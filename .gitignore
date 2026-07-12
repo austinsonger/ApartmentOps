@@ -1,0 +1,17 @@
+# ApartmentOps runtime output (user-specific; never committed)
+apartmentops/
+!examples/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editors
+.idea/
+.vscode/

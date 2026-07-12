@@ -1,0 +1,41 @@
+# ApartmentOps config - example for a two-bed search near a Chicago Loop office.
+# The onboarding skill writes this for you; this file is here to show the shape.
+# Copy to apartmentops/config.yml in your project and edit, or just run onboarding.
+
+version: 1
+created: 2026-01-01T09:00:00-06:00
+
+anchor:                          # where you commute to; null to skip commute ranking
+  label: "Office"
+  address: "233 S Wacker Dr, Chicago, IL"
+  lat: 41.8789
+  lon: -87.6359
+
+budget:
+  gross_min: 2800
+  gross_max: 3600
+  target: 3200
+  allow_net_effective: true      # net-in-band qualifies if gross <= gross_max_stretch
+  gross_max_stretch: 3900
+  income_annual: null            # optional; set it to get 40x-rent qualification flags
+
+unit:
+  beds: 2
+  baths: {value: 2, mode: hard}          # mode: hard (required) | bonus (nice to have)
+  sqft_min: {value: 950, mode: bonus}
+
+gates:
+  year_built_min: {value: 2015, mode: bonus}
+  floor_min: {value: 8, mode: bonus}
+  exposure_preferred: [S, SE, SW, E]     # lake and light; empty list = no preference
+  exposure_blocked: []                   # e.g. [N] to hard-block north-facing units
+  elevator_doorman: {value: true, mode: hard}
+  in_unit_laundry: {value: true, mode: hard}
+  pets: {value: cat, mode: hard}         # none | cat | dog | any
+
+geography:
+  areas: ["the-loop", "west-loop", "river-north", "south-loop", "streeterville"]
+  notes: >-
+    Started with West Loop and River North; widened to South Loop and
+    Streeterville after onboarding flagged them as one L stop out with
+    better price-per-foot.
