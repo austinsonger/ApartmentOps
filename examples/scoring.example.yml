@@ -1,0 +1,199 @@
+# ApartmentOps scoring spec - example / starting point.
+# Copy to apartmentops/scoring.yml in your project and edit, or run the
+# research skill's onboarding step to write it for you.
+#
+# This spec is read by .claude/skills/apartmentops/scripts/scoring.py.
+# Loading it runs a validator (scoring.load_spec) that rejects:
+#   - dimension weights that do not sum to 1.0
+#   - anchor bands that gap or overlap within a dimension
+#   - action_bands missing tour_now_min/watch_min, or tour_now_min <= watch_min
+#
+# Research subagents are given the anchor table for the dimension they are
+# scoring and must return a number plus the anchor band it falls in; a
+# number that does not match its cited band is rejected and retried, never
+# accepted. See ../.claude/skills/apartmentops/references/scoring.md for
+# the full usage rules (renormalization, calibration, gates, climate
+# sample-size disclosure, negotiation-anchor formula).
+
+version: 1
+
+# --- Scored dimensions --------------------------------------------------
+# v1 covers what research already grades (commute, budget fit, safety,
+# cleanliness) plus move_in_window_fit (availability-vs-move-in-window
+# gap). Weights must sum to 1.0. Each anchor band is {score_min, score_max,
+# meaning}; bands must tile the dimension's full range with no gaps and no
+# overlaps (validated on load). A fractional raw score landing between two
+# integer-tiled bands (e.g. 16.5 between a band ending at 16 and the next
+# starting at 17) is not a gap in the tiling itself - see scoring.py's
+# _anchor_index() for the deterministic nearer-band snap that handles it.
+#
+# Anchors are ordered worst -> best as score increases: a higher raw score
+# always means a more favorable outcome for that dimension. rank_based:
+# true changes how a dimension's raw score converts into its share of the
+# composite - see references/scoring.md - but is not needed for any of
+# these five; it exists for dimensions prone to one wild outlier value
+# (a future "market_leverage" or similar dimension would be a candidate).
+# Add a dimension later by adding a block here with its own weight and
+# anchors; score_unit() is generic over whatever dimensions the spec
+# declares, so no code change is required.
+
+dimensions:
+  commute:
+    weight: 0.25
+    rank_based: false
+    anchors:
+      - score_min: 17
+        score_max: 20
+        meaning: "under 30 min door-to-door, one seat"
+      - score_min: 13
+        score_max: 16
+        meaning: "30-45 min door-to-door or one transfer"
+      - score_min: 9
+        score_max: 12
+        meaning: "45-60 min door-to-door or two transfers"
+      - score_min: 1
+        score_max: 8
+        meaning: "over 60 min door-to-door, or no viable transit route"
+
+  budget_fit:
+    weight: 0.20
+    rank_based: false
+    anchors:
+      - score_min: 17
+        score_max: 20
+        meaning: "at or below target rent, net-effective"
+      - score_min: 13
+        score_max: 16
+        meaning: "within budget band, above target"
+      - score_min: 9
+        score_max: 12
+        meaning: "within stretch band only if net-effective qualifies"
+      - score_min: 1
+        score_max: 8
+        meaning: "above stretch band even net-effective"
+
+  safety:
+    weight: 0.20
+    rank_based: false
+    anchors:
+      - score_min: 17
+        score_max: 20
+        meaning: "area grade A/A-, crime well below city average with sources"
+      - score_min: 13
+        score_max: 16
+        meaning: "area grade B+/B/B-, crime near or somewhat below average"
+      - score_min: 9
+        score_max: 12
+        meaning: "area grade C+/C/C-, mixed block-level nuance"
+      - score_min: 1
+        score_max: 8
+        meaning: "area grade D or below, or above-average crime with sources"
+
+  cleanliness:
+    weight: 0.15
+    rank_based: false
+    anchors:
+      - score_min: 17
+        score_max: 20
+        meaning: "area grade A/A-, low sanitation/rodent complaint density"
+      - score_min: 13
+        score_max: 16
+        meaning: "area grade B+/B/B-"
+      - score_min: 9
+        score_max: 12
+        meaning: "area grade C+/C/C-, some structural factors noted"
+      - score_min: 1
+        score_max: 8
+        meaning: "area grade D or below"
+
+  move_in_window_fit:
+    weight: 0.20
+    rank_based: false
+    anchors:
+      - score_min: 17
+        score_max: 20
+        meaning: "available date falls inside the target move-in window (perfect overlap)"
+      - score_min: 13
+        score_max: 16
+        meaning: "available date within 14 days of the window edge - short early-move or late-start gap"
+      - score_min: 9
+        score_max: 12
+        meaning: "available date 15-42 days outside the window - a paid overlap month or a temp-housing gap"
+      - score_min: 1
+        score_max: 8
+        meaning: "available date more than 42 days outside the window, or no usable overlap - outright miss"
+
+# --- Action bands ---------------------------------------------------------
+# Composite is 0-100 (weighted, renormalized when dimensions are missing).
+# Threshold changes are a human commit to this file, never an automated
+# adjustment - see calibration below.
+
+action_bands:
+  tour_now_min: 80
+  watch_min: 50
+
+# --- Calibration ------------------------------------------------------
+# TourNow is meant to be rare. calibrate() reports the actual share each
+# run; if it exceeds this target, the run report recommends raising
+# action_bands.tour_now_min rather than the code silently tightening it.
+
+calibration:
+  tour_now_max_share: 0.15
+
+# --- Market-distress severity table -----------------------------------
+# Read by scoring.distress_flags(). Framing is deliberately
+# negotiation-positive (leverage signals for the renter), never
+# scam/fraud language - listing-legitimacy checks are a separate concern.
+# stale_factor: a unit's days_listed must exceed
+# neighborhood_median_days * stale_factor to trigger the "stale" flag.
+
+distress:
+  stale_factor: 1.5
+  severity:
+    - flag: relisted
+      points: 2
+      meaning: >-
+        Listing went off-market and came back within the ledger window -
+        the landlord did not close a deal last time.
+    - flag: price_cuts_30d
+      points: 3
+      meaning: >-
+        Two or more observed price cuts within 30 days - active
+        repricing pressure.
+    - flag: stale
+      points: 1
+      meaning: >-
+        Listed well beyond the neighborhood median days-on-market - time
+        is on the renter's side.
+
+# --- Move-in-window fit --------------------------------------------------
+# Read by scoring.move_in_fit_score() to convert the gap between a unit's
+# available date and the caller-supplied move-in window (config.yml) into
+# a raw score for the move_in_window_fit dimension above. gap_days is 0
+# when the available date falls inside the window; otherwise it is the
+# number of days to the nearer window edge. Each threshold below is the
+# largest gap_days that still lands in that tier; a missing available
+# date, a missing window, or an unparseable date all score n/a (None) -
+# never a guessed number. These three thresholds have documented code
+# defaults (scoring.py DEFAULT_MOVE_IN_*) and only need to be listed here
+# to override them.
+
+move_in_fit:
+  perfect_max_days: 0
+  minor_max_days: 14
+  moderate_max_days: 42
+
+# --- Concession climate -------------------------------------------------
+# Read by scoring.concession_climate(). Below min_sample, the output is
+# "insufficient sample" rather than any classification - the sample size
+# is always disclosed on the chip face, never hidden behind a label.
+# The four *_favorable thresholds have documented code defaults
+# (references/scoring.md) and only need to be listed here if you want to
+# override them.
+
+climate:
+  min_sample: 5
+  cut_share_renter_favorable: 0.5
+  concession_rate_renter_favorable: 0.4
+  cut_share_landlord_favorable: 0.15
+  concession_rate_landlord_favorable: 0.1
