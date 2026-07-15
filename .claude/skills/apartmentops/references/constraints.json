@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "value-without-provenance",
+      "description": "A non-null field value with status FACT or INFERRED must carry a source. A value with no source is fabricated - downgrade it to MISSING or CONFLICT instead of shipping it unbacked.",
+      "autofail": true
+    },
+    {
+      "id": "placeholder-left-in-output",
+      "description": "Output text matching a placeholder pattern (TODO, TBD, PLACEHOLDER, FIXME, XXX, lorem ipsum, example.com/.org/.net) signals unfinished or invented content that must never reach a committed file or the dashboard.",
+      "autofail": true
+    },
+    {
+      "id": "grade-without-source",
+      "description": "A safety, cleanliness, or climate letter grade with no sibling sources (a URL or list of URLs) is an invented grade. Every grade must cite at least one source.",
+      "autofail": true
+    },
+    {
+      "id": "price-not-number",
+      "description": "A price or rent field represented as a string (with a currency symbol, commas, or any non-numeric character) instead of a plain number violates the numeric-price contract in references/contracts.md.",
+      "autofail": true
+    },
+    {
+      "id": "unverified-marked-live",
+      "description": "A unit marked live: true with no verified_at timestamp and no evidence (screenshot or unit_deep_link) is an unverified claim of liveness - liveness must be provably checked, never assumed.",
+      "autofail": true
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+<head><title>Example Tower - Unit 1204 (fixture)</title></head>
+<body>
+<h1>Example Tower - Unit 1204</h1>
+<p>Fixture page for extract_embedded.py tests. Not a real listing site.
+Regression fixture: the platform's window-state variable names are plain
+identifiers with no leading/trailing underscores (unlike
+window_state.html's __INITIAL_STATE__), which is a legal JS identifier and
+must still be detected as a window_state payload.</p>
+<script src="/static/vendor-bundle.js"></script>
+<script>
+window.APP_STATE = {"listing": {"price": 3350, "beds": 2, "availability": "2026-08-15", "unit": "1204"}};
+window.dataLayerState = {"pageType": "listing"};
+window.location = location.href;
+</script>
+</body>
+</html>

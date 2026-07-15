@@ -1,0 +1,65 @@
+# Example extractor spec for a FICTIONAL listing platform ("example_platform").
+#
+# Real specs live at apartmentops/extractors/{platform}.yml in a user's
+# project and are written by the probe routine described in
+# .claude/skills/apartmentops/references/provenance.md - a one-time,
+# read-only visit to one or two known-live listing pages on that platform,
+# in a headless-Chromium verify context, checking for (in this order):
+#   1. <script id="__NEXT_DATA__" type="application/json">
+#   2. <script type="application/ld+json">
+#   3. an inline `window.SOME_NAME = {...}` assignment
+#
+# This file is NOT a real probe result - every path below is illustrative,
+# not observed. Specs are built from empirical probes only; nothing about a
+# real platform's internals is asserted here or anywhere else in this repo
+# in advance of actually running the probe against that platform.
+#
+# Specs go stale. A platform can change its page bundling at any time, and
+# a JSON-path miss during verification is the signal to re-probe - see the
+# "Re-probe entry point" note at the bottom.
+
+platform: example_platform
+
+# When this spec was last confirmed against a real, live listing page. Use
+# an ISO 8601 date. UPDATE this every time you re-probe.
+probed_at: 2026-07-15
+
+# Which embedded payload kind the probe found, in the order checked above.
+# Must be one of: next_data | ld_json | window_state | none.
+# "none" is a valid, RECORDED outcome - it tells the verify pass to use DOM
+# fallback for this platform instead of guessing at a payload that isn't
+# there.
+payload: next_data
+
+# field name -> dot/bracket path into the payload's parsed JSON, as
+# understood by scripts/extract_embedded.py's resolve_path(). Historically
+# this key was spelled "paths:" (as here); extract_embedded.py also accepts
+# "fields:" as an alias, and "fields:" wins if both are present in one
+# file.
+paths:
+  price: props.pageProps.listing.price
+  beds: props.pageProps.listing.beds
+  availability: props.pageProps.listing.available
+  unit: props.pageProps.listing.unitNumber
+  # "*" is a wildcard search step: try every item at that position and
+  # return the first one where the rest of the path resolves. Useful when
+  # a payload nests the target unit inside an array of units at an
+  # otherwise-fixed location, e.g. a floor-plan listing embedded among
+  # several on one page:
+  # unit_amenities: props.pageProps.units.*.amenities
+
+# Free-text notes from the probe session: what the probe actually observed,
+# any near-misses, anything that looked fragile. Not machine-read - this is
+# for the human (or the next probe) re-probing this platform later.
+notes: >-
+  FICTIONAL EXAMPLE ONLY. A real notes field should say things like: "found
+  __NEXT_DATA__ on both sampled unit pages; index/search pages use a
+  different bundle and were not probed. availability path holds a boolean,
+  not a date - confirm before trusting an 'available' date field downstream."
+
+# Re-probe entry point: when a JSON-path miss is flagged in a run report
+# (see provenance.md's grading-pass section), re-run the probe routine
+# against one or two current live listing pages on this platform, diff the
+# discovered paths against the ones recorded here, and overwrite this file
+# (bumping probed_at) rather than patching a single path blind - a bundling
+# change often moves more than one field at once.
