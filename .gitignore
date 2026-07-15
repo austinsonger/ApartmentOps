@@ -1,5 +1,7 @@
-# ApartmentOps runtime output (user-specific; never committed)
-apartmentops/
+# ApartmentOps runtime output (user-specific; never committed).
+# Anchored to the repo root on purpose: the skill tree lives at
+# .claude/skills/apartmentops/ and must stay committable.
+/apartmentops/
 !examples/
 
 # Python
