@@ -15,11 +15,42 @@ description: >-
 # ApartmentOps: Scan (hunt + verify)
 
 Inputs: `apartmentops/config.yml`. Outputs: `apartmentops/data/candidates.json`,
-`apartmentops/data/verified.json`, `apartmentops/shots/*.png`.
+`apartmentops/data/verified.json`, `apartmentops/shots/*.png`,
+`apartmentops/extractors/{platform}.yml` (probed lazily, see Phase 2),
+`apartmentops/data/photo_hashes.json` (see Phase 4). Also appends
+`status: NEW` rows to the user-owned `apartmentops/data/actions.yml` (see
+Phase 5) - never rewrites it.
 Read `../apartmentops/references/contracts.md` for the exact schemas, and
 repeat the parent skill's ground rules (anti-fabrication, liveness,
-human-in-the-loop, no emojis) verbatim to every subagent - subagents invent
-things when the rules stay implicit.
+human-in-the-loop, no emojis) - plus the machine-readable rules in
+`../apartmentops/references/constraints.json` - verbatim to every researcher
+and verifier subagent; subagents invent things when the rules stay implicit.
+
+## Phase 0 - Preflight (saved searches)
+
+Before Hunt, if `config.yml` has a `saved_searches` block, run it through
+`../apartmentops/scripts/doctor_searches.py`'s
+`check_saved_searches(saved_searches)` (profile -> platform -> area -> url,
+or the richer `{url, marker}` form). Put the resulting `{profile, platform,
+area, url, ok, status, detail}` rows in the run report as a preflight table
+before Phase 1 starts. A saved search is a pre-built, fully-filtered,
+newest-first listing URL; where one exists and passes preflight, Phase 1's
+researcher for that profile/platform/area navigates straight to it instead
+of driving the platform's search UI - filter widgets drift, a baked-in URL
+does not. A leg that fails preflight (403 bot wall, non-200, marker miss) is
+reported loudly and skipped - never retried against a bot wall, never
+silently patched over by falling back to a hand-driven search for that leg.
+
+`saved_searches` can carry more than one profile (e.g. a `fallback_1br`
+alongside `primary`, for a secondary configuration). Run each profile as its
+own Hunt leg in Phase 1 and tag every row it produces - candidates.json,
+verified.json, everything downstream - with that `profile` name, since the
+same building can legitimately appear twice under two different profiles at
+two different filters.
+
+If `config.yml` has no `saved_searches` block at all, skip this phase
+entirely; Phase 1's researchers fall back to driving the platform's search
+UI as before, and every row is tagged `profile: "primary"`.
 
 ## Phase 1 - Hunt (parallel researchers)
 
@@ -39,11 +70,16 @@ Each researcher prompt needs, explicitly:
   public source instead.
 - The requirement to return a `verify_url` per unit: the best page a headless
   browser could load to re-confirm the unit (a per-unit page if one exists).
+- When Phase 0 found a passing saved-search URL for this profile/platform/
+  area, hand it to the researcher directly and tell it to navigate straight
+  there rather than driving the search UI redundantly.
 
-Merge results, dedupe on (address + unit), drop rows failing hard gates or
+Merge results, dedupe on (address + unit + profile - the same address can
+legitimately appear once per profile), drop rows failing hard gates or
 outside the band (allow a small tolerance - sites drift daily), and write
-candidates.json. Log what was dropped and why; silent truncation reads as
-"covered everything" when it did not.
+candidates.json. Tag every row with its `profile` (default `"primary"` when
+no `saved_searches` are configured). Log what was dropped and why; silent
+truncation reads as "covered everything" when it did not.
 
 ## Phase 2 - Verify (headless browser; evidence or it did not happen)
 
@@ -51,7 +87,30 @@ For each candidate (rank by fit, cap sensibly, loop batches until the target
 count is confirmed): load `verify_url` in headless Chromium - the bundled
 `../apartmentops/scripts/verify_units.py` does the mechanical check (token
 present, nearby price, screenshot), or drive Playwright directly when a page
-needs interaction. Confirm:
+needs interaction.
+
+Before falling back to DOM parsing, read fields from the page's own embedded
+payload first: `../apartmentops/scripts/extract_embedded.py`'s
+`find_embedded_payloads(html)` locates any `__NEXT_DATA__`, `ld+json`, or
+inline `window.NAME = {...}` block on the page, then `extract_fields(payloads,
+spec)` pulls named fields out of it via the per-platform spec at
+`apartmentops/extractors/{platform}.yml` (shape: `examples/extractor.example.yml`).
+The first time this skill meets a platform it has no spec for, bring one up
+with a one-time empirical probe against one or two known-live listing pages:
+check in the order above for a payload, record which kind was found (or
+`none` - a recorded "no embedded payload" is a valid, useful outcome, not a
+failure), record the dot-paths that actually resolved, and write the spec
+file - never guess a path you have not observed on a real page. Re-run the
+probe and overwrite the spec (bumping `probed_at`) whenever a platform's
+extractions start coming back MISSING; a path miss usually means the
+platform changed its bundling, not that the field vanished. DOM parsing
+remains the fallback for any field the embedded payload does not carry, and
+the screenshot is still mandatory regardless of extraction method. Tag each
+field's extraction method (`"embedded:next_data"`, `"embedded:ld_json"`,
+`"embedded:window_state"`, or `"dom"`) in the `extraction` block written to
+verified.json - see Phase 3 for the full provenance shape this feeds.
+
+Confirm:
 
 1. **Live today** - the unit is listed available NOW. Reject stale, archived,
    or syndicated ghost listings; a zombie listing from years ago looks
@@ -70,8 +129,89 @@ Watch for unit-number collisions: two towers in one complex can both have a
 unit with the same display number at different prices. Trust feed IDs over
 display names.
 
-Write verified.json (candidates plus verification fields). Report to the
-user: counts (live, rejected, gone), the standouts against their gates, and
-price movements if this is a re-scan. Then offer the next stage:
+## Phase 3 - Provenance, gates, and grading
+
+Shape every freshly-extracted field per
+`../apartmentops/references/provenance.md` before it goes near
+verified.json: FACT needs a `source` URL and `evidence` (screenshot path or
+verbatim quote); INFERRED needs `confidence` and collapses to MISSING below
+0.3; MISSING is `value: null`, never a guess and never carried forward from
+a prior run; CONFLICT keeps `value: null` and lists the competing
+observations in a `conflicts` array rather than picking a silent winner.
+Pre-existing bare-scalar data stays legal (read as FACT/source-null or
+MISSING via `gates.normalize_field`) - this shape is for what this run
+adds. Fold `../apartmentops/references/constraints.json`'s rules into every
+researcher and verifier subagent prompt verbatim, same as the ground rules
+quoted above - anti-fabrication has to be spelled out explicitly or it
+erodes.
+
+Before writing verified.json, grade the merged output with
+`gates.grade_fields(data, constraints)` (`../apartmentops/scripts/gates.py`,
+`constraints` being the parsed `constraints.json`). Any autofail
+(`value-without-provenance`, `placeholder-left-in-output`,
+`grade-without-source`, `price-not-number`, `unverified-marked-live`) blocks
+that unit's write - fix the offending field or leave the unit out and
+re-verify it next run; never ship an autofailed record. Log withheld units
+and their rule ids in the run report.
+
+Build `config_gates` from `config.yml`'s `gates:` block per the translation
+table in `references/provenance.md` (hard-mode entries only - bonus-mode
+gates like `floor_min`/`sqft_min` feed the scoring dimensions later, not
+this tri-state block), then evaluate with
+`gates.evaluate_gates(config_gates, unit)` -> `{gate_name: "PASS"|"FAIL"|
+"UNKNOWN"}`. UNKNOWN is not a rejection: a unit whose hard gates include any
+UNKNOWN stays in the pipeline, with its `gates` block and
+`gates.verify_checklist(gate_results, unit)` recorded on the record - never
+dropped, never guessed into a PASS. `gates.tour_now_blocked(gate_results)`
+is what the research stage reads to decide whether a unit can reach the
+TourNow action band; this skill's job stops at recording accurate tri-state
+gates, not at assigning the band itself. Write verified.json once grading
+and gate evaluation are done.
+
+## Phase 4 - Photo scam net
+
+After verification, build or refresh `apartmentops/data/photo_hashes.json`.
+Assemble a manifest row per archived photo - `{unit_id, address, platform,
+price, live, photo_path}`, `photo_path` drawn from this run's
+`apartmentops/shots/*.png` and any other archived listing photos on file -
+and run it through `photo_hash.build_index(manifest)`
+(`../apartmentops/scripts/photo_hash.py index manifest.json` from the CLI).
+An unreadable photo gets `ahash`/`dhash: null` plus an `error` string and
+stays in the index rather than being dropped. Then run
+`photo_hash.find_matches(index)` (`photo_hash.py scan photo_hashes.json`)
+and map every match's flags (`cross_address`, `cross_platform`, `price_gap`,
+`zombie_repost`) onto the matched units' `scam_flags`, carrying the evidence
+pair - both units' `photo_path`, `address`, `platform`, `price`, recovered
+by joining `a_unit`/`b_unit` back through the index - so a human sees what
+matched, not just a bare flag name. A unit absent from
+`photo_hash.photo_coverage()` has no archived photos at all; render "photo
+check: n/a" for it in the run report and downstream, never a default clean
+bill of health.
+
+## Phase 5 - Actions sync
+
+After verified.json is written, sync the user-owned actions tracker.
+`backlog.load_verified_units("apartmentops/data/verified.json")`
+(`../apartmentops/scripts/backlog.py`) returns the unit set keyed by
+`unit_id` regardless of whether verified.json is stored as an array or a
+dict, so use it rather than hand-deriving keys. Then:
+`before = backlog.load_actions("apartmentops/data/actions.yml")` (empty if
+the file does not exist yet), `after = backlog.sync_new_units(before,
+verified_units, now)` with `now` a plain `YYYY-MM-DD` date (not a
+timestamp - a human edits this file by hand), then
+`backlog.append_new_entries("apartmentops/data/actions.yml", before,
+after)`. This appends only `status: NEW` rows for units newly seen this
+run - a text append, never a parse-and-rewrite - so a hand-set status, a
+hand-written note, and any comments already in the file survive byte-for-
+byte. This is the only write this skill ever makes to actions.yml; every
+other field belongs to the user. Use `backlog.describe_sync(before, after)`
+for the run-report line ("actions.yml: N NEW entries appended" or
+"actions.yml: no changes").
+
+Report to the user: the Phase 0 preflight table (which saved searches
+passed or failed and why), counts (live, rejected, gone), any units withheld
+by an autofail this run, any `scam_flags` raised by the photo net, the
+actions.yml sync line, the standouts against their gates, and price
+movements if this is a re-scan. Then offer the next stage:
 `apartmentops-research` if areas.json does not exist yet, otherwise
 `apartmentops-dashboard`.

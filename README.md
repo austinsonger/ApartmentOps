@@ -33,22 +33,30 @@ grades, no auto-contacting brokers.
 
 ## How it works
 
-Four skills that hand off through plain files in an `apartmentops/`
+Five skills that hand off through plain files in an `apartmentops/`
 directory. Each stage reads the previous stage's output and writes its own,
 so you can re-run any single stage without redoing the others.
 
 ```
-  apartmentops             ->  apartmentops/config.yml
+  apartmentops             ->  apartmentops/config.yml, scoring.yml
   (onboard from scratch)
 
   apartmentops-scan        ->  data/verified.json  (+ screenshot evidence)
   (hunt + browser-verify)
+                               data/actions.yml  (new-unit entries only)
 
   apartmentops-research    ->  data/areas.json, data/transit.json
-  (safety, cleanliness, commute cost)
+  (safety, cleanliness, commute cost, scoring)
+                               data/buildings.json, data/scores.json
 
   apartmentops-dashboard   ->  dashboard.html  (published, re-hydratable)
-  (interactive map)
+  (interactive map + hydrate)
+                               data/snapshots.jsonl  (market memory)
+
+  apartmentops-lease       ->  data/lease.json
+  (lease review, on demand)
+                               feeds back into the dashboard's critical-dates
+                               timeline
 ```
 
 - **Onboard.** Asks where you commute to (down to the corner - a Financial
@@ -58,26 +66,55 @@ so you can re-run any single stage without redoing the others.
 - **Scan.** Fans out parallel researchers per neighborhood, then confirms
   each candidate is live *today* in a real headless browser - screenshot
   evidence, per-unit deep links, scam screening, zombie-listing rejection.
+  Reads a platform's own embedded JSON payload before falling back to DOM
+  parsing, preflights every saved-search URL before trusting it, tags each
+  fact FACT / INFERRED / MISSING / CONFLICT and evaluates hard and bonus
+  gates as PASS / FAIL / UNKNOWN, and runs a photo-hash net across every
+  listing photo to catch cross-address, cross-platform, price-gap, and
+  zombie-repost scams.
 - **Research.** Grades each area's safety and cleanliness from cited crime
   and sanitation data, lists nearby essentials with walk times, and computes
-  real door-to-door transit time and monthly fare cost to your office.
+  real door-to-door transit time and monthly fare cost to your office. Pulls
+  a FEMA flood-zone chip per building, scores every unit against a
+  verbal-anchor rubric that lands in a TourNow / Watch / Skip band (TourNow
+  is kept deliberately rare and demotes to Watch while any hard gate is
+  unresolved), reads the concession climate off the market-memory ledger,
+  and computes negotiation anchors plus a same-building line-substitution
+  advisor from cited floor plans.
 - **Dashboard.** Renders everything on a to-scale map with real shorelines,
   commute lines, source-linked grade chips, per-unit listing links, and
-  live/gone badges. "Hydrate" re-checks every unit later without re-hunting.
+  live/gone badges. "Hydrate" re-checks every unit later without re-hunting,
+  and every hydrate writes to a market-memory ledger that drives a
+  freshness/heartbeat banner, per-unit price sparklines with NEW /
+  PRICE-DROP / REMOVED badges, a weekly digest, a 2-8 unit compare view, an
+  action panel grouped by status with a move-in countdown, and printable
+  per-unit tour one-pagers.
+- **Lease.** Optional fifth stage - run it whenever you drop a draft lease
+  PDF into `data/leases/`. Converts it locally, extracts every
+  renter-relevant term with a page/clause citation (or MISSING/CONFLICT,
+  never a guess), flags deviations from the advertised deal (a vanished
+  concession, a surprise fee), and derives a critical-dates timeline
+  (renewal notice, concession reversion, deposit-return deadline) for you to
+  copy into your own calendar.
 
 ## Quickstart
 
-1. Copy the four skill folders into your project's skills directory:
+1. Copy the five skill folders into your project's skills directory:
 
    ```bash
    git clone https://github.com/ajokunu/ApartmentOps
    cp -R ApartmentOps/.claude/skills/apartmentops* your-project/.claude/skills/
    ```
 
-2. Install the browser used for verification (once):
+2. Install what you need (once). Everything here is optional and scoped to
+   one feature - skip a line and that one feature degrades to n/a with a
+   `pip install <name>` hint instead of breaking the rest of the pipeline:
 
    ```bash
-   pip install playwright && playwright install chromium
+   pip install playwright && playwright install chromium  # live verification + hydrate
+   pip install pillow                                      # photo-hash scam net
+   pip install pyyaml                                      # config.yml, scoring.yml, line maps
+   pip install markitdown                                  # local lease PDF-to-text
    ```
 
 3. Open your project in Claude Code and say:
@@ -86,7 +123,7 @@ so you can re-run any single stage without redoing the others.
 
    The `apartmentops` skill triggers, walks you through onboarding, and
    offers to run the first scan. From then on: "rescan", "how safe is
-   this area", "build the dashboard", "hydrate".
+   this area", "build the dashboard", "hydrate", "review my lease".
 
 ## What it looks like
 
@@ -115,10 +152,51 @@ subagents cut corners when the rules are implicit:
   links; you send them. Read-only browsing of public pages only - no logins,
   no bot-wall bypasses.
 
+## Deterministic core
+
+Every number the skills report - a true monthly cost, a rent-drop
+percentage, a gate PASS/FAIL/UNKNOWN, a photo-hash match distance, a lease
+deadline - comes out of plain, tested Python, not the model doing math in
+its head. Eleven modules under `.claude/skills/apartmentops/scripts/`
+(`costs.py`, `snapshots.py`, `gates.py`, `scoring.py`, `photo_hash.py`,
+`lease_dates.py`, and five more, alongside the original `geocode.py` and
+`verify_units.py`) are covered by a 399-test pytest suite - run it with
+`pytest tests/` from the repo root. The model's job in every skill is to
+call these functions, read what they return, and narrate it with citations;
+it never computes a dollar figure, a percentage, or a hash distance by
+hand. If a script returns MISSING or null, that is what reaches you -
+nothing downstream is allowed to fill the gap with a guess.
+
+## Guardrails
+
+The binding rules for anyone extending a skill are pinned as
+[issue #41](https://github.com/ajokunu/ApartmentOps/issues/41) on this
+repo - read it before adding a feature. The four that matter most:
+
+- **Never auto-send.** No skill submits an application, books a tour,
+  emails a broker, or adds a calendar entry on its own. Everything produced
+  is a draft or a link; a human sends it.
+- **Never bypass a bot wall.** Verification and hydrate are read-only
+  headless browsing of public pages - no login, no CAPTCHA solving. A bot
+  wall is a stop signal, not a puzzle to solve.
+- **Cite or MISSING.** Every fact traces to a URL that was actually fetched
+  or a file that was actually read. A field with no source is MISSING, not
+  inferred or carried over from a similar listing.
+- **User-owned action files.** `data/actions.yml` tracks what you have done
+  with each unit, separate from whether the listing is still live. The
+  pipeline may only append a `NEW` row for a freshly verified unit; every
+  other edit, including status changes, is yours to make.
+
 ## Requirements
 
 - Claude Code (or the Claude Agent SDK).
-- Python 3.10+ with `playwright` and a Chromium install, for verification.
+- Python 3.10+. Everything beyond the standard library is optional and
+  scoped to one feature - missing one prints a `pip install <name>` hint
+  for that feature instead of breaking the rest of the pipeline:
+  - `playwright` (+ `playwright install chromium`) - live verification and hydrate.
+  - `pillow` - the photo-hash scam net.
+  - `pyyaml` - `config.yml`, `scoring.yml`, and per-building line maps.
+  - `markitdown` - local lease PDF-to-text conversion.
 - No API keys required for the core pipeline. Geocoding uses the free OSM
   Nominatim service.
 
@@ -126,16 +204,24 @@ subagents cut corners when the rules are implicit:
 
 ```
 .claude/skills/
-  apartmentops/            onboarding + routing; references/, scripts/, assets/
-    references/contracts.md  the file formats every stage reads and writes
-    scripts/geocode.py       Nominatim geocoder
-    scripts/verify_units.py  headless liveness checker
+  apartmentops/             onboarding + routing; references/, scripts/, assets/
+    references/contracts.md   the file formats every stage reads and writes
+    references/*.md           scoring, provenance, ledger, costs, lease-fields,
+                              and line-substitution docs
+    scripts/*.py              eleven deterministic modules (costs, gates, scoring,
+                              snapshots, photo_hash, lease_dates, line_advisor,
+                              extract_embedded, flood, backlog, doctor_searches)
+                              plus the original geocode.py and verify_units.py
     assets/example-dashboard.html  a finished dashboard to study
-  apartmentops-scan/       hunt + browser-verify
-  apartmentops-research/   safety, cleanliness, transit
-  apartmentops-dashboard/  build + hydrate the map
+  apartmentops-scan/        hunt + browser-verify
+  apartmentops-research/    safety, cleanliness, transit, scoring
+  apartmentops-dashboard/   build + hydrate the map
+  apartmentops-lease/       lease abstraction, deviations, critical dates
 examples/config.example.yml
+examples/scoring.example.yml
+examples/extractor.example.yml
 docs/screenshots/
+tests/                      pytest suite for every scripts/ module (399 tests)
 ```
 
 ## License

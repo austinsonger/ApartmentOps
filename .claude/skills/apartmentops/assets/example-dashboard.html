@@ -1,0 +1,1084 @@
+<title>ApartmentOps - Verified 2BR Dashboard</title>
+<style>
+  :root {
+    --bg: #F4F5F2; --surface: #FFFFFF; --ink: #21262C; --muted: #616A74;
+    --line: #DDE0DA; --water: #D3E0E6; --land: #E9EBE3; --landline: #D8DBD2;
+    --path: #3B76E8; --subway: #D97B1E; --walk: #8A93A0;
+    --gA: #2E7D46; --gB: #B07F0A; --gC: #98351B;
+    --chipA: #E3EFE7; --chipB: #F4ECD8; --chipC: #F3E2DC;
+    --office: #21262C; --hl: #3B76E8;
+    --shadow: 0 1px 3px rgba(30,35,42,.08), 0 4px 14px rgba(30,35,42,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171B; --surface: #1D2126; --ink: #E8EAED; --muted: #9AA3AD;
+      --line: #2C3138; --water: #17242E; --land: #1B1F23; --landline: #262B31;
+      --path: #5E8FE0; --subway: #B57C22; --walk: #6B7480;
+      --gA: #3F9A62; --gB: #B0841C; --gC: #C05A38;
+      --chipA: #1E2E24; --chipB: #2E2818; --chipC: #301F18;
+      --office: #E8EAED; --hl: #5E8FE0;
+      --shadow: 0 1px 3px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171B; --surface: #1D2126; --ink: #E8EAED; --muted: #9AA3AD;
+    --line: #2C3138; --water: #17242E; --land: #1B1F23; --landline: #262B31;
+    --path: #5E8FE0; --subway: #B57C22; --walk: #6B7480;
+    --gA: #3F9A62; --gB: #B0841C; --gC: #C05A38;
+    --chipA: #1E2E24; --chipB: #2E2818; --chipC: #301F18;
+    --office: #E8EAED; --hl: #5E8FE0;
+    --shadow: 0 1px 3px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  }
+  :root[data-theme="light"] {
+    --bg: #F4F5F2; --surface: #FFFFFF; --ink: #21262C; --muted: #616A74;
+    --line: #DDE0DA; --water: #D3E0E6; --land: #E9EBE3; --landline: #D8DBD2;
+    --path: #3B76E8; --subway: #D97B1E; --walk: #8A93A0;
+    --gA: #2E7D46; --gB: #B07F0A; --gC: #98351B;
+    --chipA: #E3EFE7; --chipB: #F4ECD8; --chipC: #F3E2DC;
+    --office: #21262C; --hl: #3B76E8;
+    --shadow: 0 1px 3px rgba(30,35,42,.08), 0 4px 14px rgba(30,35,42,.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 14px; line-height: 1.45;
+  }
+  .num { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 20px 22px 40px; }
+  header h1 { font-size: 21px; font-weight: 700; margin: 0 0 2px; letter-spacing: -.01em; text-wrap: balance; }
+  header .sub { color: var(--muted); font-size: 13px; margin: 0; }
+  header .sub b { color: var(--ink); font-weight: 600; }
+
+  .banner { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line);
+            border-radius: 8px; padding: 7px 14px; font-size: 12.5px; color: var(--muted); box-shadow: var(--shadow);
+            margin: 14px 0 0; flex-wrap: wrap; }
+  .banner b { color: var(--ink); font-weight: 600; }
+  .banner .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .kpis { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 18px; }
+  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+         padding: 9px 14px; box-shadow: var(--shadow); min-width: 120px; }
+  .kpi .v { font-size: 17px; font-weight: 700; }
+  .kpi .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+
+  .main { display: grid; grid-template-columns: minmax(420px, 7fr) minmax(330px, 5fr); gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+
+  .mapcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+             box-shadow: var(--shadow); overflow: hidden; position: sticky; top: 14px; }
+  .mapcard .maphead { display: flex; justify-content: space-between; align-items: baseline;
+                      padding: 12px 16px 6px; gap: 10px; flex-wrap: wrap; }
+  .mapcard h2 { font-size: 13.5px; margin: 0; font-weight: 700; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .sw { width: 16px; height: 0; border-top: 3px solid; border-radius: 2px; display: inline-block; }
+  .sw.path { border-color: var(--path); }
+  .sw.subway { border-color: var(--subway); }
+  .sw.walk { border-top-style: dotted; border-color: var(--walk); }
+  svg { display: block; width: 100%; height: auto; }
+  .geo-water { fill: var(--water); }
+  .geo-land { fill: var(--land); stroke: var(--landline); stroke-width: 1; }
+  .geo-label { font-size: 10.5px; fill: var(--muted); letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+  .rt-transit { fill: none; stroke-width: 2.6; stroke-linecap: round; opacity: .85; }
+  .rt-walk { fill: none; stroke-width: 2; stroke-dasharray: 1 5; stroke-linecap: round; opacity: .9; }
+  .rt.dim { opacity: .14; }
+  .stn { fill: var(--surface); stroke: var(--muted); stroke-width: 1.4; }
+  .bmark { cursor: pointer; }
+  .bmark circle.core { stroke: var(--surface); stroke-width: 2; }
+  .bmark.dim { opacity: .25; }
+  .bmark text { font-size: 10.5px; font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3; stroke-linejoin: round; }
+  .office-mark text { font-size: 11px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3; }
+  .clabel { font-size: 10px; font-weight: 600; }
+  .clabel rect { fill: var(--surface); stroke: var(--line); rx: 4; }
+  .clabel text { fill: var(--ink); }
+  .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line);
+         border-radius: 7px; box-shadow: var(--shadow); padding: 8px 11px; font-size: 12px; max-width: 240px;
+         opacity: 0; transition: opacity .12s; z-index: 5; }
+  .tip b { display: block; margin-bottom: 2px; }
+  .tip .m { color: var(--muted); }
+
+  .panel { display: flex; flex-direction: column; gap: 12px; }
+  .sortrow { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .sortrow button { background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+                    border-radius: 6px; padding: 5px 11px; font: inherit; font-size: 12px; cursor: pointer; }
+  .sortrow button.on { border-color: var(--hl); color: var(--hl); font-weight: 600; }
+  .sortrow button:focus-visible { outline: 2px solid var(--hl); outline-offset: 1px; }
+
+  .bcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+           box-shadow: var(--shadow); padding: 14px 16px; scroll-margin-top: 12px; }
+  .bcard.hl { border-color: var(--hl); box-shadow: 0 0 0 2px color-mix(in srgb, var(--hl) 35%, transparent), var(--shadow); }
+  .bhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .bhead h3 { margin: 0; font-size: 14.5px; font-weight: 700; }
+  .bhead .addr { color: var(--muted); font-size: 12px; margin: 1px 0 0; }
+  .grades { display: flex; gap: 6px; flex-shrink: 0; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 3px 9px;
+          font-size: 11px; font-weight: 700; color: inherit; text-decoration: none; }
+  a.chip:hover { text-decoration: underline; }
+  .bhead h3 a { color: inherit; text-decoration: none; }
+  .bhead h3 a:hover { text-decoration: underline; }
+  td.lnk a { color: var(--hl); text-decoration: none; font-size: 11px; }
+  .gone { color: var(--gC); font-size: 10.5px; font-weight: 700; }
+  .liveok { color: var(--gA); font-size: 10.5px; font-weight: 700; }
+  tr.rowgone td { opacity: .55; }
+  td.lnk a:hover { text-decoration: underline; }
+  .chip .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .chip.cA { background: var(--chipA); } .chip.cA .dot { background: var(--gA); }
+  .chip.cB { background: var(--chipB); } .chip.cB .dot { background: var(--gB); }
+  .chip.cC { background: var(--chipC); } .chip.cC .dot { background: var(--gC); }
+  .chip.cN { background: var(--bg); color: var(--muted); } .chip.cN .dot { background: var(--muted); }
+  .commute { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 2px; font-size: 12.5px; }
+  .commute .big { font-size: 16px; font-weight: 700; }
+  .commute .cost { color: var(--muted); }
+  .route { color: var(--muted); font-size: 11.5px; margin: 0 0 8px; }
+  table.units { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 4px 0 8px; }
+  table.units th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+                   color: var(--muted); font-weight: 600; padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); }
+  table.units td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); }
+  table.units tr:last-child td { border-bottom: none; }
+  .spark { display: inline-block; vertical-align: middle; margin-left: 6px; }
+  .spark polyline { stroke: var(--hl); }
+  .badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700; border-radius: 10px;
+           padding: 1px 6px; margin-left: 5px; white-space: nowrap; }
+  .badge.bDROP { background: var(--chipA); color: var(--gA); }
+  .badge.bREM { background: var(--chipC); color: var(--gC); }
+  .provdot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-left: 3px; vertical-align: middle; }
+  .provdot.pMISS { background: var(--gC); }
+  .provdot.pINF { background: var(--gB); }
+  .ess { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px; }
+  .ess span { background: var(--bg); border: 1px solid var(--line); border-radius: 5px;
+              padding: 2px 8px; font-size: 11px; color: var(--muted); }
+  .ess span b { color: var(--ink); font-weight: 600; }
+  .vibe { font-size: 12px; color: var(--muted); margin: 0; }
+  .vibe b { color: var(--ink); }
+
+  .foot { margin-top: 22px; display: grid; gap: 14px; }
+  .digest { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+            padding: 12px 16px; font-size: 12.5px; box-shadow: var(--shadow); }
+  .digest b { font-weight: 700; }
+  .digestlist { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .digestlist li { color: var(--muted); }
+  .dtag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-right: 6px; }
+  .fares { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+           padding: 12px 16px; font-size: 12.5px; box-shadow: var(--shadow); }
+  .fares b { font-weight: 700; }
+  .src { font-size: 11px; color: var(--muted); line-height: 1.7; }
+  .src a { color: var(--muted); }
+  .method { font-size: 11.5px; color: var(--muted); }
+
+  .actionpanel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+                 padding: 12px 16px; box-shadow: var(--shadow); font-size: 12.5px; }
+  .apheader { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; }
+  .apdays { font-size: 20px; font-weight: 700; }
+  .apdayslbl { color: var(--muted); font-size: 11.5px; }
+  .apgroup { margin: 8px 0 0; }
+  .apglabel { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+              font-weight: 600; margin: 0 0 4px; }
+  .aplist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .aplist li { display: flex; justify-content: space-between; gap: 10px; }
+  .aplist a { color: var(--ink); text-decoration: none; font-size: 12px; }
+  .aplist a:hover { text-decoration: underline; }
+  .apmeta { color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+
+  .cmpchk { width: 14px; height: 14px; }
+  .cmpbar { position: sticky; top: 14px; z-index: 6; display: flex; align-items: center; gap: 10px;
+            background: var(--surface); border: 1px solid var(--hl); border-radius: 8px; padding: 7px 12px;
+            font-size: 12.5px; box-shadow: var(--shadow); }
+  .cmpbar button { background: var(--hl); color: var(--surface); border: none; border-radius: 6px;
+                   padding: 5px 12px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .cmpbar button:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+  .cmpnote { color: var(--muted); font-size: 11.5px; }
+
+  .comparesec { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+                box-shadow: var(--shadow); padding: 14px 16px; }
+  .comparehead { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 8px; }
+  .comparehead h2 { font-size: 13.5px; margin: 0; font-weight: 700; }
+  .comparehead button { background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+                        border-radius: 6px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+  .cmpscroll { overflow-x: auto; }
+  table.compare { border-collapse: collapse; font-size: 12px; }
+  table.compare th, table.compare td { padding: 5px 14px 5px 0; border-bottom: 1px solid var(--line);
+    text-align: left; white-space: nowrap; }
+  table.compare thead th { font-weight: 700; font-size: 12.5px; }
+  table.compare .rowlbl { color: var(--muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: .05em; }
+  table.compare tbody tr:last-child td, table.compare tbody tr:last-child th { border-bottom: none; }
+
+  .onepager h1 { font-size: 18px; margin: 0 0 8px; }
+  .onepager h2 { font-size: 13px; margin: 16px 0 6px; }
+  .gauge { width: 240px; height: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 5px;
+           overflow: hidden; }
+  .gaugefill { height: 100%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .gaugelbl { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+  table.wftable { border-collapse: collapse; font-size: 12.5px; }
+  table.wftable td { padding: 3px 14px 3px 0; border-bottom: 1px solid var(--line); }
+  table.wftable tr:last-child td { border-top: 2px solid var(--ink); border-bottom: none; font-weight: 700; }
+  .opchips { font-size: 12px; color: var(--muted); margin: 4px 0; }
+  .opq { font-size: 12px; padding-left: 18px; margin: 6px 0; }
+  .opq li { margin: 2px 0; }
+  .opneg { font-size: 12px; margin: 10px 0 0; }
+
+  @media print {
+    .wrap > *:not(#onepager) { display: none !important; }
+    #onepager { display: block !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Two-Bed Hunt, Quality Band: 33 Verified Units in Newer Towers</h1>
+    <p class="sub">All 2BR/2BA, band $4,750-5,500 (nets from $4,583), buildings 2016-2026, every unit live-verified by real browser Jul 11 and re-checked via per-unit deep links <b>Jul 12, 2026, ~3:45 PM ET</b> (28 of 33 still live; JSQ repriced +$10-15 overnight).
+       Commute anchor: <b>your office anchor</b>. Safety and cleanliness graded from cited crime and sanitation data.</p>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v num">28 / 33</div><div class="k">Live right now</div></div>
+    <div class="kpi"><div class="v num">13</div><div class="k">Buildings, 2016-2026</div></div>
+    <div class="kpi"><div class="v num">26-47 min</div><div class="k">Door-to-door range</div></div>
+    <div class="kpi"><div class="v num">$4,695-5,526</div><div class="k">Gross range</div></div>
+    <div class="kpi"><div class="v num">$126-130</div><div class="k">Transit / month</div></div>
+  </div>
+
+  <div class="main">
+    <div class="mapcard" id="mapcard">
+      <div class="maphead">
+        <h2>Commute map (real shorelines, to scale)</h2>
+        <div class="legend">
+          <span><i class="sw path"></i>PATH</span>
+          <span><i class="sw subway"></i>Subway</span>
+          <span><i class="sw walk"></i>Walk leg</span>
+        </div>
+      </div>
+      <div style="position:relative">
+        <svg id="map" viewBox="0 0 960 640" role="img" aria-label="Map of 8 buildings with transit routes to your office"></svg>
+        <div class="tip" id="tip"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="actionpanel" id="actionpanel"></div>
+      <div class="sortrow">
+        Sort:
+        <button data-sort="commute" class="on">Commute</button>
+        <button data-sort="rent">Cheapest unit</button>
+        <button data-sort="safety">Safety</button>
+        <button data-sort="band">Band</button>
+      </div>
+      <div class="cmpbar" id="cmpbar" hidden>
+        <span id="cmpcount" class="num"></span>
+        <button id="cmpopen" type="button" disabled>Compare</button>
+        <span id="cmpnote" class="cmpnote"></span>
+      </div>
+      <div class="comparesec" id="comparesec" hidden></div>
+      <div id="cards"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="digest" id="digest"></div>
+    <div class="fares">
+      <b>Monthly commute cost (Jul 2026 fares, 42 rides):</b>
+      PATH $3.10/ride multi-trip = <span class="num">$130.20</span> (Newport, Journal Sq, Hoboken walk-to-terminal) -
+      MTA OMNY $3.00 = <span class="num">$126.00</span> (Astoria; never hits the $35 weekly cap) -
+      Rivington via light rail instead of walking stacks HBLR $84/mo on top of PATH = <span class="num">$214.20</span>.
+      PATH single $3.25 / 30-day $131.50; fares rose May 2026 (PATH) and Jan 2026 (MTA).
+    </div>
+    <p class="method">Verification: UNIT data (rent, floor, availability) re-verified live with headless Chromium (Playwright) on Jul 11, 2026 (screenshots in reports/nyc-4500-sweep/shots/).
+      Commutes = walk to station + typical AM-peak wait + ride + walk to 5th Ave &amp; 19th St, using real station walk times
+      (e.g. the Hamilton Park buildings are a 12 min walk to Newport PATH, not the marketed 5).
+      Safety and cleanliness are documentary area grades synthesized from the linked sources (crime statistics, sanitation and rodent-complaint data, resident reviews) - researched by agents with citations, not browser-verified, and not building guarantees. Click any grade chip to open its primary source; every unit row's listing link opens the deepest live page the site exposes (per-unit pages at Journal Squared, Urby, RentHop and Equity; building availability pages elsewhere). This is the $4,750-5,500 quality band (2BR/2BA, buildings 2017-2026, floor 10+ preferred): the sweep confirmed LIC, Downtown Brooklyn and Williamsburg new towers all clear ABOVE this band right now ($5,700-7,500), so the quality pocket is Journal Square plus select JC/Astoria buildings. Net-effective prices are year-one deals; budget gross for renewal. Treat exact rents as quote-of-the-day. Coastlines: NYC borough shoreline boundaries (NYC Open Data via dwillis/nyc-maps); the NJ bank is hand-traced to the same scale.
+      Price-snapshot series, action statuses, action bands and true-monthly-cost figures shown in this example file are illustrative sample data demonstrating the ledger, scoring and cost surfaces - real dashboards compute them from data/snapshots.jsonl, data/scores.json and scripts/costs.py results.</p>
+    <p class="src">
+      Safety and cleanliness sources:
+      <a href="https://crimegrade.org/safest-places-in-journal-square-jersey-city-nj/">CrimeGrade Journal Sq</a> -
+      <a href="https://www.areavibes.com/jersey+city-nj/journal+square/crime/">AreaVibes JSQ</a> -
+      <a href="https://www.neighborhoodscout.com/nj/jersey-city/crime">NeighborhoodScout JC</a> -
+      <a href="https://crimegrade.org/safest-places-in-astoria-queens-ny/">CrimeGrade Astoria</a> -
+      <a href="https://www.nyc.gov/site/nypd/bureaus/patrol/precincts/114th-precinct.page">NYPD 114th Pct</a> -
+      <a href="https://a816-dohbesp.nyc.gov/IndicatorPublic/rats/">NYC rat map</a> -
+      <a href="https://qns.com/ridgewood-has-the-most-rats-in-all-of-queens-based-on-complaints-followed-by-jackson-heights-and-astoria/">QNS rodent complaints</a> -
+      <a href="https://www.areavibes.com/hoboken-nj/crime/">AreaVibes Hoboken</a> -
+      <a href="https://crimegrade.org/safest-places-in-hoboken-nj/">CrimeGrade Hoboken</a> -
+      <a href="https://www.hobokennj.gov/news/city-of-hoboken-opens-new-jerseys-largest-resiliency-park">Hoboken resiliency parks</a> -
+      <a href="https://jerseydigs.com/jersey-city-trash/">Jersey Digs on JC litter</a>.
+      Fares: <a href="https://www.panynj.gov/path/en/fares.html">PATH</a> -
+      <a href="https://www.mta.info/press-release/mta-board-adopts-fare-and-toll-increases-take-effect-january-2026">MTA</a> -
+      <a href="https://www.njtransit.com/adjustedfares">NJ Transit</a>.
+    </p>
+  </div>
+
+  <div id="onepager" class="onepager" hidden></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- projection: lat/lon -> viewBox px, to scale -------------------------
+  var LON0 = -74.085, LON1 = -73.895, LAT0 = 40.698, LAT1 = 40.792;
+  var W = 960, H = 640;
+  function px(lat, lon) {
+    return [ (lon - LON0) / (LON1 - LON0) * W, (LAT1 - lat) / (LAT1 - LAT0) * H ];
+  }
+  function path(pts) {
+    return pts.map(function (p, i) { var q = px(p[0], p[1]); return (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" ");
+  }
+
+  // ---- geography: US Census 1:500k county coastlines (Hudson NJ, Manhattan,
+  // Queens, Brooklyn, Bronx), clipped to the harbor viewport ----------------
+  var GEO = {"queens":[[[40.801,-73.8205],[40.8009,-73.8199],[40.8008,-73.8195],[40.8005,-73.819],[40.8001,-73.8185],[40.7997,-73.818],[40.7993,-73.8175],[40.7991,-73.8169],[40.7989,-73.8163],[40.7985,-73.8159],[40.7983,-73.8154],[40.798,-73.8148],[40.7978,-73.8143],[40.7975,-73.8137],[40.7977,-73.8134],[40.7974,-73.8128],[40.7979,-73.8126],[40.7981,-73.8122],[40.7979,-73.8118],[40.7973,-73.8111],[40.7972,-73.8104],[40.7971,-73.8098],[40.7969,-73.8092],[40.7968,-73.8087],[40.7967,-73.8078],[40.7964,-73.8063],[40.7963,-73.8053],[40.7962,-73.8047],[40.7965,-73.8042],[40.7965,-73.8038],[40.7965,-73.8035],[40.7967,-73.8031],[40.7963,-73.8026],[40.7963,-73.8019],[40.7964,-73.8014],[40.7965,-73.801],[40.7964,-73.8006],[40.7965,-73.8001],[40.7962,-73.7997],[40.7962,-73.7994],[40.796,-73.7989],[40.7958,-73.7984],[40.7959,-73.7977],[40.7954,-73.7973],[40.7953,-73.797],[40.7951,-73.7965],[40.7951,-73.7951],[40.7948,-73.7944],[40.7942,-73.7944],[40.7936,-73.7946],[40.7931,-73.7947],[40.7926,-73.7948],[40.7922,-73.7949],[40.7916,-73.7949],[40.7894,-73.7939],[40.789,-73.7937],[40.7889,-73.7932],[40.7893,-73.7919],[40.7933,-73.7817],[40.7949,-73.7832],[40.7967,-73.7785],[40.7967,-73.7779],[40.7966,-73.7773],[40.7964,-73.7768],[40.7961,-73.7762],[40.7958,-73.7758],[40.7954,-73.7755],[40.7951,-73.7751],[40.7933,-73.7738],[40.7908,-73.7723],[40.7877,-73.7713],[40.7867,-73.7745],[40.7793,-73.7681],[40.7675,-73.7587],[40.7663,-73.7565],[40.7651,-73.7538],[40.7617,-73.751],[40.7586,-73.7463],[40.7577,-73.7462],[40.7579,-73.7458],[40.7572,-73.745],[40.7569,-73.7447],[40.7565,-73.7446],[40.7572,-73.7449],[40.7578,-73.7456],[40.7579,-73.7462],[40.7601,-73.7475],[40.7615,-73.7497],[40.7643,-73.7523],[40.7655,-73.7535],[40.7659,-73.7539],[40.7664,-73.7543],[40.7674,-73.755],[40.7684,-73.7549],[40.7686,-73.7547],[40.7687,-73.7544],[40.7688,-73.7547],[40.7694,-73.7547],[40.7712,-73.7554],[40.7735,-73.7535],[40.7762,-73.7549],[40.7772,-73.7549],[40.7787,-73.7542],[40.7681,-73.7266],[40.741,-73.7003],[40.7248,-73.723],[40.7108,-73.727],[40.6796,-73.7256],[40.6572,-73.7258],[40.6352,-73.7407],[40.6351,-73.7413],[40.6353,-73.7425],[40.6371,-73.7412],[40.6379,-73.7415],[40.639,-73.7437],[40.6376,-73.7446],[40.6372,-73.745],[40.6367,-73.7461],[40.6374,-73.7461],[40.6378,-73.7457],[40.6369,-73.747],[40.6376,-73.7469],[40.6387,-73.7465],[40.6393,-73.7463],[40.6405,-73.7463],[40.6413,-73.7463],[40.6423,-73.7468],[40.6433,-73.7474],[40.6436,-73.7477],[40.6441,-73.7483],[40.6452,-73.749],[40.6452,-73.7498],[40.6472,-73.7531],[40.647,-73.7537],[40.6413,-73.7474],[40.6395,-73.7475],[40.6382,-73.7478],[40.6367,-73.7484],[40.6347,-73.7501],[40.6337,-73.7524],[40.6331,-73.7544],[40.6328,-73.7554],[40.6325,-73.7562],[40.6322,-73.7572],[40.6317,-73.7584],[40.6311,-73.7596],[40.6307,-73.7608],[40.6303,-73.7619],[40.6297,-73.7632],[40.6296,-73.7636],[40.6293,-73.7643],[40.6293,-73.7646],[40.6293,-73.765],[40.6292,-73.7647],[40.6286,-73.7659],[40.6276,-73.7669],[40.6273,-73.7671],[40.6254,-73.7682],[40.6243,-73.7688],[40.6239,-73.7688],[40.6227,-73.7687],[40.6221,-73.7694],[40.6221,-73.7695],[40.6216,-73.7697],[40.6209,-73.7701],[40.6218,-73.7713],[40.6232,-73.7712],[40.6193,-73.7751],[40.6214,-73.7735],[40.6233,-73.7722],[40.6266,-73.7748],[40.6258,-73.7808],[40.6184,-73.7849],[40.6169,-73.7844],[40.6154,-73.7823],[40.6143,-73.7808],[40.6124,-73.7829],[40.6114,-73.7852],[40.6101,-73.7887],[40.6088,-73.7901],[40.6078,-73.7916],[40.6091,-73.7937],[40.6104,-73.7949],[40.6113,-73.7982],[40.6117,-73.8004],[40.6127,-73.8001],[40.6143,-73.7995],[40.6156,-73.799],[40.6159,-73.7985],[40.6161,-73.7982],[40.6168,-73.7974],[40.6175,-73.7972],[40.6177,-73.7968],[40.6184,-73.7965],[40.6198,-73.7959],[40.6215,-73.7951],[40.6218,-73.7945],[40.6227,-73.7943],[40.6294,-73.7828],[40.634,-73.7904],[40.6331,-73.7936],[40.6366,-73.7944],[40.6387,-73.7997],[40.646,-73.8164],[40.6486,-73.8206],[40.652,-73.8225],[40.66,-73.8217],[40.661,-73.8177],[40.6606,-73.8146],[40.6609,-73.812],[40.662,-73.8182],[40.6615,-73.8203],[40.6604,-73.823],[40.6576,-73.8243],[40.6531,-73.8242],[40.6507,-73.8237],[40.648,-73.8232],[40.6497,-73.8246],[40.6494,-73.8251],[40.6498,-73.8261],[40.6496,-73.8262],[40.6483,-73.8263],[40.6489,-73.8276],[40.65,-73.8294],[40.6553,-73.8299],[40.6553,-73.8305],[40.6559,-73.8312],[40.6565,-73.8294],[40.6579,-73.8293],[40.6585,-73.83],[40.6597,-73.8301],[40.6586,-73.8299],[40.6567,-73.8298],[40.6551,-73.8322],[40.6483,-73.8312],[40.6527,-73.8365],[40.6462,-73.8521],[40.6491,-73.8516],[40.6493,-73.8509],[40.65,-73.8506],[40.6507,-73.8502],[40.6513,-73.8493],[40.6515,-73.8508],[40.6506,-73.8527],[40.6513,-73.8555],[40.6523,-73.8565],[40.6528,-73.8576],[40.6564,-73.8614],[40.6567,-73.8605],[40.657,-73.8598],[40.6579,-73.8597],[40.6589,-73.8602],[40.6586,-73.8605],[40.6584,-73.8608],[40.6591,-73.8605],[40.6583,-73.8613],[40.6582,-73.8598],[40.6581,-73.86],[40.6578,-73.8605],[40.6572,-73.8605],[40.6569,-73.8609],[40.662,-73.8581],[40.6821,-73.865],[40.6837,-73.8927],[40.6961,-73.905],[40.708,-73.9196],[40.716,-73.9206],[40.7182,-73.9235],[40.7187,-73.9237],[40.7191,-73.924],[40.7197,-73.924],[40.7201,-73.9238],[40.7206,-73.924],[40.721,-73.9242],[40.7215,-73.9243],[40.7219,-73.9247],[40.7223,-73.9251],[40.7228,-73.9249],[40.7233,-73.9247],[40.7236,-73.9241],[40.7236,-73.9234],[40.7236,-73.9227],[40.7237,-73.922],[40.7235,-73.9213],[40.7233,-73.9207],[40.7237,-73.9205],[40.7239,-73.9212],[40.7241,-73.9218],[40.7242,-73.9224],[40.7243,-73.9231],[40.7254,-73.9262],[40.7295,-73.9359],[40.7336,-73.9401],[40.7364,-73.9427],[40.7376,-73.9459],[40.7379,-73.945],[40.739,-73.9426],[40.7394,-73.9424],[40.7384,-73.9452],[40.7398,-73.954],[40.7398,-73.9556],[40.7396,-73.957],[40.7392,-73.9581],[40.7385,-73.9601],[40.7383,-73.9622],[40.739,-73.9626],[40.742,-73.9616],[40.7443,-73.9594],[40.7446,-73.9595],[40.745,-73.9585],[40.7459,-73.9584],[40.7498,-73.9561],[40.7573,-73.9492],[40.7713,-73.9345],[40.7774,-73.931],[40.7864,-73.9156],[40.7861,-73.8964],[40.7842,-73.897],[40.782,-73.8987],[40.783,-73.8967],[40.7832,-73.8962],[40.7834,-73.8959],[40.7835,-73.8957],[40.7837,-73.8954],[40.784,-73.8949],[40.7841,-73.8947],[40.7841,-73.8946],[40.7842,-73.8944],[40.7842,-73.8944],[40.7842,-73.8943],[40.7841,-73.8943],[40.7841,-73.8944],[40.784,-73.8945],[40.784,-73.8946],[40.7838,-73.8948],[40.7835,-73.8953],[40.7834,-73.8956],[40.7833,-73.8958],[40.7831,-73.896],[40.783,-73.8959],[40.7829,-73.8957],[40.7823,-73.8946],[40.7818,-73.895],[40.7821,-73.8946],[40.7825,-73.8941],[40.7822,-73.8936],[40.7819,-73.8932],[40.7816,-73.8928],[40.7814,-73.8921],[40.7809,-73.8919],[40.7805,-73.8917],[40.7802,-73.892],[40.7799,-73.8924],[40.7795,-73.8923],[40.7755,-73.8915],[40.7737,-73.8898],[40.7741,-73.8858],[40.7786,-73.8852],[40.7806,-73.88],[40.7827,-73.8791],[40.7838,-73.8685],[40.7776,-73.8663],[40.7703,-73.8565],[40.7704,-73.8578],[40.7691,-73.857],[40.7669,-73.8618],[40.7621,-73.8589],[40.7631,-73.8578],[40.7641,-73.857],[40.763,-73.8574],[40.7631,-73.8576],[40.7616,-73.8566],[40.7607,-73.8553],[40.7602,-73.8493],[40.7638,-73.843],[40.767,-73.8399],[40.766,-73.8417],[40.7657,-73.8437],[40.7682,-73.8484],[40.7698,-73.8497],[40.7719,-73.8499],[40.7743,-73.8491],[40.7781,-73.849],[40.7785,-73.8495],[40.7788,-73.8499],[40.7795,-73.8496],[40.7793,-73.8507],[40.7798,-73.8498],[40.78,-73.8504],[40.7802,-73.8496],[40.7806,-73.8498],[40.7816,-73.8495],[40.7818,-73.8495],[40.7823,-73.8493],[40.7825,-73.8503],[40.7824,-73.8512],[40.782,-73.8544],[40.7833,-73.8563],[40.7834,-73.857],[40.784,-73.8582],[40.7844,-73.8578],[40.785,-73.8583],[40.7856,-73.859],[40.7859,-73.859],[40.7864,-73.8586],[40.7871,-73.8581],[40.7867,-73.8571],[40.7869,-73.8565],[40.7875,-73.8562],[40.7877,-73.8553],[40.7878,-73.8535],[40.7883,-73.8544],[40.7893,-73.8547],[40.7907,-73.8534],[40.7917,-73.8531],[40.7936,-73.8537],[40.7941,-73.8517],[40.7946,-73.8488],[40.796,-73.8456],[40.7955,-73.8432],[40.7961,-73.8413],[40.7921,-73.8365],[40.791,-73.8376],[40.7906,-73.8375],[40.7899,-73.8374],[40.7894,-73.8372],[40.7894,-73.8371],[40.7895,-73.8363],[40.7892,-73.8354],[40.7887,-73.834],[40.7885,-73.8331],[40.7888,-73.8321],[40.7892,-73.8314],[40.7895,-73.832],[40.7908,-73.8318],[40.7917,-73.8306],[40.7923,-73.8285],[40.793,-73.8279],[40.7945,-73.828],[40.7948,-73.8281],[40.7955,-73.8283],[40.7957,-73.8286],[40.7959,-73.8288],[40.7962,-73.829],[40.7966,-73.8293],[40.7967,-73.8292],[40.7966,-73.8287],[40.7968,-73.8281],[40.7969,-73.8273],[40.7971,-73.827],[40.7975,-73.8272],[40.7978,-73.8266],[40.7974,-73.8259],[40.7973,-73.8254],[40.7976,-73.8247],[40.7979,-73.8243],[40.7984,-73.824],[40.7984,-73.8235],[40.7985,-73.8232],[40.7988,-73.8228],[40.7992,-73.8223],[40.8006,-73.8205],[40.801,-73.8205]]],"brooklyn":[[[40.7391,-73.9544],[40.7387,-73.9519],[40.7387,-73.9519],[40.7371,-73.947],[40.7362,-73.9462],[40.7361,-73.9447],[40.7363,-73.9445],[40.7356,-73.9429],[40.7311,-73.9397],[40.7282,-73.9324],[40.7261,-73.9281],[40.7184,-73.9249],[40.7177,-73.9288],[40.7172,-73.9296],[40.7158,-73.9294],[40.7149,-73.9322],[40.7131,-73.9326],[40.7089,-73.9307],[40.7099,-73.9307],[40.7122,-73.9308],[40.7131,-73.9305],[40.7169,-73.9286],[40.7179,-73.9247],[40.7177,-73.9242],[40.7173,-73.9236],[40.7165,-73.9231],[40.7146,-73.9245],[40.7067,-73.9174],[40.6941,-73.9058],[40.685,-73.8902],[40.6824,-73.8641],[40.6635,-73.8584],[40.6572,-73.8631],[40.657,-73.8632],[40.6564,-73.863],[40.6553,-73.8613],[40.6461,-73.8582],[40.6431,-73.8608],[40.6454,-73.8721],[40.645,-73.8734],[40.6371,-73.8697],[40.637,-73.8752],[40.6393,-73.8787],[40.6403,-73.8797],[40.6408,-73.8802],[40.6415,-73.8807],[40.6419,-73.88],[40.6421,-73.8807],[40.6425,-73.8816],[40.6434,-73.8822],[40.6451,-73.8867],[40.6476,-73.8876],[40.6483,-73.8888],[40.6489,-73.8896],[40.6493,-73.89],[40.6492,-73.8906],[40.6493,-73.891],[40.649,-73.8912],[40.6483,-73.8906],[40.6476,-73.8899],[40.6468,-73.8894],[40.6471,-73.8887],[40.6471,-73.8882],[40.6469,-73.8885],[40.6466,-73.8884],[40.6461,-73.8883],[40.6457,-73.8877],[40.6453,-73.8875],[40.6452,-73.8881],[40.6451,-73.8872],[40.6445,-73.8868],[40.6438,-73.8862],[40.6435,-73.8854],[40.6396,-73.8808],[40.6333,-73.8802],[40.6285,-73.8871],[40.6246,-73.8914],[40.6227,-73.896],[40.6283,-73.9083],[40.6272,-73.9092],[40.6253,-73.9044],[40.6247,-73.9031],[40.624,-73.9026],[40.6236,-73.9029],[40.6235,-73.9024],[40.6229,-73.902],[40.6227,-73.9013],[40.6224,-73.9009],[40.6221,-73.9009],[40.6217,-73.9007],[40.6216,-73.9005],[40.6218,-73.8995],[40.6218,-73.8987],[40.6219,-73.8981],[40.621,-73.8963],[40.6204,-73.8958],[40.6195,-73.8957],[40.6186,-73.896],[40.6178,-73.8965],[40.6166,-73.8965],[40.616,-73.8962],[40.6153,-73.896],[40.6148,-73.896],[40.6143,-73.8953],[40.6139,-73.8933],[40.6131,-73.8912],[40.6121,-73.8915],[40.612,-73.8923],[40.6115,-73.894],[40.611,-73.8936],[40.6115,-73.8922],[40.6119,-73.8913],[40.612,-73.8904],[40.6108,-73.8899],[40.6091,-73.892],[40.6095,-73.8918],[40.6087,-73.8924],[40.6084,-73.8922],[40.6073,-73.8927],[40.6067,-73.8936],[40.6064,-73.8948],[40.6058,-73.8961],[40.6056,-73.8974],[40.6055,-73.899],[40.6056,-73.8999],[40.6075,-73.9006],[40.6095,-73.9003],[40.6109,-73.9011],[40.6119,-73.9016],[40.6106,-73.9012],[40.6122,-73.9029],[40.6151,-73.9059],[40.6169,-73.9077],[40.6157,-73.9081],[40.6128,-73.9049],[40.6105,-73.9024],[40.6061,-73.9017],[40.6064,-73.9077],[40.6059,-73.9085],[40.6054,-73.908],[40.6061,-73.9087],[40.6058,-73.9098],[40.6058,-73.9157],[40.6094,-73.9167],[40.614,-73.9149],[40.6138,-73.9159],[40.6111,-73.9167],[40.6081,-73.9181],[40.607,-73.9187],[40.6026,-73.9137],[40.6023,-73.9134],[40.6023,-73.9122],[40.6026,-73.9124],[40.6025,-73.9118],[40.6025,-73.9109],[40.6024,-73.9107],[40.6025,-73.9098],[40.6026,-73.909],[40.6025,-73.9103],[40.6022,-73.9101],[40.6021,-73.9103],[40.6016,-73.9089],[40.6024,-73.9069],[40.6026,-73.9041],[40.6031,-73.9019],[40.6035,-73.8982],[40.6033,-73.8971],[40.6032,-73.8959],[40.6033,-73.8948],[40.6034,-73.8935],[40.6035,-73.8919],[40.6038,-73.891],[40.6043,-73.8897],[40.6047,-73.8889],[40.6053,-73.8877],[40.6052,-73.8849],[40.6019,-73.8827],[40.5999,-73.8819],[40.5985,-73.8816],[40.5921,-73.8794],[40.5866,-73.878],[40.5785,-73.885],[40.5782,-73.8868],[40.5778,-73.8896],[40.5769,-73.8944],[40.5802,-73.8971],[40.5842,-73.8972],[40.5867,-73.8982],[40.5875,-73.8992],[40.5878,-73.9001],[40.5881,-73.9008],[40.5874,-73.902],[40.5873,-73.9033],[40.5869,-73.9043],[40.588,-73.9064],[40.5873,-73.9065],[40.5861,-73.9104],[40.587,-73.9118],[40.5882,-73.9119],[40.5893,-73.9117],[40.5899,-73.9117],[40.5905,-73.9116],[40.5914,-73.9116],[40.5921,-73.9117],[40.5924,-73.9119],[40.5929,-73.9119],[40.5932,-73.912],[40.5935,-73.912],[40.5941,-73.912],[40.5945,-73.9121],[40.595,-73.9123],[40.5953,-73.9124],[40.5957,-73.9128],[40.596,-73.913],[40.5962,-73.9132],[40.5965,-73.9133],[40.5968,-73.9135],[40.5971,-73.9137],[40.5972,-73.914],[40.5975,-73.9142],[40.5977,-73.9144],[40.5979,-73.9145],[40.5981,-73.9147],[40.5982,-73.9149],[40.5986,-73.9151],[40.5989,-73.9153],[40.5993,-73.9158],[40.5996,-73.9166],[40.5998,-73.9171],[40.6001,-73.9177],[40.6004,-73.9181],[40.6008,-73.9188],[40.601,-73.9192],[40.601,-73.9196],[40.6011,-73.9201],[40.6013,-73.9204],[40.6015,-73.921],[40.6017,-73.9214],[40.6018,-73.9217],[40.6018,-73.9221],[40.6016,-73.9224],[40.6014,-73.9229],[40.6011,-73.9232],[40.6008,-73.9234],[40.6005,-73.9236],[40.6,-73.9239],[40.5996,-73.9242],[40.5998,-73.9246],[40.6001,-73.9252],[40.6006,-73.9262],[40.6012,-73.927],[40.6019,-73.9279],[40.602,-73.9282],[40.6022,-73.9287],[40.6024,-73.9289],[40.6027,-73.9295],[40.6034,-73.9293],[40.604,-73.9293],[40.604,-73.9301],[40.6039,-73.931],[40.603,-73.932],[40.6018,-73.9311],[40.6012,-73.9303],[40.601,-73.9295],[40.6005,-73.929],[40.6006,-73.9285],[40.6002,-73.9278],[40.5999,-73.9272],[40.5994,-73.9266],[40.599,-73.9261],[40.5985,-73.9254],[40.5979,-73.9247],[40.597,-73.9236],[40.5963,-73.9228],[40.5956,-73.9223],[40.5953,-73.922],[40.5951,-73.9218],[40.595,-73.9216],[40.5949,-73.921],[40.5947,-73.9204],[40.5945,-73.9201],[40.5942,-73.9197],[40.5938,-73.9191],[40.5932,-73.9183],[40.5926,-73.9178],[40.5921,-73.9173],[40.5916,-73.9169],[40.5911,-73.9165],[40.5908,-73.9161],[40.5906,-73.9155],[40.5903,-73.915],[40.5899,-73.9146],[40.5893,-73.9146],[40.589,-73.9143],[40.5879,-73.9164],[40.5868,-73.918],[40.5861,-73.9194],[40.586,-73.9205],[40.5857,-73.9215],[40.5859,-73.9237],[40.5864,-73.9257],[40.5876,-73.9272],[40.5878,-73.9272],[40.5882,-73.9274],[40.5883,-73.9275],[40.5912,-73.9247],[40.5888,-73.9282],[40.589,-73.9284],[40.5892,-73.9288],[40.5897,-73.9302],[40.5909,-73.9305],[40.5912,-73.9305],[40.5923,-73.9304],[40.5925,-73.9302],[40.5929,-73.9299],[40.5931,-73.9298],[40.5938,-73.9299],[40.5941,-73.9304],[40.5942,-73.9306],[40.5943,-73.9313],[40.5944,-73.9316],[40.5949,-73.9325],[40.593,-73.9318],[40.5919,-73.931],[40.5915,-73.9315],[40.589,-73.9301],[40.5872,-73.9314],[40.5871,-73.9286],[40.5861,-73.9277],[40.5853,-73.9264],[40.5847,-73.9253],[40.5847,-73.924],[40.5848,-73.9231],[40.5847,-73.9217],[40.5847,-73.9204],[40.5849,-73.9196],[40.585,-73.9188],[40.5853,-73.9183],[40.5856,-73.9177],[40.5857,-73.9171],[40.5859,-73.9167],[40.5862,-73.9157],[40.5862,-73.9147],[40.586,-73.9137],[40.5857,-73.9128],[40.5845,-73.9125],[40.5838,-73.9127],[40.5831,-73.9129],[40.583,-73.914],[40.5828,-73.9148],[40.5831,-73.9151],[40.5829,-73.9162],[40.5831,-73.9171],[40.5827,-73.9161],[40.5824,-73.9159],[40.5824,-73.9151],[40.5826,-73.9144],[40.5827,-73.9137],[40.5828,-73.913],[40.583,-73.9127],[40.5829,-73.9124],[40.5826,-73.9114],[40.5816,-73.9138],[40.582,-73.9174],[40.5829,-73.921],[40.5835,-73.9247],[40.583,-73.9308],[40.5827,-73.931],[40.5831,-73.932],[40.5831,-73.9344],[40.5831,-73.9363],[40.583,-73.9369],[40.5833,-73.9379],[40.5832,-73.9406],[40.5833,-73.9406],[40.5833,-73.9412],[40.5835,-73.9453],[40.582,-73.948],[40.5812,-73.9337],[40.5757,-73.9314],[40.5756,-73.9368],[40.5756,-73.9429],[40.5754,-73.9447],[40.5748,-73.949],[40.5741,-73.9541],[40.5739,-73.9608],[40.5729,-73.97],[40.5723,-73.974],[40.5718,-73.9779],[40.5712,-73.9796],[40.5702,-73.9831],[40.5707,-73.9901],[40.5701,-73.9951],[40.5704,-73.9997],[40.5722,-74.0031],[40.574,-74.0107],[40.5805,-74.0109],[40.5813,-74.0008],[40.5809,-73.9979],[40.579,-73.9876],[40.5804,-73.9875],[40.5834,-73.9929],[40.5825,-73.995],[40.5847,-73.9995],[40.5889,-73.9942],[40.5869,-74.0005],[40.5913,-73.9971],[40.5923,-73.999],[40.5953,-74.0028],[40.6025,-74.0176],[40.6079,-74.0344],[40.6112,-74.0369],[40.6228,-74.0417],[40.6309,-74.0407],[40.6416,-74.0367],[40.6445,-74.0278],[40.6515,-74.0255],[40.651,-74.0214],[40.6542,-74.0211],[40.6555,-74.0169],[40.6626,-74.0105],[40.6626,-74.0059],[40.6625,-74.0047],[40.6636,-74.0059],[40.6639,-74.0058],[40.663,-74.0008],[40.6683,-73.9992],[40.6679,-74.0055],[40.6661,-74.007],[40.6653,-74.0174],[40.6709,-74.012],[40.6731,-74.014],[40.675,-74.018],[40.6751,-74.0189],[40.6771,-74.0191],[40.6784,-74.0193],[40.6787,-74.0183],[40.6835,-74.0126],[40.6882,-74.0046],[40.6988,-73.998],[40.7044,-73.9938],[40.7052,-73.9869],[40.7057,-73.9796],[40.7059,-73.9784],[40.7032,-73.9775],[40.6996,-73.9758],[40.6999,-73.971],[40.7058,-73.9712],[40.7107,-73.9697],[40.7125,-73.9689],[40.718,-73.9665],[40.7203,-73.9644],[40.7254,-73.9584],[40.734,-73.9623],[40.7372,-73.9596],[40.7385,-73.9578],[40.7391,-73.9544]]],"manhattan":[[[40.6845,-74.0109],[40.6839,-74.0119],[40.6841,-74.0122],[40.6861,-74.0088],[40.6862,-74.0087],[40.6863,-74.0086],[40.6864,-74.0084],[40.6862,-74.0082],[40.686,-74.0084],[40.686,-74.0085],[40.6859,-74.0086],[40.6845,-74.0109]],[[40.6902,-74.0439],[40.6897,-74.0435],[40.6901,-74.0427],[40.6901,-74.0428],[40.6902,-74.0427],[40.69,-74.0426],[40.6899,-74.0426],[40.69,-74.0427],[40.6896,-74.0435],[40.6892,-74.0435],[40.6888,-74.0436],[40.6886,-74.044],[40.6885,-74.0444],[40.6886,-74.0448],[40.6893,-74.0463],[40.69,-74.0468],[40.6896,-74.0475],[40.6899,-74.0477],[40.69,-74.0476],[40.6898,-74.0474],[40.6901,-74.0469],[40.6904,-74.0472],[40.6905,-74.0471],[40.6907,-74.0471],[40.6907,-74.0472],[40.6908,-74.0472],[40.6908,-74.0472],[40.6908,-74.0472],[40.6908,-74.0472],[40.6909,-74.0472],[40.6909,-74.0472],[40.6909,-74.0472],[40.691,-74.0472],[40.691,-74.0472],[40.691,-74.0471],[40.691,-74.0471],[40.691,-74.0471],[40.691,-74.047],[40.691,-74.047],[40.6911,-74.0462],[40.6911,-74.0461],[40.6911,-74.0461],[40.6911,-74.046],[40.6911,-74.046],[40.6911,-74.0459],[40.6911,-74.0459],[40.6906,-74.0446],[40.6902,-74.0439]],[[40.6933,-74.0167],[40.6931,-74.0154],[40.6932,-74.0154],[40.6932,-74.0154],[40.6933,-74.0154],[40.6933,-74.0152],[40.6932,-74.0152],[40.6932,-74.0153],[40.693,-74.0153],[40.693,-74.0153],[40.6932,-74.0151],[40.6932,-74.0152],[40.6933,-74.0151],[40.6932,-74.0149],[40.6931,-74.015],[40.6931,-74.015],[40.693,-74.0152],[40.6928,-74.0142],[40.6921,-74.0135],[40.6921,-74.0135],[40.6921,-74.0135],[40.6921,-74.0135],[40.6921,-74.0134],[40.6921,-74.0134],[40.6921,-74.0134],[40.6921,-74.0134],[40.6921,-74.0134],[40.6923,-74.0125],[40.6923,-74.0125],[40.6925,-74.0124],[40.6925,-74.0124],[40.6925,-74.0124],[40.6925,-74.0124],[40.6925,-74.0124],[40.6926,-74.0123],[40.6926,-74.0123],[40.6926,-74.0121],[40.6926,-74.0121],[40.6926,-74.0121],[40.6926,-74.012],[40.6925,-74.0118],[40.6925,-74.0118],[40.6925,-74.0118],[40.6924,-74.0118],[40.6924,-74.0118],[40.6923,-74.0118],[40.6923,-74.0118],[40.6923,-74.0118],[40.6923,-74.0118],[40.6922,-74.0118],[40.6922,-74.0118],[40.6922,-74.0118],[40.6921,-74.0119],[40.6921,-74.0119],[40.6921,-74.0119],[40.6921,-74.012],[40.692,-74.0121],[40.692,-74.0121],[40.692,-74.0121],[40.692,-74.0121],[40.692,-74.0122],[40.6921,-74.0123],[40.6921,-74.0124],[40.6921,-74.0124],[40.6921,-74.0124],[40.6922,-74.0124],[40.6922,-74.0125],[40.6922,-74.0125],[40.6922,-74.0126],[40.6921,-74.0128],[40.6921,-74.0132],[40.6921,-74.0132],[40.6921,-74.0132],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.692,-74.0133],[40.6919,-74.0133],[40.6919,-74.0133],[40.6919,-74.0133],[40.6919,-74.0133],[40.692,-74.0132],[40.6917,-74.0129],[40.6917,-74.0129],[40.6916,-74.0129],[40.6916,-74.0129],[40.6916,-74.0129],[40.6916,-74.0129],[40.6915,-74.0129],[40.6915,-74.0128],[40.6915,-74.0128],[40.6914,-74.0127],[40.6914,-74.0126],[40.6914,-74.0126],[40.6914,-74.0126],[40.6914,-74.0126],[40.6914,-74.0125],[40.6914,-74.0126],[40.6914,-74.0125],[40.6914,-74.0125],[40.6915,-74.012],[40.6915,-74.012],[40.6913,-74.0126],[40.6911,-74.0125],[40.6911,-74.0122],[40.6911,-74.0122],[40.6911,-74.0118],[40.691,-74.0118],[40.691,-74.0122],[40.691,-74.0122],[40.6908,-74.0122],[40.6908,-74.0121],[40.6908,-74.0121],[40.6907,-74.0121],[40.6908,-74.012],[40.6908,-74.012],[40.6908,-74.012],[40.6907,-74.012],[40.6907,-74.012],[40.6906,-74.012],[40.6906,-74.012],[40.6906,-74.0121],[40.6905,-74.0121],[40.6905,-74.0121],[40.6905,-74.0121],[40.6905,-74.0121],[40.6905,-74.0122],[40.6893,-74.0123],[40.6888,-74.0127],[40.6887,-74.0128],[40.6882,-74.0132],[40.6881,-74.0133],[40.6881,-74.0133],[40.6881,-74.0134],[40.688,-74.0135],[40.6873,-74.0149],[40.6873,-74.016],[40.6873,-74.0161],[40.6871,-74.0165],[40.6869,-74.017],[40.6869,-74.017],[40.6864,-74.0167],[40.6864,-74.0166],[40.6865,-74.0152],[40.6864,-74.0151],[40.6863,-74.0166],[40.6863,-74.0167],[40.6857,-74.0173],[40.6854,-74.0175],[40.6854,-74.0176],[40.6857,-74.0174],[40.6863,-74.0168],[40.6864,-74.0168],[40.6868,-74.0171],[40.6854,-74.0202],[40.6853,-74.0205],[40.6848,-74.0202],[40.6848,-74.0202],[40.6852,-74.0195],[40.6851,-74.0194],[40.6844,-74.021],[40.6845,-74.021],[40.6848,-74.0203],[40.6848,-74.0203],[40.6852,-74.0206],[40.685,-74.0211],[40.6847,-74.0218],[40.6845,-74.0222],[40.6845,-74.0223],[40.6844,-74.0224],[40.6844,-74.0226],[40.6838,-74.0221],[40.6829,-74.0231],[40.683,-74.0232],[40.6838,-74.0224],[40.6843,-74.0228],[40.6842,-74.023],[40.6841,-74.0231],[40.6841,-74.0233],[40.684,-74.0234],[40.684,-74.0234],[40.684,-74.0235],[40.684,-74.0238],[40.6839,-74.0239],[40.6839,-74.0242],[40.684,-74.0244],[40.684,-74.0246],[40.684,-74.0248],[40.6841,-74.025],[40.6841,-74.0252],[40.6842,-74.0255],[40.6842,-74.0257],[40.6844,-74.0259],[40.6845,-74.026],[40.6846,-74.0261],[40.6847,-74.0262],[40.6848,-74.0263],[40.685,-74.0264],[40.6851,-74.0265],[40.6852,-74.0266],[40.6854,-74.0266],[40.6855,-74.0266],[40.6857,-74.0266],[40.6858,-74.0266],[40.6859,-74.0266],[40.6861,-74.0265],[40.6862,-74.0264],[40.6862,-74.0264],[40.6863,-74.0263],[40.6864,-74.0262],[40.6864,-74.0262],[40.6865,-74.0261],[40.6868,-74.0258],[40.687,-74.0256],[40.6872,-74.0254],[40.6874,-74.0252],[40.6874,-74.0252],[40.6875,-74.025],[40.6876,-74.025],[40.6878,-74.0247],[40.688,-74.0246],[40.6881,-74.0245],[40.6882,-74.0243],[40.6882,-74.0243],[40.6883,-74.0242],[40.6884,-74.0241],[40.6885,-74.024],[40.6885,-74.024],[40.6887,-74.0238],[40.6888,-74.0237],[40.6889,-74.0235],[40.689,-74.0234],[40.6893,-74.0231],[40.6897,-74.0227],[40.6898,-74.0226],[40.6899,-74.0224],[40.6901,-74.0223],[40.6904,-74.0219],[40.6908,-74.0215],[40.6908,-74.0215],[40.6911,-74.0212],[40.6913,-74.021],[40.6916,-74.0207],[40.6916,-74.0207],[40.6918,-74.0205],[40.692,-74.0202],[40.6929,-74.0199],[40.693,-74.0198],[40.693,-74.0198],[40.6931,-74.0198],[40.6931,-74.0197],[40.6931,-74.0197],[40.6932,-74.0196],[40.6932,-74.0196],[40.6932,-74.0195],[40.6932,-74.0195],[40.6932,-74.0194],[40.6932,-74.0193],[40.6932,-74.0193],[40.6932,-74.0192],[40.6932,-74.019],[40.6932,-74.0189],[40.6932,-74.0189],[40.6932,-74.0188],[40.6933,-74.0182],[40.6933,-74.018],[40.6933,-74.0174],[40.6933,-74.0167]],[[40.7009,-74.04],[40.7005,-74.0395],[40.7006,-74.0394],[40.6993,-74.0377],[40.699,-74.0381],[40.6984,-74.0382],[40.6984,-74.039],[40.6981,-74.0393],[40.6985,-74.0399],[40.6988,-74.0403],[40.6995,-74.0412],[40.6991,-74.0417],[40.6977,-74.0399],[40.6965,-74.0417],[40.698,-74.0437],[40.698,-74.0436],[40.6981,-74.0437],[40.6988,-74.0427],[40.699,-74.043],[40.7005,-74.0411],[40.7003,-74.0408],[40.7006,-74.0403],[40.7007,-74.0404],[40.7007,-74.0404],[40.7008,-74.0405],[40.7008,-74.0405],[40.7007,-74.0403],[40.7007,-74.0404],[40.7006,-74.0403],[40.7009,-74.04]],[[40.7331,-73.9623],[40.7329,-73.9623],[40.7329,-73.9624],[40.7329,-73.9628],[40.7328,-73.9633],[40.7328,-73.9633],[40.7328,-73.9635],[40.7329,-73.9635],[40.7328,-73.9636],[40.7329,-73.9636],[40.7329,-73.9636],[40.7329,-73.9636],[40.7329,-73.9636],[40.7329,-73.9636],[40.7329,-73.9637],[40.7328,-73.9637],[40.7328,-73.964],[40.7328,-73.964],[40.7328,-73.9641],[40.7329,-73.9641],[40.7329,-73.9641],[40.7329,-73.9641],[40.733,-73.9637],[40.733,-73.9637],[40.733,-73.9637],[40.733,-73.9636],[40.733,-73.9636],[40.733,-73.9635],[40.733,-73.9635],[40.7331,-73.9628],[40.7331,-73.9624],[40.7331,-73.9624],[40.7331,-73.9623]],[[40.7466,-73.9642],[40.7465,-73.9643],[40.7465,-73.9643],[40.7465,-73.9644],[40.7464,-73.9644],[40.7465,-73.9646],[40.7465,-73.9646],[40.7466,-73.9645],[40.7466,-73.9645],[40.7467,-73.9644],[40.7467,-73.9643],[40.7468,-73.9643],[40.7468,-73.9642],[40.7469,-73.9642],[40.7468,-73.9641],[40.7468,-73.9641],[40.7467,-73.9642],[40.7466,-73.9642]],[[40.769,-73.9418],[40.7685,-73.9426],[40.7683,-73.9429],[40.7679,-73.9432],[40.7672,-73.9438],[40.7667,-73.9442],[40.7658,-73.9448],[40.7643,-73.9462],[40.7639,-73.9466],[40.7639,-73.9466],[40.7636,-73.9468],[40.7633,-73.9471],[40.7624,-73.9479],[40.7623,-73.9479],[40.7618,-73.9483],[40.7618,-73.9483],[40.7611,-73.949],[40.7605,-73.9494],[40.7603,-73.9497],[40.7599,-73.9503],[40.7588,-73.9513],[40.7587,-73.9515],[40.7585,-73.9517],[40.7584,-73.9518],[40.758,-73.9521],[40.7578,-73.9522],[40.7576,-73.9522],[40.7571,-73.9525],[40.7565,-73.9531],[40.7564,-73.9532],[40.7564,-73.9533],[40.7563,-73.9533],[40.7563,-73.9533],[40.7563,-73.9534],[40.7557,-73.9541],[40.7548,-73.9551],[40.7548,-73.9552],[40.7542,-73.9558],[40.753,-73.9569],[40.7527,-73.9572],[40.7521,-73.9579],[40.7516,-73.9586],[40.7514,-73.959],[40.7513,-73.959],[40.7509,-73.9594],[40.7508,-73.9596],[40.7506,-73.9599],[40.7503,-73.9604],[40.7499,-73.9608],[40.7497,-73.961],[40.7495,-73.9612],[40.7494,-73.9614],[40.7494,-73.9616],[40.7496,-73.9616],[40.7498,-73.9616],[40.7501,-73.9613],[40.7506,-73.9611],[40.7511,-73.9607],[40.7516,-73.9603],[40.7518,-73.96],[40.7528,-73.9596],[40.753,-73.9595],[40.7536,-73.959],[40.7536,-73.9589],[40.7539,-73.9585],[40.7548,-73.9577],[40.7557,-73.9569],[40.7562,-73.9565],[40.7567,-73.956],[40.7571,-73.9557],[40.7572,-73.9556],[40.7573,-73.9556],[40.7573,-73.9555],[40.7573,-73.9555],[40.7574,-73.9555],[40.7574,-73.9554],[40.7575,-73.9553],[40.7579,-73.955],[40.7592,-73.9539],[40.7592,-73.9538],[40.7593,-73.9538],[40.7594,-73.9537],[40.7595,-73.9537],[40.7595,-73.9536],[40.7597,-73.9533],[40.7598,-73.9534],[40.7601,-73.9531],[40.76,-73.953],[40.7606,-73.9523],[40.7609,-73.9521],[40.7612,-73.9519],[40.7617,-73.9516],[40.7625,-73.951],[40.7626,-73.9509],[40.7628,-73.9507],[40.7632,-73.9504],[40.7636,-73.95],[40.7643,-73.9492],[40.7643,-73.9491],[40.7646,-73.9488],[40.766,-73.9477],[40.7674,-73.9466],[40.7682,-73.9459],[40.7682,-73.9459],[40.7683,-73.9458],[40.7683,-73.9458],[40.7683,-73.9457],[40.7685,-73.9456],[40.7686,-73.9455],[40.7687,-73.9456],[40.7688,-73.9456],[40.7687,-73.9454],[40.7688,-73.9454],[40.7688,-73.9452],[40.7691,-73.9452],[40.7692,-73.9451],[40.7697,-73.9447],[40.7698,-73.9447],[40.7698,-73.9447],[40.7699,-73.9446],[40.7701,-73.9443],[40.7703,-73.944],[40.771,-73.9432],[40.7714,-73.9428],[40.7717,-73.9426],[40.772,-73.9421],[40.7723,-73.9414],[40.7724,-73.9409],[40.7726,-73.9406],[40.7729,-73.9403],[40.773,-73.9402],[40.7729,-73.9401],[40.7728,-73.94],[40.7726,-73.9402],[40.7723,-73.9403],[40.7717,-73.9403],[40.7711,-73.9402],[40.7709,-73.9402],[40.7707,-73.9403],[40.7705,-73.9404],[40.7699,-73.9408],[40.7694,-73.9411],[40.7693,-73.9412],[40.7693,-73.9413],[40.769,-73.9418]],[[40.7808,-73.938],[40.7807,-73.9379],[40.7808,-73.9378],[40.781,-73.9378],[40.781,-73.9376],[40.7808,-73.9377],[40.7805,-73.9376],[40.7804,-73.9378],[40.7803,-73.9382],[40.7803,-73.9384],[40.7803,-73.9386],[40.7797,-73.9392],[40.7797,-73.9393],[40.7795,-73.9395],[40.7796,-73.9396],[40.7798,-73.9394],[40.7799,-73.9395],[40.78,-73.9394],[40.78,-73.9393],[40.78,-73.9392],[40.7805,-73.9387],[40.7806,-73.9388],[40.7808,-73.9388],[40.781,-73.9387],[40.7814,-73.9383],[40.7814,-73.9381],[40.7813,-73.938],[40.7811,-73.938],[40.7809,-73.9381],[40.7808,-73.938]],[[40.8009,-73.9213],[40.8005,-73.9211],[40.8003,-73.921],[40.8,-73.9208],[40.7997,-73.9206],[40.7994,-73.9204],[40.7994,-73.9203],[40.7989,-73.9192],[40.7988,-73.9191],[40.7988,-73.9191],[40.7988,-73.919],[40.7988,-73.919],[40.7987,-73.9189],[40.7984,-73.918],[40.7984,-73.9179],[40.7979,-73.9166],[40.7977,-73.9164],[40.7971,-73.9155],[40.7957,-73.9144],[40.7945,-73.9138],[40.7938,-73.9138],[40.7928,-73.9146],[40.792,-73.9151],[40.7918,-73.9154],[40.7918,-73.9155],[40.7911,-73.9163],[40.791,-73.9162],[40.7904,-73.9169],[40.7905,-73.9171],[40.7905,-73.9171],[40.7902,-73.9178],[40.79,-73.9181],[40.7898,-73.9184],[40.7897,-73.9186],[40.7895,-73.9186],[40.7894,-73.9185],[40.7857,-73.9219],[40.7858,-73.922],[40.7855,-73.9222],[40.7836,-73.9229],[40.7833,-73.9231],[40.7827,-73.924],[40.7827,-73.924],[40.7826,-73.9241],[40.7825,-73.9241],[40.7825,-73.9242],[40.7825,-73.9242],[40.7825,-73.9243],[40.7823,-73.9245],[40.7822,-73.9247],[40.7822,-73.9249],[40.7822,-73.9251],[40.7822,-73.9251],[40.7822,-73.9252],[40.7823,-73.9252],[40.7823,-73.9254],[40.7822,-73.9257],[40.7812,-73.9271],[40.7811,-73.9273],[40.7811,-73.9275],[40.781,-73.9276],[40.781,-73.9277],[40.781,-73.9278],[40.7809,-73.9281],[40.781,-73.9285],[40.7814,-73.9292],[40.7821,-73.9303],[40.7823,-73.9306],[40.7824,-73.9311],[40.7827,-73.9327],[40.783,-73.935],[40.7834,-73.9354],[40.7837,-73.9358],[40.7839,-73.936],[40.7842,-73.9361],[40.7845,-73.9361],[40.7847,-73.936],[40.7848,-73.9359],[40.7853,-73.9358],[40.7854,-73.9358],[40.7857,-73.9357],[40.7887,-73.9331],[40.7892,-73.9327],[40.7897,-73.9324],[40.7897,-73.9322],[40.7905,-73.9315],[40.791,-73.9308],[40.791,-73.9307],[40.7913,-73.9298],[40.7914,-73.9297],[40.7914,-73.9297],[40.7909,-73.9287],[40.791,-73.9286],[40.7908,-73.9281],[40.7908,-73.9274],[40.7908,-73.9269],[40.7908,-73.9268],[40.7907,-73.9267],[40.7907,-73.9264],[40.7907,-73.9263],[40.7907,-73.9261],[40.7908,-73.9261],[40.7909,-73.9261],[40.791,-73.9261],[40.7911,-73.9261],[40.7912,-73.926],[40.7913,-73.926],[40.7914,-73.9261],[40.7914,-73.9261],[40.7915,-73.9262],[40.7916,-73.9262],[40.7917,-73.9262],[40.7918,-73.9263],[40.7918,-73.9264],[40.7918,-73.9265],[40.7919,-73.9266],[40.7919,-73.9265],[40.7919,-73.9263],[40.7918,-73.9261],[40.7919,-73.9259],[40.7919,-73.9258],[40.7918,-73.9256],[40.7918,-73.9256],[40.7919,-73.9256],[40.7919,-73.9256],[40.7919,-73.9262],[40.792,-73.9264],[40.7919,-73.9266],[40.7919,-73.9267],[40.7919,-73.9267],[40.7918,-73.9267],[40.7918,-73.9266],[40.7918,-73.9266],[40.7918,-73.9265],[40.7917,-73.9264],[40.7915,-73.9263],[40.7912,-73.9263],[40.7911,-73.9264],[40.791,-73.9265],[40.791,-73.9266],[40.791,-73.9267],[40.791,-73.9267],[40.791,-73.9268],[40.791,-73.9269],[40.791,-73.927],[40.791,-73.9271],[40.791,-73.9272],[40.791,-73.9272],[40.791,-73.9273],[40.791,-73.9274],[40.791,-73.9274],[40.791,-73.9275],[40.791,-73.9276],[40.791,-73.9277],[40.7909,-73.9278],[40.791,-73.9279],[40.791,-73.9279],[40.791,-73.9279],[40.791,-73.9279],[40.7911,-73.9279],[40.7913,-73.9277],[40.7915,-73.9276],[40.7917,-73.9273],[40.7918,-73.9273],[40.7918,-73.9272],[40.7919,-73.9271],[40.792,-73.9278],[40.7921,-73.928],[40.7923,-73.9283],[40.7929,-73.9283],[40.7929,-73.9283],[40.793,-73.9283],[40.793,-73.9283],[40.7931,-73.9283],[40.7932,-73.9283],[40.7932,-73.9283],[40.7945,-73.9274],[40.7947,-73.9273],[40.7948,-73.9272],[40.7951,-73.9271],[40.7952,-73.9271],[40.7953,-73.927],[40.7953,-73.927],[40.7954,-73.927],[40.7955,-73.9269],[40.7956,-73.9269],[40.7957,-73.9269],[40.796,-73.9269],[40.7962,-73.9269],[40.7963,-73.9269],[40.7967,-73.927],[40.797,-73.927],[40.7972,-73.9271],[40.7973,-73.9272],[40.7973,-73.9274],[40.7973,-73.9273],[40.7972,-73.9277],[40.7973,-73.9277],[40.7974,-73.9274],[40.7973,-73.9274],[40.7974,-73.9272],[40.7974,-73.9272],[40.7974,-73.9273],[40.7977,-73.9274],[40.7981,-73.9275],[40.7989,-73.9273],[40.7998,-73.9269],[40.7999,-73.9269],[40.7999,-73.9269],[40.8,-73.9269],[40.8,-73.9268],[40.8001,-73.9267],[40.8004,-73.9272],[40.8006,-73.9271],[40.8005,-73.9271],[40.8004,-73.9272],[40.8002,-73.9267],[40.8003,-73.9266],[40.8004,-73.9267],[40.8004,-73.9267],[40.8004,-73.9267],[40.8004,-73.9267],[40.8003,-73.9265],[40.8004,-73.9265],[40.8005,-73.9267],[40.8006,-73.9266],[40.8007,-73.9268],[40.8008,-73.9268],[40.8008,-73.9269],[40.8006,-73.927],[40.8007,-73.927],[40.8008,-73.9269],[40.8007,-73.9265],[40.8016,-73.9259],[40.8016,-73.9258],[40.8017,-73.9258],[40.8018,-73.9257],[40.802,-73.9255],[40.802,-73.9253],[40.802,-73.9244],[40.8019,-73.9226],[40.8016,-73.9222],[40.8015,-73.9219],[40.8009,-73.9213]],[[40.8776,-73.9264],[40.8774,-73.9263],[40.8771,-73.9263],[40.8771,-73.9255],[40.8774,-73.925],[40.8773,-73.9238],[40.8771,-73.923],[40.877,-73.9228],[40.8769,-73.9226],[40.8768,-73.9224],[40.8757,-73.9224],[40.8746,-73.9227],[40.8735,-73.922],[40.873,-73.921],[40.873,-73.9207],[40.873,-73.9205],[40.8732,-73.9202],[40.8734,-73.92],[40.8736,-73.9199],[40.8737,-73.9199],[40.8738,-73.92],[40.8741,-73.9204],[40.8742,-73.9208],[40.8745,-73.9208],[40.8746,-73.9208],[40.8748,-73.9209],[40.8749,-73.921],[40.8751,-73.9212],[40.8752,-73.9211],[40.8754,-73.921],[40.8755,-73.9209],[40.8748,-73.9193],[40.8746,-73.9189],[40.8741,-73.9192],[40.8736,-73.9193],[40.8736,-73.9192],[40.8735,-73.9191],[40.8735,-73.9191],[40.8735,-73.9191],[40.8735,-73.919],[40.8734,-73.919],[40.8734,-73.9189],[40.8733,-73.919],[40.8733,-73.9189],[40.8733,-73.9188],[40.8733,-73.9187],[40.8733,-73.9187],[40.8733,-73.9186],[40.8732,-73.9185],[40.8733,-73.9184],[40.8735,-73.9185],[40.8736,-73.9184],[40.8738,-73.9181],[40.8742,-73.9177],[40.874,-73.9177],[40.8743,-73.917],[40.8745,-73.9159],[40.8741,-73.9139],[40.8738,-73.9129],[40.8731,-73.9113],[40.8729,-73.9111],[40.8726,-73.9109],[40.872,-73.9105],[40.8715,-73.9104],[40.8713,-73.9105],[40.8711,-73.9107],[40.8708,-73.9107],[40.8706,-73.9108],[40.8703,-73.9107],[40.8699,-73.9108],[40.8697,-73.9109],[40.8695,-73.9109],[40.8694,-73.9111],[40.8694,-73.9114],[40.8691,-73.9111],[40.8689,-73.9111],[40.8687,-73.9113],[40.8685,-73.9114],[40.8682,-73.9116],[40.868,-73.9117],[40.8678,-73.9118],[40.8669,-73.9125],[40.8647,-73.914],[40.8644,-73.9151],[40.8644,-73.9157],[40.8641,-73.9159],[40.8641,-73.9154],[40.864,-73.9153],[40.8637,-73.9152],[40.8635,-73.9154],[40.8632,-73.9154],[40.8629,-73.9156],[40.8627,-73.9158],[40.8624,-73.9163],[40.8621,-73.9166],[40.862,-73.9169],[40.8617,-73.9172],[40.8613,-73.9175],[40.861,-73.9178],[40.8608,-73.9179],[40.8601,-73.9184],[40.8599,-73.9185],[40.8597,-73.9187],[40.8591,-73.9192],[40.8591,-73.9203],[40.859,-73.9202],[40.8589,-73.92],[40.8593,-73.9207],[40.8602,-73.9213],[40.8599,-73.9217],[40.8596,-73.9217],[40.8596,-73.9217],[40.8595,-73.9218],[40.8594,-73.9217],[40.8593,-73.9219],[40.8591,-73.9217],[40.859,-73.9215],[40.8589,-73.9213],[40.8588,-73.9212],[40.8586,-73.9211],[40.8584,-73.9211],[40.8583,-73.9209],[40.8582,-73.9204],[40.8581,-73.9206],[40.8579,-73.9206],[40.8578,-73.9207],[40.8577,-73.9207],[40.8578,-73.9207],[40.8578,-73.921],[40.8578,-73.921],[40.8577,-73.9209],[40.8577,-73.9209],[40.8577,-73.9208],[40.8576,-73.9208],[40.8576,-73.921],[40.8574,-73.921],[40.8574,-73.9214],[40.8571,-73.9216],[40.8569,-73.9219],[40.8566,-73.9223],[40.8557,-73.9223],[40.8559,-73.9222],[40.8563,-73.9219],[40.8564,-73.9217],[40.8559,-73.9221],[40.8558,-73.9222],[40.8549,-73.9229],[40.8519,-73.9251],[40.8512,-73.9255],[40.8498,-73.9265],[40.8471,-73.9284],[40.8452,-73.9298],[40.8438,-73.9304],[40.8428,-73.9308],[40.8385,-73.9331],[40.8368,-73.9341],[40.8354,-73.9348],[40.8347,-73.935],[40.8339,-73.9351],[40.8333,-73.9351],[40.833,-73.9351],[40.8327,-73.9352],[40.8298,-73.9348],[40.8296,-73.9347],[40.8292,-73.9347],[40.829,-73.9347],[40.8286,-73.9346],[40.8283,-73.9346],[40.828,-73.9345],[40.8265,-73.9344],[40.823,-73.9341],[40.8216,-73.9341],[40.8196,-73.9338],[40.8156,-73.9339],[40.8154,-73.9339],[40.8151,-73.934],[40.8148,-73.934],[40.8142,-73.9339],[40.8114,-73.9342],[40.8073,-73.9333],[40.8053,-73.9315],[40.8048,-73.9311],[40.8043,-73.9307],[40.8038,-73.9304],[40.8031,-73.93],[40.8017,-73.9294],[40.8007,-73.929],[40.7955,-73.9295],[40.7949,-73.9299],[40.7936,-73.932],[40.7926,-73.9337],[40.7915,-73.9353],[40.7893,-73.9371],[40.7886,-73.9374],[40.7874,-73.938],[40.7852,-73.9399],[40.7851,-73.9401],[40.7848,-73.9406],[40.7846,-73.9411],[40.7839,-73.9424],[40.7834,-73.9432],[40.7813,-73.9439],[40.7781,-73.9427],[40.7769,-73.9421],[40.7719,-73.9456],[40.7658,-73.9512],[40.7593,-73.9576],[40.7579,-73.9591],[40.7552,-73.9616],[40.751,-73.9653],[40.7473,-73.9683],[40.7469,-73.9686],[40.7467,-73.9688],[40.7462,-73.9692],[40.746,-73.9694],[40.7455,-73.9699],[40.745,-73.9704],[40.7445,-73.9709],[40.7441,-73.9709],[40.744,-73.9708],[40.744,-73.9708],[40.7438,-73.9712],[40.7434,-73.9713],[40.7427,-73.9719],[40.7407,-73.9723],[40.7404,-73.9722],[40.7392,-73.9727],[40.7385,-73.9726],[40.7379,-73.9726],[40.7372,-73.9726],[40.7367,-73.9726],[40.7363,-73.9744],[40.7359,-73.9742],[40.7358,-73.9742],[40.7357,-73.9742],[40.7356,-73.9729],[40.7351,-73.973],[40.735,-73.9733],[40.735,-73.9744],[40.7337,-73.974],[40.7333,-73.9738],[40.7332,-73.9737],[40.7331,-73.9738],[40.7318,-73.9735],[40.7309,-73.9731],[40.7302,-73.9722],[40.7297,-73.9717],[40.7288,-73.9714],[40.7276,-73.9716],[40.7274,-73.9715],[40.7255,-73.9719],[40.7245,-73.9721],[40.7211,-73.9729],[40.7162,-73.9744],[40.7132,-73.9758],[40.7114,-73.9768],[40.7105,-73.9783],[40.7103,-73.9803],[40.7091,-73.9884],[40.71,-73.9889],[40.7096,-73.9918],[40.7091,-73.9946],[40.7082,-73.9988],[40.7078,-73.9994],[40.7076,-73.9999],[40.707,-74.0009],[40.7064,-74.001],[40.7054,-74.0021],[40.7047,-74.002],[40.7056,-74.0033],[40.7053,-74.0038],[40.7046,-74.0048],[40.7043,-74.0054],[40.7031,-74.0044],[40.7035,-74.0048],[40.7041,-74.0056],[40.7035,-74.0063],[40.7024,-74.0055],[40.7027,-74.0056],[40.7033,-74.0072],[40.702,-74.0091],[40.7016,-74.0108],[40.7009,-74.0111],[40.7007,-74.011],[40.7005,-74.0109],[40.7007,-74.0111],[40.7006,-74.0114],[40.7005,-74.0116],[40.7007,-74.0121],[40.7001,-74.0121],[40.7003,-74.0125],[40.7004,-74.0129],[40.6998,-74.013],[40.7005,-74.0133],[40.7002,-74.0136],[40.7004,-74.0135],[40.7005,-74.0141],[40.7006,-74.0143],[40.7002,-74.0146],[40.7006,-74.0144],[40.7003,-74.0151],[40.7005,-74.0149],[40.701,-74.015],[40.7023,-74.0168],[40.7032,-74.0175],[40.7037,-74.0177],[40.7042,-74.0176],[40.7042,-74.0178],[40.7047,-74.0176],[40.7047,-74.0178],[40.7046,-74.018],[40.7061,-74.0193],[40.7071,-74.0189],[40.7071,-74.0185],[40.707,-74.0188],[40.707,-74.0187],[40.7069,-74.0186],[40.708,-74.0188],[40.7113,-74.018],[40.7125,-74.0165],[40.7135,-74.0169],[40.7131,-74.0177],[40.7132,-74.0177],[40.7187,-74.0167],[40.7185,-74.015],[40.7197,-74.0129],[40.7205,-74.0145],[40.7204,-74.0139],[40.7209,-74.0132],[40.7231,-74.0122],[40.7264,-74.0152],[40.7286,-74.0143],[40.7333,-74.014],[40.7335,-74.0107],[40.734,-74.0108],[40.7361,-74.0107],[40.7363,-74.0106],[40.7384,-74.0111],[40.7392,-74.0114],[40.7397,-74.0123],[40.74,-74.0123],[40.7407,-74.0122],[40.7408,-74.0095],[40.7419,-74.0093],[40.7439,-74.0121],[40.7449,-74.0087],[40.7452,-74.01],[40.745,-74.0101],[40.7454,-74.0105],[40.745,-74.0104],[40.7454,-74.0105],[40.7451,-74.0112],[40.7454,-74.0112],[40.7451,-74.0117],[40.7459,-74.0106],[40.7461,-74.0094],[40.747,-74.0115],[40.7473,-74.0096],[40.748,-74.0113],[40.7486,-74.0112],[40.75,-74.0097],[40.7501,-74.0095],[40.7519,-74.0088],[40.7521,-74.0091],[40.7524,-74.0093],[40.7528,-74.01],[40.7525,-74.0087],[40.7548,-74.0074],[40.7568,-74.0058],[40.7599,-74.0065],[40.7598,-74.0042],[40.7598,-74.0036],[40.7627,-74.0044],[40.7646,-74.0029],[40.7647,-74.0031],[40.7656,-74.0023],[40.7652,-73.9987],[40.7656,-73.9983],[40.7663,-73.9977],[40.7695,-73.9997],[40.7705,-73.999],[40.7713,-73.9958],[40.7713,-73.9956],[40.7717,-73.995],[40.7734,-73.9966],[40.7729,-73.9941],[40.7733,-73.9951],[40.774,-73.9962],[40.7738,-73.9934],[40.7755,-73.9922],[40.7786,-73.9896],[40.7797,-73.9896],[40.7797,-73.9906],[40.7796,-73.9916],[40.7814,-73.9881],[40.7842,-73.9863],[40.7862,-73.9861],[40.786,-73.9853],[40.786,-73.9852],[40.7866,-73.9846],[40.7942,-73.9793],[40.7999,-73.9753],[40.8023,-73.9736],[40.8043,-73.9722],[40.8066,-73.9705],[40.8091,-73.9685],[40.8104,-73.9677],[40.8118,-73.9669],[40.8137,-73.9655],[40.8181,-73.962],[40.8212,-73.9593],[40.8224,-73.959],[40.8219,-73.9587],[40.8235,-73.9592],[40.8236,-73.9595],[40.8279,-73.9562],[40.8285,-73.9541],[40.832,-73.9516],[40.834,-73.9504],[40.8359,-73.9497],[40.8367,-73.9495],[40.8368,-73.9493],[40.8368,-73.9495],[40.8396,-73.9486],[40.8414,-73.9476],[40.8426,-73.9469],[40.8438,-73.9462],[40.8445,-73.9461],[40.8453,-73.9462],[40.846,-73.9465],[40.8467,-73.9466],[40.8481,-73.9466],[40.8493,-73.9467],[40.8499,-73.947],[40.8501,-73.947],[40.8504,-73.947],[40.851,-73.9464],[40.8509,-73.9463],[40.8511,-73.9462],[40.8511,-73.9461],[40.8512,-73.9457],[40.8515,-73.9454],[40.8517,-73.945],[40.8519,-73.9447],[40.8519,-73.9445],[40.852,-73.9442],[40.8526,-73.9431],[40.8545,-73.9415],[40.8558,-73.9408],[40.8571,-73.9399],[40.8587,-73.9387],[40.8601,-73.9376],[40.8614,-73.9368],[40.865,-73.9341],[40.866,-73.9334],[40.8674,-73.9328],[40.868,-73.9324],[40.8686,-73.9325],[40.8687,-73.9325],[40.8689,-73.9323],[40.8698,-73.9324],[40.8698,-73.9322],[40.8723,-73.9312],[40.8765,-73.9281],[40.8776,-73.9264]]],"bronx":[[[40.7958,-73.8968],[40.7956,-73.8969],[40.7957,-73.8972],[40.7956,-73.898],[40.7961,-73.8986],[40.7962,-73.899],[40.7965,-73.8992],[40.7969,-73.8985],[40.7971,-73.8979],[40.7968,-73.8971],[40.7963,-73.8968],[40.7958,-73.8968]],[[40.7987,-73.8889],[40.7987,-73.8886],[40.7987,-73.8886],[40.7987,-73.8882],[40.7986,-73.8883],[40.7986,-73.8884],[40.7986,-73.8884],[40.7982,-73.8882],[40.7983,-73.8879],[40.7984,-73.8877],[40.7984,-73.8876],[40.7984,-73.8875],[40.7984,-73.8874],[40.7983,-73.8873],[40.7983,-73.8873],[40.7983,-73.8872],[40.7983,-73.8872],[40.7983,-73.8871],[40.7983,-73.8871],[40.7982,-73.887],[40.7982,-73.887],[40.7982,-73.8869],[40.7981,-73.8868],[40.7981,-73.8868],[40.7981,-73.8867],[40.7981,-73.8867],[40.7981,-73.8867],[40.7981,-73.8867],[40.798,-73.8867],[40.798,-73.8866],[40.798,-73.8865],[40.7979,-73.8865],[40.7979,-73.8865],[40.7979,-73.8864],[40.7979,-73.8864],[40.7978,-73.8863],[40.7978,-73.8863],[40.7977,-73.8862],[40.7976,-73.8861],[40.7975,-73.886],[40.7975,-73.8859],[40.7973,-73.8857],[40.7972,-73.8856],[40.7971,-73.8854],[40.7971,-73.8854],[40.7971,-73.8853],[40.797,-73.8853],[40.797,-73.8852],[40.7969,-73.8851],[40.7968,-73.885],[40.7966,-73.8849],[40.7966,-73.8848],[40.7965,-73.8847],[40.7965,-73.8847],[40.7964,-73.8846],[40.7963,-73.8845],[40.7963,-73.8845],[40.7962,-73.8844],[40.7962,-73.8843],[40.7962,-73.8842],[40.7961,-73.8842],[40.7961,-73.8842],[40.7961,-73.8842],[40.796,-73.8841],[40.7959,-73.884],[40.7959,-73.884],[40.7958,-73.884],[40.7958,-73.884],[40.7958,-73.8839],[40.7958,-73.8839],[40.7958,-73.8838],[40.7957,-73.8838],[40.7957,-73.8837],[40.7957,-73.8837],[40.7957,-73.8837],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8836],[40.7957,-73.8837],[40.7958,-73.8837],[40.7958,-73.8837],[40.7959,-73.8837],[40.7959,-73.8837],[40.7959,-73.8837],[40.7959,-73.8837],[40.7959,-73.8837],[40.7959,-73.8837],[40.7959,-73.8837],[40.7959,-73.8837],[40.7959,-73.8837],[40.7959,-73.8837],[40.796,-73.8837],[40.796,-73.8837],[40.796,-73.8837],[40.796,-73.8837],[40.796,-73.8837],[40.796,-73.8837],[40.796,-73.8837],[40.796,-73.8837],[40.796,-73.8837],[40.796,-73.8836],[40.796,-73.8836],[40.796,-73.8836],[40.796,-73.8836],[40.7959,-73.8836],[40.7959,-73.8836],[40.7959,-73.8835],[40.7959,-73.8835],[40.7958,-73.8835],[40.7957,-73.8834],[40.7957,-73.8834],[40.7957,-73.8834],[40.7957,-73.8833],[40.7956,-73.8833],[40.7956,-73.8833],[40.7956,-73.8832],[40.7956,-73.8832],[40.7955,-73.8832],[40.7955,-73.8832],[40.7955,-73.8832],[40.7955,-73.8832],[40.7955,-73.8832],[40.7955,-73.8831],[40.7955,-73.8831],[40.7955,-73.883],[40.7955,-73.8829],[40.7955,-73.8829],[40.7955,-73.8828],[40.7955,-73.8828],[40.7955,-73.8828],[40.7954,-73.8827],[40.7954,-73.8826],[40.7953,-73.8826],[40.7953,-73.8825],[40.7953,-73.8825],[40.7953,-73.8824],[40.7952,-73.8824],[40.7952,-73.8823],[40.7952,-73.8822],[40.7952,-73.8821],[40.7952,-73.8821],[40.7951,-73.882],[40.7951,-73.882],[40.7951,-73.8819],[40.7951,-73.8818],[40.7951,-73.8817],[40.7951,-73.8817],[40.7951,-73.8816],[40.7951,-73.8815],[40.7951,-73.8815],[40.7951,-73.8814],[40.7951,-73.8814],[40.7951,-73.8813],[40.7951,-73.8813],[40.7951,-73.8813],[40.795,-73.8812],[40.795,-73.8811],[40.795,-73.8811],[40.795,-73.881],[40.795,-73.8809],[40.795,-73.8808],[40.795,-73.8808],[40.795,-73.8807],[40.795,-73.8807],[40.7949,-73.8806],[40.7949,-73.8805],[40.7949,-73.8804],[40.7949,-73.8803],[40.7949,-73.8802],[40.7949,-73.8801],[40.7949,-73.88],[40.7949,-73.8799],[40.7949,-73.8799],[40.7949,-73.8799],[40.7949,-73.8798],[40.7949,-73.8798],[40.7949,-73.8797],[40.7948,-73.8796],[40.7948,-73.8795],[40.7948,-73.8793],[40.7948,-73.8792],[40.7947,-73.8791],[40.7947,-73.879],[40.7947,-73.8789],[40.7946,-73.8787],[40.7946,-73.8786],[40.7946,-73.8785],[40.7946,-73.8785],[40.7945,-73.8784],[40.7945,-73.8784],[40.7945,-73.8783],[40.7945,-73.8782],[40.7944,-73.8782],[40.7944,-73.8782],[40.7944,-73.8782],[40.7944,-73.8782],[40.7944,-73.8781],[40.7944,-73.878],[40.7944,-73.878],[40.7944,-73.878],[40.7943,-73.8779],[40.7943,-73.8779],[40.7943,-73.8778],[40.7942,-73.8776],[40.7941,-73.8775],[40.7941,-73.8774],[40.794,-73.8773],[40.794,-73.8773],[40.7939,-73.8772],[40.7939,-73.8771],[40.7938,-73.877],[40.7938,-73.8769],[40.7937,-73.8769],[40.7937,-73.8768],[40.7937,-73.8768],[40.7937,-73.8768],[40.7936,-73.8767],[40.7936,-73.8766],[40.7935,-73.8765],[40.7935,-73.8765],[40.7935,-73.8764],[40.7934,-73.8764],[40.7934,-73.8763],[40.7934,-73.8763],[40.7934,-73.8763],[40.7934,-73.8763],[40.7934,-73.8763],[40.7934,-73.8762],[40.7933,-73.8762],[40.7933,-73.8761],[40.7933,-73.8761],[40.7933,-73.8761],[40.7933,-73.8761],[40.7933,-73.876],[40.7932,-73.876],[40.7932,-73.876],[40.7932,-73.876],[40.7932,-73.8759],[40.7932,-73.8759],[40.7932,-73.8758],[40.7932,-73.8758],[40.7931,-73.8758],[40.7931,-73.8758],[40.7931,-73.8758],[40.7931,-73.8758],[40.7931,-73.8757],[40.793,-73.8757],[40.793,-73.8757],[40.793,-73.8756],[40.7929,-73.8756],[40.7929,-73.8756],[40.7929,-73.8755],[40.7929,-73.8755],[40.7928,-73.8755],[40.7928,-73.8754],[40.7928,-73.8754],[40.7927,-73.8754],[40.7926,-73.8753],[40.7926,-73.8752],[40.7925,-73.8751],[40.7924,-73.8751],[40.7924,-73.875],[40.7923,-73.8749],[40.7923,-73.8749],[40.7922,-73.8748],[40.7922,-73.8747],[40.7922,-73.8747],[40.7921,-73.8746],[40.7921,-73.8745],[40.7921,-73.8745],[40.792,-73.8744],[40.792,-73.8743],[40.7919,-73.8742],[40.7919,-73.8742],[40.7919,-73.8742],[40.7919,-73.8741],[40.7919,-73.8741],[40.7919,-73.8741],[40.7919,-73.874],[40.7919,-73.8739],[40.7919,-73.8739],[40.7918,-73.8739],[40.7918,-73.8736],[40.7917,-73.8735],[40.7917,-73.8734],[40.7916,-73.8734],[40.7916,-73.8734],[40.7916,-73.8733],[40.7916,-73.8733],[40.7916,-73.8733],[40.7916,-73.8732],[40.7916,-73.8731],[40.7916,-73.8731],[40.7915,-73.873],[40.7915,-73.873],[40.7915,-73.8729],[40.7915,-73.8729],[40.7914,-73.8728],[40.7914,-73.8727],[40.7913,-73.8726],[40.7912,-73.8726],[40.7912,-73.8725],[40.7911,-73.8724],[40.7911,-73.8723],[40.791,-73.8722],[40.791,-73.8722],[40.791,-73.8722],[40.7909,-73.8721],[40.7908,-73.872],[40.7907,-73.8718],[40.7907,-73.8718],[40.7906,-73.8717],[40.7906,-73.8717],[40.7905,-73.8716],[40.7904,-73.8715],[40.7903,-73.8714],[40.7902,-73.8714],[40.7902,-73.8713],[40.7902,-73.8713],[40.7901,-73.8713],[40.7901,-73.8712],[40.79,-73.8712],[40.79,-73.8712],[40.79,-73.8712],[40.7899,-73.8712],[40.7898,-73.8712],[40.7898,-73.8711],[40.7897,-73.8711],[40.7897,-73.8711],[40.7896,-73.8711],[40.7895,-73.8711],[40.7894,-73.871],[40.7894,-73.871],[40.7894,-73.871],[40.7894,-73.871],[40.7893,-73.871],[40.7892,-73.871],[40.7892,-73.871],[40.7892,-73.871],[40.7892,-73.871],[40.7891,-73.871],[40.7891,-73.871],[40.7891,-73.871],[40.789,-73.8709],[40.7889,-73.871],[40.7887,-73.871],[40.7886,-73.8709],[40.7885,-73.8709],[40.7883,-73.8709],[40.7882,-73.8709],[40.7881,-73.8708],[40.788,-73.8708],[40.788,-73.8708],[40.788,-73.8708],[40.7879,-73.8708],[40.7879,-73.8708],[40.7876,-73.8711],[40.7874,-73.8712],[40.7873,-73.8714],[40.7871,-73.8715],[40.7868,-73.8716],[40.7866,-73.8719],[40.7865,-73.8721],[40.7864,-73.8722],[40.7864,-73.8723],[40.7863,-73.8725],[40.7862,-73.8727],[40.7861,-73.8728],[40.786,-73.8729],[40.786,-73.8729],[40.7859,-73.873],[40.7859,-73.8731],[40.7858,-73.8732],[40.7858,-73.8733],[40.7858,-73.8734],[40.7858,-73.8734],[40.7858,-73.8735],[40.7858,-73.8737],[40.7858,-73.8739],[40.7858,-73.874],[40.7858,-73.8742],[40.7858,-73.8744],[40.7858,-73.8746],[40.7859,-73.8748],[40.7859,-73.8751],[40.7859,-73.8753],[40.7859,-73.8756],[40.7859,-73.8758],[40.7859,-73.876],[40.7859,-73.8763],[40.7858,-73.8765],[40.7858,-73.8768],[40.7858,-73.877],[40.7857,-73.8772],[40.7857,-73.8774],[40.7856,-73.8776],[40.7856,-73.8778],[40.7855,-73.8779],[40.7854,-73.8781],[40.7854,-73.8783],[40.7866,-73.8852],[40.7867,-73.8854],[40.7867,-73.8858],[40.7868,-73.886],[40.7867,-73.8861],[40.7867,-73.8863],[40.7867,-73.8866],[40.7867,-73.8869],[40.7868,-73.8872],[40.7868,-73.8873],[40.7869,-73.8877],[40.787,-73.8883],[40.7872,-73.8886],[40.7874,-73.8891],[40.7878,-73.8894],[40.7881,-73.8895],[40.7882,-73.8896],[40.7887,-73.8898],[40.7889,-73.8899],[40.789,-73.8899],[40.7896,-73.8901],[40.7899,-73.8903],[40.7901,-73.8906],[40.7902,-73.8908],[40.7902,-73.8909],[40.7902,-73.8912],[40.7902,-73.8914],[40.7902,-73.8916],[40.7902,-73.8918],[40.7902,-73.892],[40.7903,-73.8921],[40.7904,-73.8922],[40.7928,-73.8928],[40.7938,-73.8926],[40.7968,-73.8918],[40.7971,-73.8915],[40.7971,-73.8914],[40.7972,-73.8913],[40.7973,-73.8913],[40.7977,-73.8907],[40.7977,-73.8907],[40.7977,-73.8907],[40.7978,-73.8908],[40.7978,-73.8908],[40.7978,-73.8909],[40.7979,-73.8908],[40.7978,-73.8908],[40.7978,-73.8908],[40.7977,-73.8907],[40.7977,-73.8907],[40.7977,-73.8907],[40.7977,-73.8906],[40.7978,-73.8907],[40.7978,-73.8907],[40.798,-73.8908],[40.798,-73.8908],[40.7978,-73.8907],[40.7978,-73.8907],[40.7978,-73.8906],[40.798,-73.8902],[40.7979,-73.8901],[40.7979,-73.8901],[40.7979,-73.89],[40.7979,-73.89],[40.7979,-73.8898],[40.7978,-73.8896],[40.7978,-73.8894],[40.7978,-73.8892],[40.7978,-73.8891],[40.7978,-73.8891],[40.7979,-73.8889],[40.7979,-73.8887],[40.798,-73.8886],[40.7981,-73.8885],[40.7981,-73.8884],[40.7982,-73.8883],[40.7982,-73.8885],[40.7983,-73.8885],[40.7984,-73.8886],[40.7984,-73.8885],[40.7984,-73.8884],[40.7986,-73.8885],[40.7986,-73.8886],[40.7986,-73.8886],[40.7987,-73.889],[40.7988,-73.889],[40.7987,-73.8888],[40.7987,-73.8889]],[[40.8024,-73.8983],[40.8008,-73.8965],[40.7996,-73.898],[40.7991,-73.8986],[40.7992,-73.899],[40.7993,-73.9002],[40.7995,-73.8998],[40.8008,-73.8997],[40.8009,-73.9],[40.8009,-73.8995],[40.8019,-73.8994],[40.8024,-73.8983]],[[40.9044,-73.8729],[40.9011,-73.8616],[40.901,-73.8591],[40.9022,-73.8595],[40.9029,-73.8576],[40.9051,-73.8567],[40.9064,-73.8555],[40.9096,-73.8536],[40.9089,-73.8523],[40.9057,-73.8454],[40.9018,-73.8408],[40.899,-73.8392],[40.8926,-73.8327],[40.89,-73.8233],[40.8891,-73.8152],[40.886,-73.8029],[40.8805,-73.7949],[40.8715,-73.8014],[40.8691,-73.8059],[40.8658,-73.8031],[40.8786,-73.7938],[40.8806,-73.7905],[40.879,-73.7878],[40.8732,-73.7872],[40.8728,-73.7844],[40.871,-73.7832],[40.8683,-73.7856],[40.8688,-73.7907],[40.8606,-73.7932],[40.8596,-73.794],[40.857,-73.7945],[40.8566,-73.7943],[40.8561,-73.797],[40.8541,-73.799],[40.8531,-73.7981],[40.8491,-73.7999],[40.8482,-73.8002],[40.8487,-73.8014],[40.8499,-73.8018],[40.8547,-73.8045],[40.8552,-73.804],[40.8556,-73.8035],[40.8588,-73.8042],[40.8612,-73.8046],[40.8619,-73.8056],[40.86,-73.8067],[40.8604,-73.8075],[40.8604,-73.8077],[40.8602,-73.8078],[40.86,-73.808],[40.8597,-73.8082],[40.8587,-73.8076],[40.8585,-73.8077],[40.8605,-73.8091],[40.862,-73.8105],[40.8621,-73.8107],[40.8626,-73.8115],[40.8627,-73.8121],[40.8627,-73.8123],[40.8629,-73.8123],[40.8632,-73.8131],[40.8632,-73.8133],[40.8639,-73.8137],[40.8641,-73.814],[40.863,-73.8148],[40.8611,-73.8153],[40.8535,-73.8169],[40.8526,-73.817],[40.852,-73.8172],[40.8516,-73.817],[40.851,-73.817],[40.8509,-73.8162],[40.8506,-73.816],[40.8495,-73.8157],[40.8488,-73.8154],[40.8481,-73.8159],[40.8477,-73.8158],[40.8465,-73.8161],[40.8471,-73.8146],[40.8465,-73.8155],[40.8465,-73.8151],[40.8468,-73.8144],[40.8471,-73.8139],[40.8472,-73.8136],[40.8469,-73.8141],[40.8459,-73.8146],[40.8457,-73.814],[40.8454,-73.8139],[40.8456,-73.8135],[40.8459,-73.8133],[40.8455,-73.8135],[40.8452,-73.8135],[40.8457,-73.8131],[40.8463,-73.8128],[40.8458,-73.813],[40.8453,-73.8132],[40.8452,-73.8129],[40.8461,-73.8125],[40.8463,-73.8124],[40.8459,-73.8125],[40.8455,-73.8127],[40.8451,-73.8128],[40.8459,-73.8122],[40.8466,-73.8119],[40.8446,-73.8125],[40.8445,-73.8127],[40.8445,-73.8128],[40.8445,-73.8127],[40.8447,-73.813],[40.8449,-73.8126],[40.845,-73.8135],[40.845,-73.8139],[40.8448,-73.8137],[40.8445,-73.8141],[40.8443,-73.8135],[40.8436,-73.8135],[40.8434,-73.8142],[40.8431,-73.8144],[40.8435,-73.8151],[40.8441,-73.8154],[40.8444,-73.8157],[40.8444,-73.816],[40.8441,-73.816],[40.844,-73.8165],[40.8441,-73.8165],[40.8441,-73.8166],[40.8441,-73.8169],[40.8442,-73.8171],[40.8443,-73.8172],[40.8443,-73.8182],[40.8441,-73.8182],[40.8443,-73.8177],[40.844,-73.8172],[40.8438,-73.8166],[40.8434,-73.8164],[40.8428,-73.8159],[40.8423,-73.8155],[40.8416,-73.8154],[40.8412,-73.8152],[40.8407,-73.8151],[40.8405,-73.815],[40.8398,-73.8147],[40.8396,-73.8145],[40.8389,-73.8154],[40.8387,-73.8158],[40.8379,-73.8163],[40.8369,-73.8164],[40.836,-73.8161],[40.8359,-73.8155],[40.8355,-73.816],[40.8355,-73.8157],[40.835,-73.816],[40.8345,-73.8158],[40.8342,-73.816],[40.8335,-73.8158],[40.8332,-73.8158],[40.8324,-73.8155],[40.832,-73.8153],[40.8317,-73.815],[40.8314,-73.815],[40.831,-73.8148],[40.8308,-73.8141],[40.8305,-73.8143],[40.8301,-73.814],[40.8299,-73.8137],[40.8295,-73.8137],[40.8293,-73.8134],[40.8289,-73.8131],[40.8288,-73.8131],[40.8287,-73.8131],[40.8284,-73.8129],[40.8283,-73.8101],[40.828,-73.8099],[40.8279,-73.8103],[40.8278,-73.81],[40.8278,-73.8112],[40.8278,-73.8118],[40.8278,-73.8125],[40.8276,-73.8127],[40.8269,-73.8135],[40.8267,-73.8139],[40.8263,-73.8137],[40.8261,-73.8139],[40.8257,-73.814],[40.8255,-73.8138],[40.8253,-73.813],[40.8251,-73.8132],[40.8247,-73.8135],[40.824,-73.8133],[40.8245,-73.8128],[40.8248,-73.8127],[40.8243,-73.812],[40.8245,-73.8116],[40.8248,-73.8112],[40.8251,-73.8108],[40.8252,-73.8102],[40.8258,-73.8092],[40.8258,-73.8081],[40.8258,-73.8076],[40.8253,-73.807],[40.8246,-73.8067],[40.8242,-73.8066],[40.8238,-73.8068],[40.8236,-73.8067],[40.8232,-73.8065],[40.8228,-73.8061],[40.8208,-73.806],[40.8185,-73.8039],[40.8183,-73.8026],[40.8186,-73.8021],[40.8181,-73.8011],[40.8176,-73.8004],[40.8169,-73.7983],[40.8159,-73.7974],[40.8129,-73.8015],[40.8128,-73.8021],[40.8124,-73.803],[40.8125,-73.8036],[40.8131,-73.8037],[40.8136,-73.8044],[40.8132,-73.8038],[40.8133,-73.8033],[40.8135,-73.8035],[40.814,-73.8042],[40.8141,-73.8042],[40.8138,-73.8038],[40.8135,-73.8035],[40.8146,-73.8043],[40.8151,-73.8046],[40.8155,-73.805],[40.8165,-73.8064],[40.8159,-73.806],[40.8156,-73.8057],[40.8152,-73.805],[40.8146,-73.8047],[40.8152,-73.8051],[40.8155,-73.8056],[40.8162,-73.8064],[40.8166,-73.8066],[40.8163,-73.8068],[40.8165,-73.8069],[40.8157,-73.8064],[40.8129,-73.8051],[40.8102,-73.8022],[40.8074,-73.7937],[40.8071,-73.7913],[40.8074,-73.7916],[40.8074,-73.7912],[40.8058,-73.7901],[40.8041,-73.792],[40.8043,-73.7935],[40.8061,-73.7956],[40.8083,-73.8006],[40.8091,-73.8028],[40.8085,-73.8037],[40.8088,-73.8041],[40.8096,-73.8052],[40.8114,-73.8077],[40.8129,-73.8099],[40.8128,-73.8108],[40.8129,-73.8112],[40.813,-73.8118],[40.8131,-73.8124],[40.8134,-73.8135],[40.8136,-73.814],[40.8129,-73.8145],[40.8135,-73.8155],[40.8134,-73.8174],[40.8133,-73.818],[40.8135,-73.8185],[40.813,-73.8201],[40.8125,-73.8203],[40.8128,-73.8205],[40.8129,-73.8212],[40.8128,-73.8216],[40.8124,-73.8222],[40.8124,-73.8234],[40.8123,-73.8237],[40.8117,-73.8248],[40.8118,-73.8251],[40.8112,-73.8252],[40.8112,-73.8256],[40.8112,-73.8258],[40.8113,-73.8265],[40.8113,-73.829],[40.8102,-73.8311],[40.8084,-73.8322],[40.8067,-73.8318],[40.8066,-73.8316],[40.8064,-73.832],[40.8052,-73.8316],[40.8051,-73.8341],[40.8062,-73.8374],[40.8076,-73.838],[40.809,-73.8387],[40.8107,-73.8398],[40.8124,-73.8404],[40.8135,-73.8401],[40.8145,-73.8396],[40.8164,-73.8397],[40.8172,-73.8402],[40.8189,-73.8392],[40.822,-73.839],[40.8228,-73.8391],[40.8239,-73.8396],[40.8243,-73.8401],[40.828,-73.842],[40.8307,-73.8419],[40.8344,-73.8389],[40.8371,-73.8392],[40.8395,-73.8403],[40.8386,-73.8401],[40.8376,-73.84],[40.8361,-73.8397],[40.836,-73.8397],[40.8357,-73.8396],[40.8356,-73.8397],[40.8354,-73.8396],[40.8352,-73.8395],[40.835,-73.8396],[40.8347,-73.8396],[40.8344,-73.8395],[40.831,-73.8426],[40.8287,-73.8429],[40.8274,-73.8425],[40.8242,-73.8409],[40.8217,-73.8399],[40.8199,-73.84],[40.8193,-73.8409],[40.8188,-73.842],[40.8153,-73.8437],[40.8121,-73.8451],[40.8113,-73.8476],[40.8144,-73.8513],[40.8137,-73.853],[40.8136,-73.8541],[40.8137,-73.8526],[40.8133,-73.8507],[40.8126,-73.8495],[40.8116,-73.8492],[40.8109,-73.8492],[40.81,-73.8498],[40.8096,-73.85],[40.8091,-73.85],[40.8086,-73.85],[40.8082,-73.8497],[40.8079,-73.8494],[40.8064,-73.8484],[40.8049,-73.8483],[40.8048,-73.8489],[40.8051,-73.8494],[40.8045,-73.8503],[40.8045,-73.8541],[40.8047,-73.8562],[40.8047,-73.8556],[40.8053,-73.8566],[40.805,-73.8568],[40.806,-73.8589],[40.806,-73.8584],[40.8064,-73.8584],[40.8067,-73.8589],[40.8062,-73.859],[40.8065,-73.8593],[40.8072,-73.8592],[40.8092,-73.8588],[40.8096,-73.8601],[40.8092,-73.8597],[40.809,-73.8593],[40.8082,-73.8593],[40.8085,-73.8595],[40.8096,-73.8604],[40.8149,-73.8717],[40.8137,-73.872],[40.8019,-73.8716],[40.8008,-73.8729],[40.8014,-73.8753],[40.8027,-73.8784],[40.8027,-73.8804],[40.8024,-73.8821],[40.8023,-73.883],[40.8019,-73.8838],[40.8023,-73.8851],[40.8026,-73.8856],[40.8039,-73.8873],[40.8053,-73.8894],[40.8058,-73.8897],[40.8058,-73.8903],[40.8064,-73.892],[40.8051,-73.8915],[40.8052,-73.8918],[40.8063,-73.8934],[40.806,-73.8946],[40.8063,-73.8954],[40.8063,-73.8957],[40.8065,-73.8962],[40.8061,-73.8973],[40.8062,-73.8979],[40.8059,-73.8983],[40.8057,-73.8981],[40.8054,-73.8986],[40.8054,-73.899],[40.8053,-73.8991],[40.8053,-73.8994],[40.8051,-73.9001],[40.8048,-73.9021],[40.8049,-73.9022],[40.8049,-73.9022],[40.8043,-73.9028],[40.8038,-73.9033],[40.8037,-73.9038],[40.8034,-73.9041],[40.8028,-73.9049],[40.8022,-73.9054],[40.8011,-73.9066],[40.8,-73.9075],[40.7996,-73.908],[40.7995,-73.908],[40.7993,-73.9085],[40.7979,-73.9098],[40.797,-73.9109],[40.7966,-73.9119],[40.7974,-73.9151],[40.8019,-73.922],[40.804,-73.9277],[40.8078,-73.9318],[40.8105,-73.9328],[40.8147,-73.9324],[40.8221,-73.9325],[40.8269,-73.933],[40.833,-73.9336],[40.8376,-73.9319],[40.8402,-73.9304],[40.8454,-73.9281],[40.8465,-73.9273],[40.8474,-73.9266],[40.8491,-73.9252],[40.8545,-73.9215],[40.8568,-73.9196],[40.8619,-73.9148],[40.8639,-73.9127],[40.8666,-73.9104],[40.871,-73.9089],[40.8768,-73.9069],[40.8758,-73.9173],[40.8759,-73.9183],[40.8767,-73.9201],[40.8786,-73.9222],[40.8789,-73.923],[40.879,-73.9238],[40.879,-73.9245],[40.8876,-73.9204],[40.8969,-73.9169],[40.9041,-73.9142],[40.9078,-73.9131],[40.9091,-73.9124],[40.9129,-73.9115],[40.9142,-73.9112],[40.9154,-73.9101],[40.9079,-73.8848],[40.9052,-73.8756],[40.9044,-73.8729]]],"hudsonNJ":[[[40.805,-74.115],[40.805,-74.0135],[40.79,-74.0175],[40.7765,-74.0202],[40.7702,-74.0208],[40.7643,-74.0231],[40.7565,-74.0243],[40.7523,-74.0246],[40.7488,-74.0257],[40.7448,-74.0269],[40.7404,-74.0273],[40.7362,-74.0284],[40.7332,-74.0292],[40.7302,-74.0311],[40.7272,-74.0335],[40.7255,-74.0331],[40.7226,-74.0316],[40.7198,-74.0322],[40.7166,-74.0332],[40.7133,-74.0343],[40.7104,-74.0392],[40.7078,-74.0431],[40.703,-74.0503],[40.685,-74.055],[40.685,-74.115]]]};
+
+  // ---- stations -------------------------------------------------------------
+  var STN = {
+    newport: { n: "Newport PATH", ll: [40.7267,-74.0339] },
+    jsq:     { n: "Journal Sq PATH", ll: [40.7328,-74.0629] },
+    hoboken: { n: "Hoboken Terminal", ll: [40.7349,-74.0279] },
+    p14:     { n: "14 St PATH", ll: [40.7373,-73.9969] },
+    p23:     { n: "23 St PATH", ll: [40.7429,-73.9928] },
+    f21:     { n: "21 St-Queensbridge F", ll: [40.7544,-73.9427] },
+    astbl:   { n: "Astoria Blvd N/W", ll: [40.7703,-73.9180] },
+    s46:     { n: "46 St M/R", ll: [40.7565,-73.9134] },
+    m23:     { n: "23 St F/M", ll: [40.7407,-73.9946] },
+    rw23:    { n: "23 St R/W", ll: [40.7411,-73.9895] },
+    grove:   { n: "Grove St PATH", ll: [40.7195,-74.0434] }
+  };
+  var OFFICE = { n: "your office", ll: [40.7387,-73.9910] };
+
+  // ---- run log + weekly digest (illustrative - see method note) ------------
+  var RUNLOG = { last: "Jul 12, 2026 3:45 PM ET", legs_done: 5, legs_total: 5, overdue: false };
+  var MOVEIN = "2026-11-01";
+  var DIGEST = [
+    { kind: "DROP", text: "235 Grand #2906 (06-line): $5,305 -> $5,105, -3.8% / 14d" },
+    { kind: "DROP", text: "235 Grand #3306 (06-line): $5,355 -> $5,155, -3.7% / 14d" },
+    { kind: "DROP", text: "90 Columbus #2511: $5,520 -> $5,320, -3.6% / 7d" },
+    { kind: "NEW", text: "505 Summit #3113: new listing, floor 31, $5,601 gross (net $4,967)" },
+    { kind: "REMOVED", text: "The Journal #1314S: gone from the market (was $5,895 gross / $5,306 net)" }
+  ];
+
+  // ---- buildings + verified data -------------------------------------------
+  var B = [
+    { id: "jsq2", name: "Journal Squared Tower 2", addr: "615 Pavonia Ave, Jersey City (Journal Sq)",
+      ll: [40.7325,-74.0612], area: "Journal Square, JC",
+      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
+      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=615%20Pavonia%20Ave%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 35, range: "30-42", cost: 130, mode: "path",
+        route: "PATH at the building base, JSQ-33 to 23 St (19 min), walk 7 min",
+        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
+      units: [
+        { u: "3410", fl: 34, rent: 4810, sqft: 1048, avail: "Aug 13", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=28505300&unit-name=3410&tower=1335214",
+          snap: [{r:"Jun 28",p:4810},{r:"Jul 5",p:4810},{r:"Jul 12",p:4810}], act: "TourBooked", band: "TourNow", tmc: 4985,
+          prov: { rent: "FACT", orient: "FACT" } },
+        { u: "4104", fl: 41, rent: 4890, sqft: 1030, avail: "Aug 26", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=28505330&unit-name=4104&tower=1335214",
+          snap: [{r:"Jun 28",p:4890},{r:"Jul 5",p:4890},{r:"Jul 12",p:4890}], act: "ToContact", band: "Skip", tmc: 5065,
+          prov: { rent: "FACT", orient: "FACT" } },
+ ],
+      ess: [["Food Story market, in-building","1 min"],["Duane Reade","2 min"],["PureGym","2 min"],["India Square groceries","6 min"]],
+      vibe: "2021 tower, 68 floors, PATH underneath. THE headline: #3410 is line 10, the floor-plan-VERIFIED SW corner - south glass in living room, kitchen and bedroom 2, west in the primary. #4104 (line 04) is verified NOT south. Aug dates line up with a Nov 1 start." },
+    { id: "jsq3", name: "Journal Squared Tower 3", addr: "595 Pavonia Ave, Jersey City (Journal Sq)",
+      ll: [40.7324,-74.0602], area: "Journal Square, JC",
+      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
+      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=595%20Pavonia%20Ave%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 35, range: "30-42", cost: 130, mode: "path",
+        route: "PATH at the complex, JSQ-33 to 23 St (19 min), walk 7 min",
+        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
+      units: [
+        { u: "4904", fl: 49, rent: 5415, sqft: 1066, avail: "Aug 19", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=39741972&unit-name=4904&tower=1776274",
+          snap: [{r:"Jun 28",p:5375},{r:"Jul 5",p:5395},{r:"Jul 12",p:5415}], act: "NEW", band: "Watch", tmc: 5590,
+          prov: { rent: "FACT", orient: "MISSING" } },
+        { u: "4802", fl: 48, rent: 5455, sqft: 1056, avail: "Sep 3", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=39741969&unit-name=4802&tower=1776274",
+          snap: [{r:"Jun 28",p:5455},{r:"Jul 5",p:5455},{r:"Jul 12",p:5455}], act: "NEW", band: "Skip", tmc: 5630,
+          prov: { rent: "FACT", orient: "FACT" } },
+        { u: "4702", fl: 47, rent: 5465, sqft: 1056, avail: "Oct 25", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=39741967&unit-name=4702&tower=1776274",
+          snap: [{r:"Jun 28",p:5465},{r:"Jul 5",p:5465},{r:"Jul 12",p:5465}], act: "NEW", band: "Skip", tmc: 5640,
+          prov: { rent: "FACT", orient: "FACT" } },
+        { u: "1812", fl: 18, rent: 5030, sqft: 1044, avail: "Sep 8", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=39741898&unit-name=1812&tower=1776274",
+          snap: [{r:"Jun 28",p:5030},{r:"Jul 5",p:5030},{r:"Jul 12",p:5030}], act: "NEW", band: "Watch", tmc: 5205,
+          prov: { rent: "FACT" } } ],
+      ess: [["Food Story market","1 min"],["Duane Reade","2 min"],["PureGym","2 min"],["India Square groceries","6 min"]],
+      vibe: "2024, the newest JSQ tower. #4904 is floor 49 - the highest unit on this board. Advertised prices are the 24-month Best Value term; 12-month runs ~$110 higher. #4702's Oct 25 date is prime Nov timing but it is line 02 - the VERIFIED NE corner - as is #4802 (the earlier $4,695 quote was a stale feed record; $5,455 is the live price). Best non-02 bet: #4904 (line 04, exposure unverified)." },
+    { id: "urby", name: "Journal Square Urby", addr: "532 Summit Ave, Jersey City (Journal Sq)",
+      ll: [40.7321,-74.0594], area: "Journal Square, JC",
+      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
+      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=532%20Summit%20Ave%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 34, range: "30-40", cost: 130, mode: "path",
+        route: "Walk 3 min to Journal Sq PATH, JSQ-33 to 23 St (19 min), walk 7 min",
+        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
+      units: [
+        { u: "1910", fl: 19, rent: 4855, avail: "Now", live: true, link: "https://www.urby.com/location/journal-square/availability/unit-1910-2-5031340",
+          snap: [{r:"Jun 28",p:4855},{r:"Jul 5",p:4855},{r:"Jul 12",p:4855}], act: "NEW", band: "Skip", tmc: 5030,
+          prov: { rent: "FACT", orient: "INFERRED" } },
+        { u: "2110", fl: 21, rent: 4925, avail: "Now", live: true, link: "https://www.urby.com/location/journal-square/availability/unit-2110-2-5031366",
+          snap: [{r:"Jun 28",p:4925},{r:"Jul 5",p:4925},{r:"Jul 12",p:4925}], act: "NEW", band: "Skip", tmc: 5100,
+          prov: { rent: "FACT", orient: "INFERRED" } },
+        { u: "802", fl: 8, rent: 4865, avail: "Now", live: true, link: "https://www.urby.com/location/journal-square/availability/unit-802-2-5031184",
+          snap: [{r:"Jun 28",p:4865},{r:"Jul 5",p:4865},{r:"Jul 12",p:4865}], act: "NEW", band: "Watch", tmc: 5040,
+          prov: { rent: "FACT", orient: "INFERRED" } } ],
+      ess: [["Food Story market","3 min"],["Duane Reade","3 min"],["PureGym","3 min"],["India Square groceries","6 min"]],
+      vibe: "2024 Urby, 2 bed + den layouts with published exposures: #1910 and #2110 are NE-corner 'NYC views, tons of natural light'; #802 is east-facing. Real corner light and views - but a north component, so no south sun. Up to 2 months free on select units." },
+    { id: "summit505", name: "505 Summit", addr: "505 Summit Ave, Jersey City (Journal Sq)",
+      ll: [40.7311,-74.0608], area: "Journal Square, JC",
+      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
+      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=505%20Summit%20Ave%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 37, range: "32-44", cost: 130, mode: "path",
+        route: "Walk 6-8 min (uphill) to Journal Sq PATH, JSQ-33 to 23 St, walk 7 min",
+        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
+      units: [
+        { u: "2901", fl: 29, rent: 5576, net: 4945, sqft: 1144, avail: "Now", live: true, link: "https://505summit.securecafe.com/onlineleasing/505-summit/rentaloptions.aspx?UnitID=47119139&FloorPlanID=6249972&myOlePropertyid=2285813",
+          snap: [{r:"Jun 28",p:5576},{r:"Jul 5",p:5576},{r:"Jul 12",p:5576}], act: "NEW", band: "Watch", tmc: 5751,
+          prov: { rent: "FACT", orient: "MISSING" } },
+        { u: "3113", fl: 31, rent: 5601, net: 4967, sqft: 924, avail: "Now", live: true, link: "https://www.505summit.com/availability",
+          snap: [{r:"Jul 12",p:5601}], act: "NEW", band: "Watch", tmc: 5776,
+          prov: { rent: "FACT", orient: "MISSING" } } ],
+      ess: [["Journal Sq PATH plaza","7 min"],["India Square groceries","8 min"],["Duane Reade","7 min"]],
+      vibe: "Brand-new 2026 Greystar tower (54 fl), grand-opening deal: 2.5 months free on 24 months plus a year of waived lifestyle fees - nets $4,945-4,967. Markets Statue-of-Liberty S-SSE views; per-unit exposure unpublished, so ask which 01/13-line floors face south. Budget the GROSS ($5,576+) for renewal." },
+    { id: "greyson", name: "The Greyson", addr: "25 Cottage St, Jersey City (Journal Sq)",
+      ll: [40.7342,-74.0604], area: "Journal Square, JC",
+      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
+      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=25%20Cottage%20St%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 36, range: "31-43", cost: 130, mode: "path",
+        route: "Walk 4-5 min to Journal Sq PATH, JSQ-33 to 23 St, walk 7 min",
+        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
+      units: [
+        { u: "2108", fl: 21, rent: null, net: 5156, avail: "Listed now", live: true, link: "https://www.thegreyson.com/availability?view=6ebe015364646572f2000268",
+          snap: [{r:"Jun 28",p:5156},{r:"Jul 5",p:5156},{r:"Jul 12",p:5156}], act: "NEW", band: "Watch", tmc: 5331,
+          prov: { rent: "MISSING", orient: "MISSING" } },
+        { u: "902", fl: 9, rent: null, net: 4973, avail: "Listed now", live: true, link: "https://www.thegreyson.com/availability?view=6ebfea83313338df4000023c",
+          snap: [{r:"Jun 28",p:4973},{r:"Jul 5",p:4973},{r:"Jul 12",p:4973}], act: "NEW", band: "Watch", tmc: 5148,
+          prov: { rent: "MISSING", orient: "MISSING" } } ],
+      ess: [["Journal Sq PATH plaza","5 min"],["India Square groceries","4 min"],["Duane Reade","5 min"]],
+      vibe: "2026 Handel-designed tower (29 fl, first residents June 2026) with a serrated glass facade built for bay-window light and Manhattan views. 2 months free on 24-month leases; prices shown are net-effective. Per-unit exposure unpublished - the facade design is the light story here." },
+    { id: "journaln", name: "The Journal (Kushner Towers)", addr: "Journal Square Plaza, Jersey City",
+      ll: [40.7336,-74.0640], area: "Journal Square, JC",
+      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
+      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=Journal%20Square%20Plaza%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 34, range: "30-40", cost: 130, mode: "path",
+        route: "Tower above the PATH plaza, JSQ-33 to 23 St, walk 7 min",
+        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
+      units: [
+        { u: "3014N", fl: 30, rent: null, net: 5126, avail: "Listed now", live: true, link: "https://journaljc.securecafe.com/onlineleasing/the-journal/rentaloptions.aspx?UnitID=43311080&FloorPlanID=5580605&myOlePropertyid=1847855",
+          snap: [{r:"Jun 28",p:5126},{r:"Jul 5",p:5126},{r:"Jul 12",p:5126}], act: "NEW", band: "Skip", tmc: 5301,
+          prov: { rent: "MISSING", orient: "FACT" } },
+        { u: "2914N", fl: 29, rent: null, net: 5126, avail: "Listed now", live: true, link: "https://journaljc.com/availability",
+          snap: [{r:"Jun 28",p:5126},{r:"Jul 5",p:5126},{r:"Jul 12",p:5126}], act: "NEW", band: "Skip", tmc: 5301,
+          prov: { rent: "MISSING", orient: "FACT" } },
+        { u: "1314S", fl: 13, rent: 5895, net: 5306, sqft: 989, avail: "GONE", live: false, link: "https://journaljc.securecafe.com/onlineleasing/the-journal/rentaloptions.aspx?UnitID=45187136&FloorPlanID=6239865&myOlePropertyid=1847855",
+          snap: [{r:"Jun 28",p:5895},{r:"Jul 5",p:5895},{r:"Jul 12",p:5895}], act: "Contacted", band: "Skip", tmc: 6070,
+          prov: { rent: "FACT", orient: "MISSING" } } ],
+      ess: [["PATH at the door","1 min"],["India Square groceries","6 min"],["Duane Reade","3 min"]],
+      vibe: "2024-26 Kushner twin towers over the PATH. Net $5,126 on 2-months-free/20-month - gross runs ~$5,696, over your band at renewal; treat the net as a year-one deal. The 14-line here is the NORTH-plan stack per the floor-plan asset - ask leasing for a south-plan line instead." },
+    { id: "grand235", name: "235 Grand", addr: "235 Grand St, Jersey City (Downtown/Grove)",
+      ll: [40.7157,-74.0445], area: "Downtown JC - Grove St",
+      safety: { g: "A-", c: "A" }, clean: { g: "B+", c: "B" },
+      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=235%20Grand%20St%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 30, range: "26-36", cost: 130, mode: "path",
+        route: "Walk 6 min to Grove St PATH, JSQ-33 to 23 St (15 min), walk 7 min",
+        legs: [["walk","self","grove"],["path","grove","p23"],["walk","p23","office"]] },
+      units: [
+        { u: "2906", fl: 29, rent: 5105, sqft: 925, avail: "Now", live: true, link: "https://www.rentcafe.com/apartments/nj/jersey-city/235-grand/default.aspx",
+          snap: [{r:"Jun 14",p:5905},{r:"Jun 21",p:5905},{r:"Jun 28",p:5305},{r:"Jul 12",p:5105}], act: "Contacted", band: "Skip", tmc: 5280,
+          prov: { rent: "FACT", orient: "FACT" } },
+        { u: "3306", fl: 33, rent: 5155, sqft: 925, avail: "Now", live: true, link: "https://www.rentcafe.com/apartments/nj/jersey-city/235-grand/default.aspx",
+          snap: [{r:"Jun 14",p:5955},{r:"Jun 21",p:5955},{r:"Jun 28",p:5355},{r:"Jul 12",p:5155}], act: "NEW", band: "Skip", tmc: 5330,
+          prov: { rent: "FACT", orient: "FACT" } },
+        { u: "1005", fl: 10, rent: 5355, avail: "Nov 7 ($5,355-5,550 by term)", live: true, link: "https://235grand.securecafe.com/onlineleasing/235-grand/oleapplication.aspx?stepname=RentalOptions&myOlePropertyId=871333&FloorPlanID=2725112&UnitID=16194480&MoveInDate=11/7/2026",
+          snap: [{r:"Jun 28",p:5355},{r:"Jul 5",p:5355},{r:"Jul 12",p:5355}], act: "Contacted", band: "TourNow", tmc: 5530,
+          prov: { rent: "FACT", orient: "MISSING" } },
+        { u: "0705", fl: 7, rent: 5330, avail: "Aug 17", live: true, link: "https://www.235grand.com/floorplans/2-bedroom---2-bathroom",
+          snap: [{r:"Jun 28",p:5330},{r:"Jul 5",p:5330},{r:"Jul 12",p:5330}], act: "NEW", band: "Watch", tmc: 5505,
+          prov: { rent: "FACT", orient: "MISSING" } },
+        { u: "0405", fl: 4, rent: 5315, avail: "Aug 7", live: true, link: "https://www.235grand.com/floorplans/2-bedroom---2-bathroom",
+          snap: [{r:"Jun 28",p:5315},{r:"Jul 5",p:5315},{r:"Jul 12",p:5315}], act: "ToContact", band: "Watch", tmc: 5490,
+          prov: { rent: "FACT", orient: "MISSING" } },
+        { u: "0305", fl: 3, rent: 5315, avail: "Aug 30", live: true, link: "https://www.235grand.com/floorplans/2-bedroom---2-bathroom",
+          snap: [{r:"Jun 28",p:5315},{r:"Jul 5",p:5315},{r:"Jul 12",p:5315}], act: "NEW", band: "Watch", tmc: 5490,
+          prov: { rent: "FACT", orient: "MISSING" } } ],
+      ess: [["Grove St PATH + restaurants","6 min"],["ShopRite Metro Plaza","8 min"],["Whole Foods JC (Greene St)","10 min"],["Morris Canal waterfront","8 min"]],
+      vibe: "2019, 46 floors, best area grades and near-shortest commute; 06-line prices dropped ~$800 since June. Two stacks live: the 06 line (verified NE corner - great glass, no south sun) and NOW THE 05 LINE - the stack our floor-plate work flagged as the likely Sussex-St/SOUTH side. Unverified, but #1005 is available NOV 7, the best-timed unit on this board. Ask leasing to confirm the 05 exposure and you may have the whole brief in one unit." },
+    { id: "soholofts", name: "Soho Lofts", addr: "273 16th St, Jersey City (SoHo West)",
+      ll: [40.7331,-74.0451], area: "SoHo West (JC/Hoboken border)",
+      safety: { g: "n/a", c: "B" }, clean: { g: "n/a", c: "B" },
+      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=273%2016th%20St%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 40, range: "34-48", cost: 130, mode: "path",
+        route: "Walk ~15 min to Newport PATH (or Hoboken HBLR), JSQ-33 to 14 St, walk 7 min",
+        legs: [["walk","self","newport"],["path","newport","p14"],["walk","p14","office"]] },
+      units: [
+        { u: "SL-1835", fl: 18, rent: 4935, net: 4583, sqft: 1201, avail: "GONE", live: false, link: "https://soholoftsjc.com/",
+          snap: [{r:"Jun 28",p:4935},{r:"Jul 5",p:4935},{r:"Jul 12",p:4935}], act: "Toured", band: "Skip", tmc: 5110,
+          prov: { rent: "FACT" } } ],
+      ess: [["ShopRite Madison St (Hoboken)","9 min"],["Trader Joe's Willow Ave","12 min"],["ResilienCity Park","10 min"]],
+      vibe: "2017 loft tower on the JC/Hoboken border: 1,201 sqft on floor 18 netting $4,583 - the space-per-dollar king of this board. Micro-area safety not yet graded (sits between Hoboken A- and Journal Sq C zones); the walk to any train is the real tax." },
+    { id: "devan", name: "The Devan", addr: "3 New York Ave, Jersey City (SoHo West/Heights)",
+      ll: [40.7375,-74.0451], area: "SoHo West (JC/Hoboken border)",
+      safety: { g: "n/a", c: "B" }, clean: { g: "n/a", c: "B" },
+      flood: { z: null, link: null },
+      commute: { min: 45, range: "38-55", cost: 130, mode: "path",
+        route: "Walk/bus ~18 min to Hoboken Terminal (or 9 St HBLR), HOB-33 PATH to 14 St, walk 7 min",
+        legs: [["walk","self","hoboken"],["path","hoboken","p14"],["walk","p14","office"]] },
+      units: [
+        { u: "333", fl: 3, rent: 5050, sqft: 1154, avail: "Aug 25", live: true, link: "https://thedevan.securecafe.com/onlineleasing/devan-propco-llc/availableunits.aspx?myOlePropertyId=1763306&floorPlans=5126789",
+          snap: [{r:"Jun 28",p:5050},{r:"Jul 5",p:5050},{r:"Jul 12",p:5050}], act: "ToContact", band: "Watch", tmc: 5225,
+          prov: { rent: "FACT" } },
+        { u: "358", fl: 3, rent: 5255, net: 4817, sqft: 1290, avail: "GONE", live: false, link: "https://thedevan.com/floorplan/?unit_id=5126814",
+          snap: [{r:"Jun 28",p:5255},{r:"Jul 5",p:5255},{r:"Jul 12",p:5255}], act: "Contacted", band: "Skip", tmc: 5430,
+          prov: { rent: "FACT" } },
+        { u: "442", fl: 4, rent: 5315, net: 4872, sqft: 1277, avail: "GONE", live: false, link: "https://thedevan.com/floorplan/?unit_id=5126810",
+          snap: [{r:"Jun 28",p:5315},{r:"Jul 5",p:5315},{r:"Jul 12",p:5315}], act: "Contacted", band: "Skip", tmc: 5490,
+          prov: { rent: "FACT" } } ],
+      ess: [["ShopRite Madison St","8 min"],["Trader Joe's Willow Ave","11 min"],["9 St-Congress HBLR","9 min"]],
+      vibe: "2024 building with the biggest layouts found (1,154-1,290 sqft) and nets to $4,817. Trade-offs: floors 3-4 only (fails the high-floor brief) and the longest JC commute here. Micro-area not yet safety-graded." },
+    { id: "halletts", name: "10 Halletts Point (Durst)", addr: "10 Halletts Point, Astoria waterfront",
+      ll: [40.7749,-73.9227], area: "Astoria waterfront, Queens",
+      safety: { g: "B+", c: "B" }, clean: { g: "B-", c: "B" },
+      flood: { z: "AE", link: "https://msc.fema.gov/portal/search?AddressQuery=10%20Halletts%20Point%2C%20Astoria%2C%20NY" },
+      commute: { min: 47, range: "40-55", cost: 126, mode: "subway",
+        route: "Walk ~15 min (or Durst shuttle) to Astoria Blvd N/W, to 23 St R/W (25 min), walk 5 min",
+        legs: [["walk","self","astbl"],["subway","astbl","rw23"],["walk","rw23","office"]] },
+      units: [
+        { u: "1507", fl: 15, rent: 5076, avail: "Now", live: true, link: "https://www.hallettspoint.com/residences/2-bedroom/10-halletts-point/apt-1507/",
+          snap: [{r:"Jun 28",p:5076},{r:"Jul 5",p:5076},{r:"Jul 12",p:5076}], act: "NEW", band: "Watch", tmc: 5247,
+          prov: { rent: "FACT" } },
+        { u: "0503", fl: 5, rent: 5374, avail: "Now", live: true, link: "https://www.hallettspoint.com/residences/2-bedroom/10-halletts-point/apt-503/",
+          snap: [{r:"Jun 28",p:5374},{r:"Jul 5",p:5374},{r:"Jul 12",p:5374}], act: "Toured", band: "Watch", tmc: 5545,
+          prov: { rent: "FACT", orient: "INFERRED" } } ],
+      ess: [["Building shuttle to subway","1 min"],["Astoria Park","12 min"],["City Fresh Market 24h","12 min"]],
+      vibe: "2019 Durst waterfront tower with per-unit pages; #0503 is a stated CORNER residence with floor-to-ceiling windows. Sister building 20 Halletts runs 2 months free - ask if it applies. The catch: an isolated waterfront pocket with thin street retail, shuttle-dependent transit, and the longest commute on this board." },
+    { id: "col90", name: "90 Columbus", addr: "90 Christopher Columbus Dr, Jersey City (Grove)",
+      ll: [40.7181,-74.0387], area: "Downtown JC - Grove St",
+      safety: { g: "A-", c: "A" }, clean: { g: "B+", c: "B" },
+      flood: { z: "AE", link: "https://msc.fema.gov/portal/search?AddressQuery=90%20Christopher%20Columbus%20Dr%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 28, range: "24-34", cost: 130, mode: "path",
+        route: "Grove St PATH inside the building podium, JSQ-33 to 23 St (15 min), walk 7 min",
+        legs: [["walk","self","grove"],["path","grove","p23"],["walk","p23","office"]] },
+      units: [
+        { u: "2511", fl: 25, rent: 5320, sqft: 965, avail: "Jul 20", live: true, link: "https://ironstate.com/property/90-columbus/floorplan/2442638/",
+          snap: [{r:"Jun 21",p:5520},{r:"Jun 28",p:5520},{r:"Jul 5",p:5520},{r:"Jul 12",p:5320}], act: "ToContact", band: "Watch", tmc: 5495,
+          prov: { rent: "FACT", orient: "MISSING" } },
+        { u: "3011", fl: 30, rent: 5370, sqft: 965, avail: "GONE", live: false, link: "https://ironstate.securecafe.com/onlineleasing/90-columbus/rentaloptions.aspx?UnitID=13527776&FloorPlanID=2442638&myOlePropertyid=728072",
+          snap: [{r:"Jun 28",p:5370},{r:"Jul 5",p:5370},{r:"Jul 12",p:5370}], act: "Contacted", band: "Skip", tmc: 5545,
+          prov: { rent: "FACT", orient: "MISSING" } },
+        { u: "3211", fl: 32, rent: 5410, sqft: 998, avail: "Sep 10", live: true, link: "https://ironstate.securecafe.com/onlineleasing/90-columbus/rentaloptions.aspx?UnitID=13527800&FloorPlanID=2442641&myOlePropertyid=728072",
+          snap: [{r:"Jun 28",p:5410},{r:"Jul 5",p:5410},{r:"Jul 12",p:5410}], act: "NEW", band: "Watch", tmc: 5585,
+          prov: { rent: "FACT", orient: "MISSING" } } ],
+      ess: [["Grove St PATH in the podium","1 min"],["Grove St restaurant row","3 min"],["ShopRite Metro Plaza","7 min"],["Whole Foods JC","9 min"]],
+      vibe: "2018, ~51 floors, and the PATH station is literally in the building - the shortest, driest commute on this board. All three units are the 11-line (exposure unverified; the cached map only maps the A-line as south). $500 look-and-lease credit running. Sep dates suit a Nov 1 start." },
+    { id: "vyv", name: "VYV North", addr: "474 Warren St, Jersey City (Downtown)",
+      ll: [40.7194,-74.0392], area: "Downtown JC - Grove St",
+      safety: { g: "A-", c: "A" }, clean: { g: "B+", c: "B" },
+      flood: { z: "AE", link: "https://msc.fema.gov/portal/search?AddressQuery=474%20Warren%20St%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 30, range: "26-36", cost: 130, mode: "path",
+        route: "Walk 5 min to Grove St PATH, JSQ-33 to 23 St, walk 7 min",
+        legs: [["walk","self","grove"],["path","grove","p23"],["walk","p23","office"]] },
+      units: [
+        { u: "N-2511", fl: 25, rent: 5448, sqft: 1084, avail: "Aug 5", live: true, link: "https://rent.brookfieldproperties.com/unit/?propertyId[]=1845044&floorplanId=5374638&unitId=40071676",
+          snap: [{r:"Jun 28",p:5448},{r:"Jul 5",p:5448},{r:"Jul 12",p:5448}], act: "ToContact", band: "Watch", tmc: 5623,
+          prov: { rent: "FACT", orient: "MISSING" } } ],
+      ess: [["Grove St PATH","5 min"],["ShopRite Metro Plaza","6 min"],["Newport Centre Mall","10 min"]],
+      vibe: "Brookfield twin towers; North is the 2017 tower (South is 2020). Floor 25, 1,084 sqft, per-unit Brookfield link. Building-wide 1.5-months-free promos come and go - ask. Exposure unverified." },
+    { id: "ellipse", name: "Ellipse", addr: "25 Park Lane S, Newport, Jersey City",
+      ll: [40.7278,-74.0308], area: "Newport waterfront, JC",
+      safety: { g: "A-", c: "A" }, clean: { g: "A-", c: "A" },
+      flood: { z: "AE", link: "https://msc.fema.gov/portal/search?AddressQuery=25%20Park%20Lane%20S%2C%20Jersey%20City%2C%20NJ" },
+      commute: { min: 26, range: "22-32", cost: 130, mode: "path",
+        route: "Walk 4 min to Newport PATH, JSQ-33 to 14 St, walk 7 min",
+        legs: [["walk","self","newport"],["path","newport","p14"],["walk","p14","office"]] },
+      units: [
+        { u: "204", fl: 2, rent: 5526, sqft: 1218, avail: "Aug 24", live: true, link: "https://www.newportrentals.com/apartments-jersey-city-for-rent/ellipse/",
+          snap: [{r:"Jun 28",p:5526},{r:"Jul 5",p:5526},{r:"Jul 12",p:5526}], act: "NEW", band: "Watch", tmc: 5701,
+          prov: { rent: "FACT" } } ],
+      ess: [["Newport PATH","4 min"],["Newport Green park","3 min"],["ShopRite Metro Plaza","8 min"],["Newport Centre Mall","6 min"]],
+      vibe: "2016 LeFrak waterfront ellipse tower - the only true-waterfront JC entry, and the shortest commute here (26 min). The catch: floor 2 and $5,526, a hair over your cap. Watch this building for higher-floor drops." }
+  ];
+
+  // ---- render map -----------------------------------------------------------
+  var svg = document.getElementById("map");
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    (parent || svg).appendChild(e); return e;
+  }
+
+  el("rect", { x: 0, y: 0, width: W, height: H, "class": "geo-water" });
+  Object.keys(GEO).forEach(function (k) {
+    GEO[k].forEach(function (ring) { el("path", { d: path(ring) + " Z", "class": "geo-land" }); });
+  });
+  var gl = [ ["HUDSON RIVER", 40.757, -74.014, -78], ["EAST RIVER", 40.748, -73.952, -55],
+             ["MANHATTAN", 40.776, -73.963, 0], ["QUEENS", 40.762, -73.898, 0],
+             ["JERSEY CITY", 40.716, -74.058, 0], ["HOBOKEN", 40.746, -74.041, 0] ];
+  gl.forEach(function (g) {
+    var p = px(g[1], g[2]);
+    el("text", { x: p[0], y: p[1], "class": "geo-label", "text-anchor": "middle",
+                 transform: g[3] ? "rotate(" + g[3] + " " + p[0] + " " + p[1] + ")" : "" }).textContent = g[0];
+  });
+
+  var routesG = el("g", {});
+  var stnsG = el("g", {});
+  var marksG = el("g", {});
+
+  function legPoints(b, leg) {
+    var a = leg[1] === "self" ? b.ll : (leg[1] === "office" ? OFFICE.ll : STN[leg[1]].ll);
+    var c = leg[2] === "self" ? b.ll : (leg[2] === "office" ? OFFICE.ll : STN[leg[2]].ll);
+    return [a, c];
+  }
+
+  B.forEach(function (b) {
+    var g = el("g", { "class": "rt", "data-b": b.id }, routesG);
+    b.commute.legs.forEach(function (leg) {
+      var pts = legPoints(b, leg);
+      var a = px(pts[0][0], pts[0][1]), c = px(pts[1][0], pts[1][1]);
+      var mx = (a[0] + c[0]) / 2, my = (a[1] + c[1]) / 2 - Math.min(28, Math.hypot(c[0]-a[0], c[1]-a[1]) * .12);
+      var d = "M" + a[0].toFixed(1) + " " + a[1].toFixed(1) + " Q" + mx.toFixed(1) + " " + my.toFixed(1) + " " + c[0].toFixed(1) + " " + c[1].toFixed(1);
+      var cls = leg[0] === "walk" ? "rt-walk" : "rt-transit";
+      var stroke = leg[0] === "walk" ? "var(--walk)" : (leg[0] === "path" ? "var(--path)" : "var(--subway)");
+      el("path", { d: d, "class": cls, stroke: stroke }, g);
+    });
+  });
+
+  Object.keys(STN).forEach(function (k) {
+    var p = px(STN[k].ll[0], STN[k].ll[1]);
+    var c = el("circle", { cx: p[0], cy: p[1], r: 3.5, "class": "stn" }, stnsG);
+    el("title", {}, c).textContent = STN[k].n;
+  });
+
+  var op = px(OFFICE.ll[0], OFFICE.ll[1]);
+  var og = el("g", { "class": "office-mark" }, marksG);
+  el("path", { d: "M " + op[0] + " " + (op[1]-9) + " l 7 9 l -7 9 l -7 -9 Z", fill: "var(--office)", stroke: "var(--surface)", "stroke-width": 2 }, og);
+  el("text", { x: op[0] + 12, y: op[1] - 8 }, og).textContent = "YOUR OFFICE";
+
+  var tip = document.getElementById("tip");
+  var mapcard = document.getElementById("mapcard");
+  var gradeVar = { A: "var(--gA)", B: "var(--gB)", C: "var(--gC)" };
+
+  B.forEach(function (b) {
+    var p = px(b.ll[0], b.ll[1]);
+    var g = el("g", { "class": "bmark", "data-b": b.id, tabindex: "0", role: "button" }, marksG);
+    var na = b.safety.g === "n/a";
+    el("circle", { cx: p[0], cy: p[1], r: 8, "class": "core", fill: na ? "var(--walk)" : gradeVar[b.safety.c] }, g);
+    el("text", { x: p[0], y: p[1] + 3.6, "text-anchor": "middle", "font-size": "9", "font-weight": "700",
+                 fill: "var(--surface)", stroke: "none" }, g).textContent = na ? "?" : b.safety.g.charAt(0);
+    // Per-building label nudges: the JSQ pair and the Hamilton Park pair sit
+    // on nearly identical coordinates, so labels fan out around the cluster.
+    var LBL = {
+      journaln:  { dx: -13, dy: -26, anchor: "end" },
+      jsq2:      { dx: -13, dy: -8,  anchor: "end" },
+      summit505: { dx: -11, dy: 26,  anchor: "end" },
+      greyson:   { dx: 12,  dy: -26, anchor: "start" },
+      jsq3:      { dx: 14,  dy: -8,  anchor: "start" },
+      urby:      { dx: 14,  dy: 10,  anchor: "start" },
+      soholofts: { dx: 13,  dy: 14,  anchor: "start" },
+      devan:     { dx: 13,  dy: 0,   anchor: "start" },
+      col90:     { dx: 13,  dy: 2,   anchor: "start" },
+      vyv:       { dx: -12, dy: -8,  anchor: "end" },
+      grand235:  { dx: -12, dy: 12,  anchor: "end" },
+      ellipse:   { dx: 13,  dy: -4,  anchor: "start" }
+    };
+    var o = LBL[b.id] || { dx: 12, dy: 4, anchor: "start" };
+    if (!LBL[b.id] && p[0] > W - 190) { o = { dx: -12, dy: 4, anchor: "end" }; }
+    var short = { jsq2: "JSQ Tower 2", jsq3: "JSQ Tower 3", journaln: "The Journal", summit505: "505 Summit", grand235: "235 Grand", halletts: "10 Halletts Pt", urby: "Urby", col90: "90 Columbus", vyv: "VYV", ellipse: "Ellipse", greyson: "Greyson", soholofts: "Soho Lofts", devan: "The Devan" };
+    el("text", { x: p[0] + o.dx, y: p[1] + o.dy, "text-anchor": o.anchor }, g).textContent =
+      (short[b.id] || b.name) + "  " + b.commute.min + "m";
+    g.addEventListener("mouseenter", function (ev) { showTip(b, ev); focusB(b.id, false); });
+    g.addEventListener("mousemove", function (ev) { moveTip(ev); });
+    g.addEventListener("mouseleave", function () { tip.style.opacity = 0; focusB(null, false); });
+    g.addEventListener("click", function () { focusB(b.id, true); });
+    g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); focusB(b.id, true); } });
+  });
+
+  function showTip(b, ev) {
+    var cheapest = Math.min.apply(null, b.units.map(function (u) { return (u.net != null ? u.net : u.rent) || 99999; }));
+    tip.innerHTML = "<b>" + b.name + "</b>" +
+      "<span class='m'>" + b.commute.min + " min - $" + b.commute.cost + "/mo transit<br>" +
+      b.units.length + " unit" + (b.units.length > 1 ? "s" : "") + " from $" + cheapest.toLocaleString() +
+      " - Safety " + b.safety.g + " - Clean " + b.clean.g + "</span>";
+    tip.style.opacity = 1; moveTip(ev);
+  }
+  function moveTip(ev) {
+    var r = mapcard.getBoundingClientRect();
+    var x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 8;
+    if (x > r.width - 260) x -= 280;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+
+
+  var JSQ_SRC = { safety: "https://crimegrade.org/safest-places-in-journal-square-jersey-city-nj/", clean: "https://www.niche.com/places-to-live/n/journal-square-jersey-city-nj/reviews/" };
+  var LINKS = {
+    jsq2: { site: "https://www.journalsquared.com/availabilities/", safety: JSQ_SRC.safety, clean: JSQ_SRC.clean },
+    jsq3: { site: "https://www.journalsquared.com/availabilities/", safety: JSQ_SRC.safety, clean: JSQ_SRC.clean },
+    urby: { site: "https://www.urby.com/location/journal-square/availability", safety: JSQ_SRC.safety, clean: JSQ_SRC.clean },
+    summit505: { site: "https://www.505summit.com/availability", safety: JSQ_SRC.safety, clean: JSQ_SRC.clean },
+    greyson: { site: "https://www.thegreyson.com/availability", safety: JSQ_SRC.safety, clean: JSQ_SRC.clean },
+    journaln: { site: "https://journaljc.com/availability", safety: JSQ_SRC.safety, clean: JSQ_SRC.clean },
+    grand235: { site: "https://www.rentcafe.com/apartments/nj/jersey-city/235-grand/default.aspx",
+      safety: "https://www.neighborhoodscout.com/nj/jersey-city/crime", clean: "https://jerseydigs.com/jersey-city-trash/" },
+    soholofts: { site: "https://soholoftsjc.com/", safety: null, clean: null },
+    devan: { site: "https://thedevan.com/", safety: null, clean: null },
+    halletts: { site: "https://www.hallettspoint.com/", safety: "https://crimegrade.org/safest-places-in-astoria-queens-ny/", clean: "https://a816-dohbesp.nyc.gov/IndicatorPublic/rats/" },
+    col90: { site: "https://ironstate.com/property/90-columbus/", safety: "https://www.neighborhoodscout.com/nj/jersey-city/crime", clean: "https://jerseydigs.com/jersey-city-trash/" },
+    vyv: { site: "https://rent.brookfieldproperties.com/property/vyv/", safety: "https://www.neighborhoodscout.com/nj/jersey-city/crime", clean: "https://jerseydigs.com/jersey-city-trash/" },
+    ellipse: { site: "https://www.newportrentals.com/apartments-jersey-city-for-rent/ellipse/", safety: "https://www.neighborhoodscout.com/nj/jersey-city/crime", clean: "https://jerseydigs.com/jersey-city-trash/" }
+  };
+
+  // ---- render cards ---------------------------------------------------------
+  var cardsRoot = document.getElementById("cards");
+  function chipCls(c) { return c === "A" ? "cA" : (c === "B" ? "cB" : "cC"); }
+  function money(n) { return "$" + n.toLocaleString(); }
+  function bandCls(band) { return band === "TourNow" ? "cA" : (band === "Watch" ? "cB" : "cN"); }
+  function floodCls(z) { return z === "X" ? "cA" : (z === "AE" ? "cB" : "cN"); }
+  function runDate(r) { return new Date(r + ", 2026"); }
+
+  // ---- unit index + compare selection state (D1 / D5 look units up by key) --
+  var UNIT_INDEX = {};
+  B.forEach(function (b) {
+    b.units.forEach(function (u) { UNIT_INDEX[b.id + "-" + u.u] = { u: u, b: b }; });
+  });
+  var compareSet = {};
+
+  // ---- provenance dots: only render for INFERRED/MISSING, FACT stays clean --
+  function provDot(status, title) {
+    if (!status || status === "FACT") return "";
+    return "<span class='provdot " + (status === "MISSING" ? "pMISS" : "pINF") + "' title='" + title + "'></span>";
+  }
+
+  // ---- sparkline + delta badge from a unit's snap series ---------------------
+  function sparkSVG(snap) {
+    if (!snap || snap.length < 2) return "";
+    var w = 60, h = 16, pad = 2;
+    var prices = snap.map(function (s) { return s.p; }).filter(function (p) { return p != null; });
+    if (prices.length < 2) return "";
+    var lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
+    var span = hi - lo || 1;
+    var step = (w - pad * 2) / (snap.length - 1);
+    var pts = snap.map(function (s, i) {
+      var x = pad + i * step;
+      var y = h - pad - ((s.p - lo) / span) * (h - pad * 2);
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    return "<svg class='spark' viewBox='0 0 " + w + " " + h + "' width='" + w + "' height='" + h + "'>" +
+      "<polyline points='" + pts + "' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+  }
+  function badgeFor(u) {
+    if (!u.snap || u.snap.length < 2) return null;
+    var removedHit = DIGEST.some(function (d) { return d.kind === "REMOVED" && d.text.indexOf("#" + u.u) !== -1; });
+    if (removedHit) return { cls: "bREM", text: "REMOVED" };
+    var a = u.snap[u.snap.length - 2], b = u.snap[u.snap.length - 1];
+    if (a.p != null && b.p != null && b.p < a.p) {
+      var pct = ((b.p - a.p) / a.p) * 100;
+      var days = Math.round((runDate(b.r) - runDate(a.r)) / 86400000);
+      return { cls: "bDROP", text: pct.toFixed(1) + "% / " + days + "d" };
+    }
+    return null;
+  }
+
+  function renderCards(order) {
+    cardsRoot.innerHTML = "";
+    order.forEach(function (b) {
+      var card = document.createElement("div");
+      card.className = "bcard"; card.id = "card-" + b.id;
+      var L = LINKS[b.id] || {};
+      var rows = b.units.map(function (u) {
+        var key = b.id + "-" + u.u;
+        var prov = u.prov || {};
+        var unitDot = provDot(prov.orient, "orientation: " + prov.orient + " - " + (prov.orient === "MISSING" ? "not yet verified, ask leasing" : "landlord-published, not floor-plan verified"));
+        var rentDot = provDot(prov.rent, "rent: " + prov.rent + " - gross not published, net-effective quote only");
+        var priceText = u.rent != null ? money(u.rent) : (u.net != null ? money(u.net) + " net" : "-");
+        var badge = badgeFor(u);
+        var badgeHTML = badge ? " <span class='badge " + badge.cls + "' title='Weekly price change'>" + badge.text + "</span>" : "";
+        return "<tr class='" + (u.live === false ? "rowgone" : "") + "'>" +
+          "<td><input type='checkbox' class='cmpchk' data-key='" + key + "' aria-label='Compare " + b.name + " #" + u.u + "'" + (compareSet[key] ? " checked" : "") + "></td>" +
+          "<td class='num'>" + u.u + unitDot + "</td><td class='num'>" + (u.fl == null ? "-" : u.fl) + "</td>" +
+          "<td class='num'>" + priceText + rentDot + (u.note === "net" ? " net" : "") + (u.rent != null && u.net ? " <span style='color:var(--muted)'>(net " + money(u.net) + ")</span>" : "") + sparkSVG(u.snap) + badgeHTML + "</td>" +
+          "<td class='num'>" + (u.sqft ? u.sqft : "-") + "</td><td>" + u.avail + "</td>" +
+          "<td><span class='chip " + bandCls(u.band) + "' title='Action-priority band'><span class='dot'></span>" + u.band + "</span></td>" +
+          "<td class='lnk'><a href='" + (u.link || L.unit || "#") + "' target='_blank' rel='noopener'>listing</a></td>" +
+          "<td>" + (u.live === false ? "<span class='gone'>gone 7/11</span>" : "<span class='liveok'>live 7/11</span>") + "</td>" +
+          "<td class='lnk'><a href='#' class='pplink' data-key='" + key + "'>one-pager</a></td></tr>";
+      }).join("");
+      var ess = b.ess.map(function (e) { return "<span><b>" + e[0] + "</b> " + e[1] + "</span>"; }).join("");
+      card.innerHTML =
+        "<div class='bhead'><div><h3><a href='" + (L.site || "#") + "' target='_blank' rel='noopener'>" + b.name + "</a></h3><p class='addr'>" + b.addr + "</p></div>" +
+        "<div class='grades'>" +
+        (L.safety ? "<a class='chip " + chipCls(b.safety.c) + "' href='" + L.safety + "' target='_blank' rel='noopener' title='Area safety grade - opens source'><span class='dot'></span>Safety " + b.safety.g + "</a>"
+                  : "<span class='chip' style='background:var(--bg);color:var(--muted)' title='Micro-area not yet graded'>Safety n/a</span>") +
+        (L.clean ? "<a class='chip " + chipCls(b.clean.c) + "' href='" + L.clean + "' target='_blank' rel='noopener' title='Area cleanliness grade - opens source'><span class='dot'></span>Clean " + b.clean.g + "</a>"
+                 : "<span class='chip' style='background:var(--bg);color:var(--muted)' title='Micro-area not yet graded'>Clean n/a</span>") +
+        (b.flood && b.flood.z ? "<a class='chip " + floodCls(b.flood.z) + "' href='" + b.flood.link + "' target='_blank' rel='noopener' title='FEMA flood zone " + b.flood.z + " - opens map viewer'><span class='dot'></span>Flood " + b.flood.z + "</a>"
+                              : "<span class='chip' style='background:var(--bg);color:var(--muted)' title='Flood zone not yet fetched'>Flood n/a</span>") +
+        "</div></div>" +
+        "<div class='commute'><span class='big num'>" + b.commute.min + " min</span>" +
+        "<span class='num'>(" + b.commute.range + ")</span>" +
+        "<span class='cost num'>$" + b.commute.cost + "/mo</span></div>" +
+        "<p class='route'>" + b.commute.route + "</p>" +
+        "<table class='units'><thead><tr><th></th><th>Unit</th><th>Fl</th><th>Rent</th><th>Sqft</th><th>Avail</th><th>Band</th><th></th><th>Status</th><th></th></tr></thead><tbody>" + rows + "</tbody></table>" +
+        "<div class='ess'>" + ess + "</div>" +
+        "<p class='vibe'>" + b.vibe + "</p>";
+      card.addEventListener("mouseenter", function () { focusB(b.id, false); });
+      card.addEventListener("mouseleave", function () { focusB(null, false); });
+      cardsRoot.appendChild(card);
+    });
+  }
+
+  function focusB(id, scroll) {
+    document.querySelectorAll(".rt").forEach(function (r) { r.classList.toggle("dim", !!id && r.getAttribute("data-b") !== id); });
+    document.querySelectorAll(".bmark").forEach(function (m) { m.classList.toggle("dim", !!id && m.getAttribute("data-b") !== id); });
+    document.querySelectorAll(".bcard").forEach(function (c) { c.classList.toggle("hl", !!id && c.id === "card-" + id); });
+    if (id && scroll) {
+      var c = document.getElementById("card-" + id);
+      if (c) c.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  var sorters = {
+    commute: function (a, b) { return a.commute.min - b.commute.min; },
+    rent: function (a, b) {
+      var ma = Math.min.apply(null, a.units.map(function (u) { return (u.net != null ? u.net : u.rent) || 99999; }));
+      var mb = Math.min.apply(null, b.units.map(function (u) { return (u.net != null ? u.net : u.rent) || 99999; }));
+      return ma - mb;
+    },
+    safety: function (a, b) {
+      var rank = { "A-": 1, "B+": 2, "B": 3, "C+": 4, "C": 5, "n/a": 6 };
+      return (rank[a.safety.g] || 9) - (rank[b.safety.g] || 9) || a.commute.min - b.commute.min;
+    },
+    band: function (a, b) {
+      var rank = { TourNow: 1, Watch: 2, Skip: 3 };
+      var ra = Math.min.apply(null, a.units.map(function (u) { return rank[u.band] || 9; }));
+      var rb = Math.min.apply(null, b.units.map(function (u) { return rank[u.band] || 9; }));
+      return ra - rb || a.commute.min - b.commute.min;
+    }
+  };
+  document.querySelectorAll(".sortrow button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".sortrow button").forEach(function (x) { x.classList.remove("on"); });
+      btn.classList.add("on");
+      renderCards(B.slice().sort(sorters[btn.getAttribute("data-sort")]));
+    });
+  });
+
+  // ---- compare view (D1): checkbox per unit row, sticky bar, pivot table ----
+  function compareCount() {
+    var n = 0;
+    for (var k in compareSet) if (compareSet[k]) n++;
+    return n;
+  }
+  function syncCompareUI(blockedMsg) {
+    var n = compareCount();
+    var bar = document.getElementById("cmpbar");
+    var btn = document.getElementById("cmpopen");
+    var note = document.getElementById("cmpnote");
+    bar.hidden = n === 0;
+    document.getElementById("cmpcount").textContent = n + (n === 1 ? " unit selected" : " units selected");
+    btn.disabled = n < 2;
+    btn.textContent = n >= 2 ? "Compare " + n + " units" : "Compare";
+    note.textContent = blockedMsg || (n >= 8 ? "Compare is capped at 8 units." : "");
+  }
+  function onCompareToggle(key, checked, cb) {
+    if (checked && compareCount() >= 8) {
+      cb.checked = false;
+      syncCompareUI("Compare is capped at 8 units - uncheck one first.");
+      return;
+    }
+    if (checked) { compareSet[key] = true; } else { delete compareSet[key]; }
+    syncCompareUI();
+    if (!document.getElementById("comparesec").hidden) renderCompareTable();
+  }
+  cardsRoot.addEventListener("change", function (ev) {
+    var cb = ev.target.closest ? ev.target.closest(".cmpchk") : null;
+    if (!cb) return;
+    onCompareToggle(cb.getAttribute("data-key"), cb.checked, cb);
+  });
+  cardsRoot.addEventListener("click", function (ev) {
+    var a = ev.target.closest ? ev.target.closest(".pplink") : null;
+    if (!a) return;
+    ev.preventDefault();
+    openOnePager(a.getAttribute("data-key"));
+  });
+  document.getElementById("cmpopen").addEventListener("click", function () { renderCompareTable(); });
+
+  function renderCompareTable() {
+    var sec = document.getElementById("comparesec");
+    var cols = [];
+    B.forEach(function (b) {
+      b.units.forEach(function (u) {
+        var key = b.id + "-" + u.u;
+        if (compareSet[key]) cols.push(UNIT_INDEX[key]);
+      });
+    });
+    if (!cols.length) { sec.hidden = true; return; }
+    function row(label, fn) {
+      return "<tr><th class='rowlbl'>" + label + "</th>" + cols.map(fn).join("") + "</tr>";
+    }
+    var head = cols.map(function (c) {
+      return "<th><a href='" + (c.u.link || "#") + "' target='_blank' rel='noopener'>" + c.b.name + " #" + c.u.u + "</a></th>";
+    }).join("");
+    var rentRow = row("Rent (gross / net)", function (c) {
+      return "<td class='num'>" + (c.u.rent != null ? money(c.u.rent) : "-") + " / " + (c.u.net != null ? money(c.u.net) : "-") + "</td>";
+    });
+    var tmcRow = row("True monthly cost", function (c) { return "<td class='num'>" + money(c.u.tmc) + "</td>"; });
+    var pfsRow = row("Price / sqft", function (c) {
+      if (!c.u.sqft) return "<td class='num'>n/a</td>";
+      var base = c.u.rent != null ? c.u.rent : c.u.net;
+      return "<td class='num'>$" + Math.round(base / c.u.sqft) + "/sqft</td>";
+    });
+    var commuteRow = row("Commute", function (c) { return "<td class='num'>" + c.b.commute.min + " min - $" + c.b.commute.cost + "/mo</td>"; });
+    var safetyRow = row("Safety / Clean", function (c) { return "<td>" + c.b.safety.g + " / " + c.b.clean.g + "</td>"; });
+    var floodRow = row("Flood", function (c) { return "<td>" + (c.b.flood && c.b.flood.z ? c.b.flood.z : "n/a") + "</td>"; });
+    var bandRow = row("Band", function (c) { return "<td><span class='chip " + bandCls(c.u.band) + "'><span class='dot'></span>" + c.u.band + "</span></td>"; });
+    var orientRow = row("Orientation status", function (c) { return "<td>" + ((c.u.prov && c.u.prov.orient) || "MISSING") + "</td>"; });
+    var availRow = row("Available", function (c) { return "<td>" + c.u.avail + "</td>"; });
+    var liveRow = row("Live status", function (c) { return "<td>" + (c.u.live === false ? "gone" : "live") + "</td>"; });
+    var buildingsInvolved = {};
+    cols.forEach(function (c) { buildingsInvolved[c.b.id] = c.b; });
+    var labelSets = Object.keys(buildingsInvolved).map(function (id) {
+      return buildingsInvolved[id].ess.map(function (e) { return e[0]; });
+    });
+    var shared = labelSets.length ? labelSets.reduce(function (acc, arr) {
+      return acc.filter(function (x) { return arr.indexOf(x) !== -1; });
+    }) : [];
+    var amenRow = "<tr><th class='rowlbl'>Shared amenities</th><td colspan='" + cols.length + "'>" +
+      (shared.length ? shared.join(", ") : "none shared") + "</td></tr>";
+    sec.innerHTML = "<div class='comparehead'><h2>Comparing " + cols.length + " units</h2><button id='cmpclose' type='button'>Close</button></div>" +
+      "<div class='cmpscroll'><table class='compare'><thead><tr><th></th>" + head + "</tr></thead><tbody>" +
+      rentRow + tmcRow + pfsRow + commuteRow + safetyRow + floodRow + bandRow + orientRow + availRow + liveRow + amenRow +
+      "</tbody></table></div>";
+    sec.hidden = false;
+    document.getElementById("cmpclose").addEventListener("click", function () { sec.hidden = true; });
+  }
+
+  // ---- action panel (D4): move-in countdown + units grouped by act status ---
+  var ACT_ORDER = ["NEW", "ToContact", "Contacted", "TourBooked", "Toured", "Applied", "Rejected", "Skipped", "Secured"];
+  function apRow(r) {
+    var price = r.u.rent != null ? money(r.u.rent) : (r.u.net != null ? money(r.u.net) + " net" : "-");
+    return "<li><a href='" + (r.u.link || "#") + "' target='_blank' rel='noopener'>" + r.b.name + " #" + r.u.u + "</a>" +
+      "<span class='apmeta num'>" + price + " - " + r.b.commute.min + " min</span></li>";
+  }
+  function renderActionPanel() {
+    var el = document.getElementById("actionpanel");
+    var groups = {};
+    var allUnits = [];
+    B.forEach(function (b) {
+      b.units.forEach(function (u) {
+        var rec = { u: u, b: b };
+        allUnits.push(rec);
+        var act = u.act || "NEW";
+        (groups[act] = groups[act] || []).push(rec);
+      });
+    });
+
+    // Move-in countdown: computed from the dashboard's own stamped date, not
+    // Date.now() - this is a static example file. A real dashboard build step
+    // stamps "today" at render time instead of hardcoding it here.
+    var STAMPED_TODAY = "2026-07-12";
+    var daysToMoveIn = MOVEIN ? Math.round((new Date(MOVEIN) - new Date(STAMPED_TODAY)) / 86400000) : null;
+    var html = "<div class='apheader'>" +
+      (daysToMoveIn != null
+        ? "<span class='apdays num'>" + daysToMoveIn + "</span><span class='apdayslbl'>days to target move-in (" + MOVEIN + ")</span>"
+        : "<span class='apdayslbl'>No move-in target set</span>") +
+      "</div>";
+
+    // Pinned: still-live NEW units in a high-priority band (TourNow or Watch,
+    // i.e. not Skip) - surfaced above the lifecycle groups so a fresh
+    // high-band listing does not wait behind the rest of the NEW bucket.
+    var pinned = allUnits.filter(function (r) { return r.u.act === "NEW" && r.u.live !== false && r.u.band !== "Skip"; });
+    if (pinned.length) {
+      html += "<div class='apgroup'><div class='apglabel'>Pinned - new, live, high-band</div><ul class='aplist'>" +
+        pinned.map(apRow).join("") + "</ul></div>";
+    }
+
+    ACT_ORDER.forEach(function (act) {
+      var list = groups[act];
+      if (!list || !list.length) return;
+      html += "<div class='apgroup'><div class='apglabel'>" + act + " (" + list.length + ")</div><ul class='aplist'>" +
+        list.map(apRow).join("") + "</ul></div>";
+    });
+    el.innerHTML = html;
+  }
+
+  // ---- print one-pager (D5): mark a unit, render it, hand off to print ------
+  function gaugePct(band) { return band === "TourNow" ? 100 : (band === "Watch" ? 55 : 20); }
+  function gaugeColor(band) { return band === "TourNow" ? "var(--gA)" : (band === "Watch" ? "var(--gB)" : "var(--muted)"); }
+  function waterfallRow(label, value) { return "<tr><td>" + label + "</td><td class='num'>" + value + "</td></tr>"; }
+  function negotiationLine(u) {
+    var badge = badgeFor(u);
+    if (!badge || badge.cls !== "bDROP") return null;
+    var last2 = u.snap[u.snap.length - 2], latest = u.snap[u.snap.length - 1];
+    var pct = ((latest.p - last2.p) / last2.p) * 100;
+    var first = u.snap[0];
+    var weeksListed = Math.max(1, Math.round((runDate(latest.r) - runDate(first.r)) / (7 * 86400000)));
+    // Simple labeled heuristic, not a real negotiation formula - about half a
+    // week of ask per point of the observed percentage cut, minimum 1 week.
+    var weeksFree = Math.max(1, Math.round(Math.abs(pct) / 2));
+    return "listed " + weeksListed + " week" + (weeksListed === 1 ? "" : "s") + ", price cut " + Math.abs(pct).toFixed(1) +
+      "% - reasonable ask: " + weeksFree + " week" + (weeksFree === 1 ? "" : "s") + " free";
+  }
+  function openOnePager(key) {
+    var rec = UNIT_INDEX[key];
+    if (!rec) return;
+    var u = rec.u, b = rec.b;
+    var prov = u.prov || {};
+    var orientStatus = prov.orient || "MISSING";
+    var gross = u.rent != null ? money(u.rent) : "MISSING";
+    var concession = (u.rent != null && u.net != null) ? ("-" + money(u.rent - u.net)) : "MISSING";
+    var neg = negotiationLine(u);
+    var el = document.getElementById("onepager");
+    el.innerHTML =
+      "<h1>" + b.name + " #" + u.u + "</h1>" +
+      "<div class='gauge'><div class='gaugefill' style='width:" + gaugePct(u.band) + "%;background:" + gaugeColor(u.band) + "'></div></div>" +
+      "<p class='gaugelbl'>Action band: " + (u.band || "MISSING") + "</p>" +
+      "<h2>Cost waterfall (sample data - see method note)</h2>" +
+      "<table class='wftable'>" +
+      waterfallRow("Gross rent", gross) +
+      waterfallRow("Concession", concession) +
+      waterfallRow("Amortized fees", money(45)) +
+      waterfallRow("Transit (monthly)", money(b.commute.cost)) +
+      waterfallRow("True monthly cost", money(u.tmc)) +
+      "</table>" +
+      "<p class='opchips'>Flood: " + (b.flood && b.flood.z ? b.flood.z : "MISSING") +
+      " - Safety: " + (b.safety && b.safety.g ? b.safety.g : "MISSING") +
+      " - Cleanliness: " + (b.clean && b.clean.g ? b.clean.g : "MISSING") + "</p>" +
+      "<p class='opchips'>Orientation: " + orientStatus + " - " +
+      (orientStatus === "MISSING" ? "not yet verified, ask leasing" : "landlord-published, not floor-plan verified") + "</p>" +
+      "<p class='opchips'>Available: " + (u.avail || "MISSING") + " - Live status: " + (u.live === false ? "gone" : "live") +
+      " - Checked: " + (RUNLOG.last || "MISSING") + "</p>" +
+      "<h2>Tour questions</h2>" +
+      "<ol class='opq'>" +
+      "<li>Are the concession terms being put in writing before applying?</li>" +
+      "<li>Does this exact unit match the model/photos - can leasing provide current photos of it?</li>" +
+      "<li>What is the measured walk time to transit, not the marketed estimate?</li>" +
+      "<li>What is the full fee schedule - application, admin, amenity, pet, move-in?</li>" +
+      "</ol>" +
+      (neg ? "<p class='opneg'>Negotiation note (sample data): " + neg + "</p>" : "");
+    el.hidden = false;
+    window.print();
+  }
+
+  // ---- freshness banner: green/yellow/red from the run-log heartbeat --------
+  function renderBanner() {
+    var el = document.getElementById("banner");
+    var color = "gA", reason = "all fresh";
+    if (RUNLOG.overdue) {
+      color = "gC"; reason = "hydrate overdue since " + RUNLOG.last;
+    } else if (RUNLOG.legs_done < RUNLOG.legs_total) {
+      color = "gB"; reason = (RUNLOG.legs_total - RUNLOG.legs_done) + " research leg(s) still pending";
+    }
+    el.innerHTML = "<span class='dot' style='background:var(--" + color + ")'></span>" +
+      "Hydrated <b>" + RUNLOG.last + "</b> - " + RUNLOG.legs_done + "/" + RUNLOG.legs_total + " research legs - " + reason;
+  }
+
+  // ---- weekly digest card: NEW / REMOVED / DROP entries ---------------------
+  function renderDigest() {
+    var el = document.getElementById("digest");
+    if (!DIGEST.length) { el.innerHTML = "<b>This week</b><p class='vibe'>No changes since last run.</p>"; return; }
+    var items = DIGEST.map(function (d) {
+      var color = d.kind === "DROP" ? "gA" : (d.kind === "REMOVED" ? "gC" : "gB");
+      return "<li><span class='dtag' style='color:var(--" + color + ")'>" + d.kind + "</span>" + d.text + "</li>";
+    }).join("");
+    el.innerHTML = "<b>This week</b><ul class='digestlist'>" + items + "</ul>";
+  }
+
+  renderBanner();
+  renderDigest();
+  renderActionPanel();
+  renderCards(B.slice().sort(sorters.commute));
+})();
+</script>

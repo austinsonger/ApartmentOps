@@ -15,10 +15,16 @@ description: >-
 # ApartmentOps: Dashboard (build + hydrate)
 
 Inputs: `apartmentops/config.yml`, `data/verified.json`, `data/areas.json`,
-`data/transit.json`. Output: `apartmentops/dashboard.html`, published as an
+`data/transit.json`, plus - each optional, each degrading to n/a or a
+hidden section when absent, never faked - `data/scores.json`,
+`data/snapshots.jsonl` + `data/run-log.jsonl`, `data/actions.yml` +
+`data/backlog-state.json`, `data/buildings.json`, `data/results.json`
+(the cost engine's output - see Hydrate below for how it gets built),
+`data/lease.json`. Output: `apartmentops/dashboard.html`, published as an
 artifact (republish the SAME file path every time so the URL never changes).
 Study `../apartmentops/assets/example-dashboard.html` before building - it
-is a working instance of every pattern below.
+is the working instance of every pattern below, including the additional
+surfaces.
 
 ## Build
 
@@ -46,9 +52,113 @@ that make it trustworthy rather than decorative:
 - **Both themes.** Define tokens on :root, override in
   prefers-color-scheme:dark AND :root[data-theme="dark"]/[data-theme="light"].
   Validate chart/marker colors against both surfaces before shipping.
-- Sort controls (commute / cheapest / safety), hover tooltips, marker-card
-  cross-highlighting. Render it headless and LOOK at the screenshot before
-  publishing - label collisions and geometry bugs hide from validators.
+- Sort controls (commute / cheapest / safety / action band), hover
+  tooltips, marker-card cross-highlighting. Render it headless and LOOK at
+  the screenshot before publishing - label collisions and geometry bugs
+  hide from validators.
+
+### Additional surfaces (each degrades to n/a or hides when its input is missing - never faked)
+
+- **Freshness and confidence banner.** One line at the top: last hydrate
+  stamp (the newest `at` in `data/run-log.jsonl`) and research legs done
+  vs. expected (areas present in `verified.json` that also have a real
+  entry in `data/areas.json` and `data/transit.json`, out of the total).
+  Green under 7 days old with every leg present; yellow at 7+ days old, or
+  when any expected leg is missing, or when any unit in `scores.json`
+  carries a non-null `renormalization_note` (surface that note's text, not
+  just a count - it names which dimension was dropped and why); red
+  overrides both and means the scheduler died, not a quiet week - render
+  red whenever `snapshots.heartbeat_overdue(runlog_path, max_age_days)`
+  (`../apartmentops/scripts/snapshots.py runlog-check`, default
+  `max_age_days` 10 per `DEFAULT_HEARTBEAT_MAX_AGE_DAYS`) returns True,
+  including the never-hydrated case. No `run-log.jsonl` at all renders
+  "never hydrated", never a fabricated green.
+- **Action-band column.** A column per unit showing `scores.json`'s
+  `band` (`TourNow` / `Watch` / `Skip`), sortable most-actionable first.
+  Never re-derive the band here - `scoring.py` already demotes TourNow to
+  Watch while any hard gate is UNKNOWN (`references/scoring.md` section
+  4). A unit missing from `scores.json` gets no band chip, not a guessed
+  one.
+- **Price sparklines and delta badges.** Per unit, feed
+  `snapshots.trajectory(path, unit_id)`'s ordered
+  `[{run_id, observed_at, price, status}]` series straight into an inline
+  sparkline. Badge a unit NEW or REMOVED from `snapshots.diff_last_two(path)`'s
+  `new`/`removed` lists, and PRICE-DROP from
+  `snapshots.detect_drops(path, min_pct, window_days)`'s `drops` list
+  (thresholds from config.yml's `ledger:` block, same ones the hydrate
+  digest uses - see Hydrate below). Below two recorded runs
+  `diff_last_two` raises `InsufficientHistoryError` - catch it and hide
+  the sparkline and every delta badge for that unit entirely. A single
+  point is not a trend; never draw a flat line to fill the gap.
+- **Flood chip.** Per building, read `data/buildings.json[slug].flood`
+  and render a chip (zone letter, SFHA yes/no) that links out to
+  `viewer_url`. A `flood.zone` of `null` (the FEMA service call failed -
+  `error` is set) or a building missing from `buildings.json` entirely
+  both render "flood: n/a" - never a guessed zone, and never a chip with
+  no link behind it, matching the "no source, no grade" rule the
+  safety/cleanliness chips already follow above.
+- **Provenance chips.** Any unit field carrying the
+  `references/provenance.md` shape gets a small FACT / INFERRED / MISSING
+  / CONFLICT chip; read it through `gates.field_value` / `gates.field_status`
+  (`../apartmentops/scripts/gates.py`) so a legacy bare scalar and a full
+  provenance dict render identically. Click reveals `source` and
+  `evidence` for FACT, `confidence` for INFERRED, and the full
+  `conflicts` list for CONFLICT. A legacy scalar with no source renders
+  "FACT (no source)", never a bare unlabeled value - this chip is the
+  only place in the UI a user can tell a scraped fact from a guess.
+- **Compare view.** Checkbox 2-8 units into a pivot table: true monthly
+  cost (12- and 24-month, read only from `data/results.json[unit_id]` -
+  see Hydrate's cost recompute step, never recomputed inline), price per
+  sqft (rent_verified / sqft, only when sqft is a known FACT - n/a
+  otherwise), commute (`data/transit.json`'s door-to-door minutes and
+  monthly cost for the unit's area), safety/cleanliness grades
+  (`data/areas.json`, linked), flood chip (`data/buildings.json`,
+  linked), orientation confidence (the exposure/light_view field's
+  provenance chip plus its `evaluate_gates` PASS/FAIL/UNKNOWN result when
+  config.yml declares an exposure gate), and an amenity-overlap row
+  (which hard/bonus gates every selected unit shares a PASS on, straight
+  off each unit's own `gates` block in verified.json - never inferred
+  from a listing description). Any cell whose source file or field is
+  absent renders n/a, not a blank guess.
+- **Action panel.** Group units by `data/actions.yml` status
+  (`backlog.load_actions`, the nine-value enum in `references/actions.md`;
+  a unit with no entry reads as `NEW`). Pin still-live, high-scoring `NEW`
+  units at the top using `backlog.build_backlog`'s `backlog` list (see
+  Hydrate below for how it's built) - `unscored`/`stale` render as their
+  own subsections, never merged into the ranked list. Header the panel
+  with a plain "N days to target move-in" number computed from
+  config.yml's `move_in_target` minus today - no countdown copy, no
+  urgency language, just the number (or nothing at all when
+  `move_in_target` is null).
+- **Lease critical-dates timeline.** When `data/lease.json` exists for a
+  unit, render its `dates` list (from `lease_dates.derive_dates`, already
+  computed - the dashboard never re-derives a date) as a timeline:
+  `status: "past_due"` entries struck through, `"upcoming"` entries
+  highlighted, sorted chronologically as the file already provides them.
+  Render `dates_skipped` entries too (label plus the reason, e.g.
+  "statute not researched") so a missing date reads as documented, not
+  forgotten. No `lease.json` for a unit: the whole timeline section is
+  absent, not an empty placeholder.
+- **Printable tour one-pager.** Print CSS (`@media print`) in this same
+  file, one page per unit: score gauge and band (`data/scores.json`'s
+  `composite`/`band`), a cost waterfall (`data/results.json[unit_id]`'s
+  `true_monthly_cost_12.waterfall` line items - label/monthly/source,
+  they already sum to the total, never re-summed by hand), flood/safety/
+  cleanliness chips, an orientation verdict with its provenance chip
+  (same field as the compare view's orientation confidence), tour
+  questions (`gates.verify_checklist`'s "Confirm <gate> before contacting
+  or touring: <deep link>" strings, one per UNKNOWN gate - print these
+  verbatim, they are the actual pre-tour checklist), and a negotiation
+  ask when `scoring.negotiation_ask(unit, climate, comps)` returns one -
+  `cuts`/`days_listed` counted from that unit's own
+  `snapshots.trajectory()` series (the same series
+  `scoring.distress_flags()` reads, `references/scoring.md` section 5),
+  `current_price` its latest `rent_verified`, `climate` from
+  `data/areas.json[area].climate` when present. Print the `ask` figure
+  and its `justification` list; when `insufficient_data` is True, omit
+  the section rather than printing a null ask - this is a number the user
+  says or types themselves, nothing here drafts or sends an offer. Every
+  field with no data prints the literal word MISSING, screen or paper.
 
 ## Hydrate (re-verification without re-hunting)
 
@@ -59,6 +169,68 @@ verified.json, mark gone rows with a dated badge (keep them - they are
 market history and show the user how fast the market moves), update the
 dashboard's freshness stamp and KPI counts, republish to the same URL, and
 report the diff: what leased, what repriced, what direction prices moved.
+
+Every hydrate run also does the following, in order:
+
+- **Run identity.** Generate one `run_id` at the very start of hydrate,
+  before the first unit is re-checked - `hyd-YYYYMMDD-HHMM` (e.g.
+  `hyd-20260713-1402`) - and stamp every row this run writes with that
+  exact string. Never derive it per-row from each row's own timestamp; a
+  slow or retried run needs one shared id.
+- **Ledger append.** After re-checking each unit, call
+  `snapshots.append_rows` (`../apartmentops/scripts/snapshots.py append
+  --target snapshots --run-id <run_id>`) with one row per checked unit:
+  `{unit_id, url, observed_at, run_id, price, availability, status,
+  fetch_evidence}`. `unit_id` must be `backlog.unit_key(unit)` - never
+  hand-derive it. `price`/`availability` are `null` when the re-check
+  could not confirm them - never carried forward from the previous run's
+  value.
+- **Heartbeat.** Call `snapshots.append_runlog` (`... append --target
+  runlog --run-id <run_id>`) UNCONDITIONALLY at the end of every hydrate,
+  zero-change runs included - a missing row is what the freshness banner
+  reads as "the scheduler died", not a quiet market. `stats` needs
+  `units_checked`, `live`, `gone`, `recheck`, `changes` (changes = new +
+  removed + price_changed from the digest below, 0 on a quiet run - still
+  write the row).
+- **Delta digest.** Render the run report's "What changed this week"
+  section from `snapshots.digest_markdown` (`... digest --path
+  apartmentops/data/snapshots.jsonl [--drop-pct N --window-days N]`),
+  reading `drop_pct`/`drop_window_days` from config.yml's `ledger:` block
+  (if the block is absent, fall back to `snapshots.DEFAULT_DROP_PCT` /
+  `DEFAULT_DROP_WINDOW_DAYS`, 5.0 / 14). `digest_markdown` itself never
+  raises, but the delta it wraps (`diff_last_two`) RAISES
+  `InsufficientHistoryError` below two runs - `digest_markdown` prints
+  that exact message inline; treat it as the report, never silently swap
+  in an empty "no changes" section of your own.
+- **Backlog rebuild.** Call `backlog.build_backlog(verified_units,
+  actions, scores, state, run_id, top_n=5, max_resurface=3)` then
+  `backlog.backlog_markdown(result)` for the hydrate report's Backlog
+  section, and persist `result["state"]` back to
+  `data/backlog-state.json`. This resurfaces still-live, high-scoring
+  `NEW` units the user never acted on, capped at 3 resurfacings before
+  permanent demotion to the Stale list. The only thing that silences a
+  unit is the user flipping its `actions.yml` status away from `NEW` by
+  hand - hydrate never writes that file itself beyond the already-
+  existing NEW-entry append. `draft_outreach_note` on each row is text
+  for the user to copy and send themselves - nothing in this pipeline
+  sends it anywhere.
+- **Cost recompute.** Assemble `inputs.json` from config.yml's assumption
+  overrides, verified.json's per-unit gross/fees/term_months, and
+  transit.json's `monthly_cost` per area, then run
+  `../apartmentops/scripts/costs.py inputs.json > apartmentops/data/results.json`
+  (add `--income <value>` only if the user supplies income in this
+  conversation - hold it in memory, never write it into inputs.json or
+  any committed file; `costs.py` refuses `income_annual` inside
+  inputs.json outright). The LLM narrates these numbers - it never
+  computes a fee, a total, or a ranking itself. Every dollar figure the
+  dashboard shows, in the compare view or the tour one-pager, traces back
+  to a `results.json` field.
+- **Refresh the surfaces.** Freshness banner (new `at` stamp, new
+  heartbeat state), sparklines and NEW / PRICE-DROP / REMOVED badges (new
+  `trajectory` / `diff_last_two` / `detect_drops` reads), move-in
+  countdown (recompute the day count against config.yml's
+  `move_in_target` - "today" has moved even when the target date has
+  not).
 
 At typical bands, units disappear within days - if the user has a target
 move-in date, offer a scheduled hydrate cadence rather than manual refreshes.

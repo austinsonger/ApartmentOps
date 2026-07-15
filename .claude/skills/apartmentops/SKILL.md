@@ -1,0 +1,220 @@
+---
+name: apartmentops
+description: >-
+  ApartmentOps - a verified apartment-hunting pipeline anyone can set up from
+  scratch. Onboards a new user (commute anchor, budget band, must-haves), then
+  routes to the companion skills that feed each other: apartmentops-scan (find
+  + browser-verify units), apartmentops-research (safety, cleanliness, transit
+  cost), apartmentops-dashboard (interactive map dashboard + re-hydration),
+  and apartmentops-lease (post-signing lease review and critical dates).
+  Use this skill whenever the user wants to find an apartment or rental,
+  compare listings against a commute, set up ApartmentOps, run an apartment
+  search, or asks anything like "find me a 2 bed near my office", "is this
+  neighborhood safe", or "update my apartment dashboard" - even if they never
+  say the word ApartmentOps.
+---
+
+# ApartmentOps
+
+A pipeline that turns "find me an apartment" into a verified, mapped,
+evidence-backed shortlist. Five skills feed each other through files in the
+`apartmentops/` directory of the project (the contracts are defined in
+`references/contracts.md` - read it before producing or consuming any stage
+file):
+
+```
+onboard (this skill)  ->  apartmentops/config.yml
+apartmentops-scan     ->  apartmentops/data/verified.json  (+ shots/)
+apartmentops-research ->  apartmentops/data/areas.json, transit.json
+apartmentops-dashboard->  apartmentops/dashboard.html  (published artifact)
+apartmentops-lease    ->  apartmentops/data/lease.json  (post-signing, optional)
+```
+
+## Routing
+
+Check state, then route. Run these checks silently first:
+
+1. `apartmentops/config.yml` exists? If NOT -> run Onboarding below.
+2. Config exists but no `data/verified.json` -> the user needs a scan; invoke
+   the `apartmentops-scan` skill.
+3. Verified data exists but no `data/areas.json` / `data/transit.json` ->
+   invoke `apartmentops-research`.
+4. All data present -> `apartmentops-dashboard` builds or re-hydrates.
+5. The user has a draft lease PDF (in `apartmentops/data/leases/`) or asks a
+   lease question - "review my lease", "check this against the listing",
+   "when do I need to give notice" - invoke `apartmentops-lease`. This one is
+   orthogonal to the checks above: it runs whenever the user has a lease in
+   hand, regardless of where the rest of the pipeline is (it degrades
+   gracefully with no `verified.json` to compare against).
+
+The stages are separable on purpose: a user can re-run scan weekly without
+re-onboarding, or re-hydrate the dashboard without re-scanning. Never skip a
+missing upstream contract silently - tell the user which stage is missing and
+offer to run it.
+
+## Onboarding (from scratch)
+
+The goal is a complete `apartmentops/config.yml` in one conversation. Ask for
+what only the user knows; compute what can be computed. Do not fabricate any
+value - every field below is either user-supplied or derived from a source you
+actually fetched.
+
+### Step 1 - The commute anchor (most important question)
+
+Ask where they commute to, down to the street corner. The anchor changes
+everything: a Financial District office and a Flatiron office produce
+completely different winning neighborhoods, and marketing walk times lie.
+Verify the address exists (web search), then geocode it with
+`scripts/geocode.py` (Nominatim, 1 req/sec). Store address + lat/lon.
+
+If they work from home, use their most frequent destination or skip
+commute ranking (set `anchor: null`) - the pipeline still works.
+
+### Step 2 - Budget, honestly
+
+Ask for the monthly budget as a range, then explain the one trap that
+matters: advertised "net effective" prices bake in a free-month concession
+and revert to the higher gross at renewal. The config stores BOTH a gross
+band and whether net-effective prices may qualify. If they share income,
+note the standard qualification rule (annual gross >= 40x monthly rent) so
+every future result can carry a "you qualify" flag - but never require it.
+
+Also ask for a target move-in date - optional, `null` is fine if they are
+just browsing. Store it as the top-level `move_in_target` (ISO date) in
+`config.yml`; it feeds scoring's `move_in_window_fit` dimension (how well a
+unit's availability lines up with when they actually need to move) and
+drives the dashboard's move-in countdown.
+
+### Step 3 - The unit itself
+
+Beds, baths (ask whether 2 full baths is a requirement or a preference -
+this cuts pools in half), minimum square feet if any.
+
+### Step 4 - Quality gates and deal-breakers
+
+Ask which of these are hard requirements vs scoring bonuses, and record each
+as `hard` or `bonus`: building age (e.g. built in the last N years), minimum
+floor, elevator/doorman, light and exposure (e.g. south-facing; record
+hard-blocked directions too - a "no north" rule is common), pets, parking,
+in-unit laundry. Lesson learned: when everything is a hard gate the pool goes
+to near zero; when everything is a bonus the results feel old and dark. Make
+the user choose consciously.
+
+### Step 5 - Geography
+
+Which neighborhoods/boroughs/cities are in scope. Offer to widen: the best
+value is often one transit stop past where the user first looked.
+
+### Step 6 - Write the config and confirm
+
+Write `apartmentops/config.yml` exactly per `references/contracts.md`,
+create `apartmentops/data/` and `apartmentops/shots/`, echo a readable
+summary back, and offer to start the first scan (`apartmentops-scan`).
+
+Step 6 also:
+
+- Copy `examples/scoring.example.yml` to `apartmentops/scoring.yml` - this
+  is the committed scoring spec the research stage scores against
+  (`references/scoring.md`). Mention to the user that they can retune the
+  dimension weights or verbal anchor bands later; it is their file once
+  copied, not something later stages overwrite.
+- Create `apartmentops/data/actions.yml` empty, with a one-line comment
+  header saying it is user-owned (the pipeline only ever appends `NEW`
+  entries for newly verified units; every other edit is the user's - see
+  `references/actions.md`).
+- Build the `saved_searches` block from the gates just chosen: one
+  newest-first, fully filtered listing URL per platform per area (price
+  band, beds, sort baked into the URL so no scan subagent has to drive a
+  search UI), keyed `saved_searches.<profile>.<platform>.<area>: {url,
+  marker}` per `references/contracts.md`. `marker` is an optional regex
+  (e.g. `"of \\d+ results"`) proving the page actually rendered results,
+  not an empty or blocked state.
+- Explain the optional secondary profile: a second, differently-gated
+  search (e.g. a 1BR fallback if the 2BR pool runs dry) can be added as its
+  own key under `saved_searches` alongside `primary`. It writes to the same
+  `apartmentops/data/verified.json`, tagged with its own `profile` value,
+  so the dashboard can filter or label results by which search found them.
+
+## Ground rules for every stage (repeat these to any subagent you spawn)
+
+- **Anti-fabrication:** report only facts tied to a URL actually fetched or a
+  file actually read. UNKNOWN is always an acceptable value. Never invent
+  unit numbers, rents, years, orientations, or safety claims.
+- **Constraints travel verbatim, and outputs get graded:** every subagent
+  prompt carries `references/constraints.json`'s rules verbatim, not
+  paraphrased or summarized. After a stage produces output, grade it with
+  `scripts/gates.py`'s `grade_fields` - autofail on `value-without-provenance`
+  (a FACT/INFERRED value with no source) and `placeholder-left-in-output`
+  (TODO/TBD/FIXME/lorem-ipsum/example.com left in a committed file). A unit
+  that fails grading is withheld and re-checked next run, never shipped with
+  a footnote.
+- **Liveness or it does not count:** a listing must be verifiably live on the
+  day of the check. Stale syndication pages ("zombie listings") look real and
+  are not - years-old listings resurface on syndication pages looking current.
+- **Per-unit deep links beat index pages:** availability index pages paginate
+  and lazy-load, producing false "gone" verdicts. Verify against the unit's
+  own page whenever one exists, and harvest those links when found.
+- **Human-in-the-loop:** never submit applications, book tours, send
+  emails/messages to brokers or leasing offices, or click
+  Book/Submit/Confirm/Apply on any site. Produce drafts and links; the user
+  sends. Read-only browsing of public pages only; no logins, no CAPTCHA or
+  bot-wall bypasses; back off on 403s and find another public source.
+- **No emojis in any produced file.**
+
+## Bundled resources
+
+- `references/contracts.md` - the file formats every stage reads/writes.
+  Read it before any stage work.
+- `scripts/geocode.py` - Nominatim geocoder (polite rate limit built in).
+- `scripts/verify_units.py` - headless-Chromium liveness checker: feed it a
+  JSON list of {key, token, url}, get per-unit live/price verdicts. Requires
+  `pip install playwright && playwright install chromium` once.
+- `scripts/extract_embedded.py` - pulls listing fields from a page's
+  embedded JSON (`__NEXT_DATA__`, ld+json, `window.NAME =`) before any DOM
+  scraping fallback.
+- `scripts/gates.py` - field-level provenance helpers and tri-state
+  (PASS/FAIL/UNKNOWN) hard-gate evaluation; `grade_fields` is the
+  anti-fabrication grading pass.
+- `scripts/doctor_searches.py` - preflight-checks every `saved_searches` URL
+  in `config.yml` still resolves and renders results.
+- `scripts/snapshots.py` - the append-only price/liveness ledger: run-to-run
+  diffs, price-drop detection, per-unit trajectories, the weekly digest, and
+  the heartbeat run log.
+- `scripts/flood.py` - keyless FEMA NFHL flood-zone lookup for a building's
+  lat/lon.
+- `scripts/scoring.py` - turns per-unit dimension scores into a composite,
+  action band, distress flags, and concession climate against
+  `scoring.yml`.
+- `scripts/costs.py` - deterministic true monthly cost, total cost of
+  ownership, 40x-income qualification, and renewal-vs-relocate math.
+- `scripts/backlog.py` - appends `NEW` entries to `actions.yml` (a text
+  append, never a rewrite - it never touches the user's existing notes) and
+  builds the hydrate report's resurfacing backlog section.
+- `scripts/lease_dates.py` - pure date math for lease critical dates
+  (renewal notice, concession reversion, deposit return).
+- `scripts/photo_hash.py` - a perceptual-hash scam net across archived
+  listing photos (recycled photos, price-gap flips, zombie reposts).
+- `scripts/line_advisor.py` - suggests same-line sibling units in a tower
+  from a hand-curated per-building line map.
+- `references/provenance.md` - the field-level provenance shape, tri-state
+  gate rules, and how `constraints.json` plugs into grading.
+- `references/constraints.json` - the machine-readable anti-fabrication rule
+  set (see Ground rules above).
+- `references/ledger.md` - `snapshots.jsonl` / `run-log.jsonl` schemas, the
+  `run_id` convention, and the heartbeat contract.
+- `references/scoring.md` - the `scoring.yml` spec: dimensions, verbal
+  anchor bands, the move-in-window-fit formula, distress and climate rules.
+- `references/costs.md` - the cost-math contract: `inputs.json`/
+  `results.json` shapes, and the rule that income never touches disk.
+- `references/actions.md` - the `actions.yml` / `backlog-state.json`
+  ownership split and the resurface-max-3-then-stale rule.
+- `references/lease-fields.md` - the field dictionary `apartmentops-lease`
+  extracts against.
+- `references/line-substitution.md` - the per-building line-map schema and
+  the trailing-letter trust rule.
+- `assets/example-dashboard.html` - a real finished dashboard to study
+  before building one (structure, map projection, grade chips, link rows).
+
+The repo's `tests/` directory (root level, alongside this skill tree) covers
+every script above - run `pytest` from the repo root before trusting a
+change to any of them.
