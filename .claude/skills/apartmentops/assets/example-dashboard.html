@@ -1,4 +1,4 @@
-<title>ApartmentOps - Verified 2BR Dashboard</title>
+<title>ApartmentOps - Verified 2BR/2BA Dashboard (Example)</title>
 <style>
   :root {
     --bg: #F4F5F2; --surface: #FFFFFF; --ink: #21262C; --muted: #616A74;
@@ -6,7 +6,7 @@
     --path: #3B76E8; --subway: #D97B1E; --walk: #8A93A0;
     --gA: #2E7D46; --gB: #B07F0A; --gC: #98351B;
     --chipA: #E3EFE7; --chipB: #F4ECD8; --chipC: #F3E2DC;
-    --office: #21262C; --hl: #3B76E8;
+    --office: #21262C; --hl: #3B76E8; --c2: #C0398E; --office2: #C0398E;
     --shadow: 0 1px 3px rgba(30,35,42,.08), 0 4px 14px rgba(30,35,42,.06);
   }
   @media (prefers-color-scheme: dark) {
@@ -16,7 +16,7 @@
       --path: #5E8FE0; --subway: #B57C22; --walk: #6B7480;
       --gA: #3F9A62; --gB: #B0841C; --gC: #C05A38;
       --chipA: #1E2E24; --chipB: #2E2818; --chipC: #301F18;
-      --office: #E8EAED; --hl: #5E8FE0;
+      --office: #E8EAED; --hl: #5E8FE0; --c2: #E877B8; --office2: #E877B8;
       --shadow: 0 1px 3px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
     }
   }
@@ -26,7 +26,7 @@
     --path: #5E8FE0; --subway: #B57C22; --walk: #6B7480;
     --gA: #3F9A62; --gB: #B0841C; --gC: #C05A38;
     --chipA: #1E2E24; --chipB: #2E2818; --chipC: #301F18;
-    --office: #E8EAED; --hl: #5E8FE0;
+    --office: #E8EAED; --hl: #5E8FE0; --c2: #E877B8; --office2: #E877B8;
     --shadow: 0 1px 3px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
   }
   :root[data-theme="light"] {
@@ -35,7 +35,7 @@
     --path: #3B76E8; --subway: #D97B1E; --walk: #8A93A0;
     --gA: #2E7D46; --gB: #B07F0A; --gC: #98351B;
     --chipA: #E3EFE7; --chipB: #F4ECD8; --chipC: #F3E2DC;
-    --office: #21262C; --hl: #3B76E8;
+    --office: #21262C; --hl: #3B76E8; --c2: #C0398E; --office2: #C0398E;
     --shadow: 0 1px 3px rgba(30,35,42,.08), 0 4px 14px rgba(30,35,42,.06);
   }
   * { box-sizing: border-box; }
@@ -49,12 +49,6 @@
   header h1 { font-size: 21px; font-weight: 700; margin: 0 0 2px; letter-spacing: -.01em; text-wrap: balance; }
   header .sub { color: var(--muted); font-size: 13px; margin: 0; }
   header .sub b { color: var(--ink); font-weight: 600; }
-
-  .banner { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line);
-            border-radius: 8px; padding: 7px 14px; font-size: 12.5px; color: var(--muted); box-shadow: var(--shadow);
-            margin: 14px 0 0; flex-wrap: wrap; }
-  .banner b { color: var(--ink); font-weight: 600; }
-  .banner .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
   .kpis { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 18px; }
   .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
@@ -120,13 +114,13 @@
   td.lnk a { color: var(--hl); text-decoration: none; font-size: 11px; }
   .gone { color: var(--gC); font-size: 10.5px; font-weight: 700; }
   .liveok { color: var(--gA); font-size: 10.5px; font-weight: 700; }
+  .recheck { color: var(--gB); font-size: 10.5px; font-weight: 700; }
   tr.rowgone td { opacity: .55; }
   td.lnk a:hover { text-decoration: underline; }
   .chip .dot { width: 7px; height: 7px; border-radius: 50%; }
   .chip.cA { background: var(--chipA); } .chip.cA .dot { background: var(--gA); }
   .chip.cB { background: var(--chipB); } .chip.cB .dot { background: var(--gB); }
   .chip.cC { background: var(--chipC); } .chip.cC .dot { background: var(--gC); }
-  .chip.cN { background: var(--bg); color: var(--muted); } .chip.cN .dot { background: var(--muted); }
   .commute { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 2px; font-size: 12.5px; }
   .commute .big { font-size: 16px; font-weight: 700; }
   .commute .cost { color: var(--muted); }
@@ -136,15 +130,6 @@
                    color: var(--muted); font-weight: 600; padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); }
   table.units td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); }
   table.units tr:last-child td { border-bottom: none; }
-  .spark { display: inline-block; vertical-align: middle; margin-left: 6px; }
-  .spark polyline { stroke: var(--hl); }
-  .badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700; border-radius: 10px;
-           padding: 1px 6px; margin-left: 5px; white-space: nowrap; }
-  .badge.bDROP { background: var(--chipA); color: var(--gA); }
-  .badge.bREM { background: var(--chipC); color: var(--gC); }
-  .provdot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-left: 3px; vertical-align: middle; }
-  .provdot.pMISS { background: var(--gC); }
-  .provdot.pINF { background: var(--gB); }
   .ess { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px; }
   .ess span { background: var(--bg); border: 1px solid var(--line); border-radius: 5px;
               padding: 2px 8px; font-size: 11px; color: var(--muted); }
@@ -153,91 +138,72 @@
   .vibe b { color: var(--ink); }
 
   .foot { margin-top: 22px; display: grid; gap: 14px; }
-  .digest { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
-            padding: 12px 16px; font-size: 12.5px; box-shadow: var(--shadow); }
-  .digest b { font-weight: 700; }
-  .digestlist { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-  .digestlist li { color: var(--muted); }
-  .dtag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-right: 6px; }
   .fares { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
            padding: 12px 16px; font-size: 12.5px; box-shadow: var(--shadow); }
   .fares b { font-weight: 700; }
   .src { font-size: 11px; color: var(--muted); line-height: 1.7; }
   .src a { color: var(--muted); }
   .method { font-size: 11.5px; color: var(--muted); }
-
-  .actionpanel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
-                 padding: 12px 16px; box-shadow: var(--shadow); font-size: 12.5px; }
-  .apheader { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; }
-  .apdays { font-size: 20px; font-weight: 700; }
-  .apdayslbl { color: var(--muted); font-size: 11.5px; }
-  .apgroup { margin: 8px 0 0; }
-  .apglabel { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
-              font-weight: 600; margin: 0 0 4px; }
-  .aplist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
-  .aplist li { display: flex; justify-content: space-between; gap: 10px; }
-  .aplist a { color: var(--ink); text-decoration: none; font-size: 12px; }
-  .aplist a:hover { text-decoration: underline; }
-  .apmeta { color: var(--muted); font-size: 11.5px; white-space: nowrap; }
-
-  .cmpchk { width: 14px; height: 14px; }
-  .cmpbar { position: sticky; top: 14px; z-index: 6; display: flex; align-items: center; gap: 10px;
-            background: var(--surface); border: 1px solid var(--hl); border-radius: 8px; padding: 7px 12px;
-            font-size: 12.5px; box-shadow: var(--shadow); }
-  .cmpbar button { background: var(--hl); color: var(--surface); border: none; border-radius: 6px;
-                   padding: 5px 12px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-  .cmpbar button:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
-  .cmpnote { color: var(--muted); font-size: 11.5px; }
-
-  .comparesec { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
-                box-shadow: var(--shadow); padding: 14px 16px; }
-  .comparehead { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 8px; }
-  .comparehead h2 { font-size: 13.5px; margin: 0; font-weight: 700; }
-  .comparehead button { background: var(--surface); color: var(--ink); border: 1px solid var(--line);
-                        border-radius: 6px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
-  .cmpscroll { overflow-x: auto; }
-  table.compare { border-collapse: collapse; font-size: 12px; }
-  table.compare th, table.compare td { padding: 5px 14px 5px 0; border-bottom: 1px solid var(--line);
-    text-align: left; white-space: nowrap; }
-  table.compare thead th { font-weight: 700; font-size: 12.5px; }
-  table.compare .rowlbl { color: var(--muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase;
-    letter-spacing: .05em; }
-  table.compare tbody tr:last-child td, table.compare tbody tr:last-child th { border-bottom: none; }
-
-  .onepager h1 { font-size: 18px; margin: 0 0 8px; }
-  .onepager h2 { font-size: 13px; margin: 16px 0 6px; }
-  .gauge { width: 240px; height: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 5px;
-           overflow: hidden; }
-  .gaugefill { height: 100%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .gaugelbl { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
-  table.wftable { border-collapse: collapse; font-size: 12.5px; }
-  table.wftable td { padding: 3px 14px 3px 0; border-bottom: 1px solid var(--line); }
-  table.wftable tr:last-child td { border-top: 2px solid var(--ink); border-bottom: none; font-weight: 700; }
-  .opchips { font-size: 12px; color: var(--muted); margin: 4px 0; }
-  .opq { font-size: 12px; padding-left: 18px; margin: 6px 0; }
-  .opq li { margin: 2px 0; }
-  .opneg { font-size: 12px; margin: 10px 0 0; }
-
-  @media print {
-    .wrap > *:not(#onepager) { display: none !important; }
-    #onepager { display: block !important; }
+  .rt2 path { fill: none; }
+  .rt2 .rt2-transit { stroke: var(--c2); stroke-width: 2.4; }
+  .rt2 .rt2-walk { stroke: var(--c2); stroke-width: 1.6; stroke-dasharray: 2 4; opacity: .7; }
+  .office2-mark path, .office2-mark rect { stroke: var(--surface); stroke-width: 2; }
+  .office2-mark text { font-size: 11px; font-weight: 700; fill: var(--c2); paint-order: stroke; stroke: var(--surface); stroke-width: 3; }
+  .sw.c2 { background: var(--c2); }
+  .ctoggle { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .ctoggle button { background: var(--surface); color: var(--muted); border: none; border-left: 1px solid var(--line); padding: 4px 10px; font: inherit; font-size: 11px; cursor: pointer; }
+  .ctoggle button:first-child { border-left: none; }
+  .ctoggle button.on { color: var(--ink); font-weight: 600; }
+  .ctoggle button.on.oa { color: var(--hl); }
+  .ctoggle button.on.ob { color: var(--c2); }
+  .crow { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 4px 0 4px 9px; border-left: 3px solid var(--hl); margin-top: 6px; }
+  .crow.ob { border-left-color: var(--c2); }
+  .crow .who { font-size: 10px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+  .crow.oa .who { color: var(--hl); }
+  .crow.ob .who { color: var(--c2); }
+  .gchip { background: var(--surface); }
+  .gstar { color: #E8A21C; }
+  .crow.oa .who { color: var(--hl); }
+  .exp { display:inline-block; padding:1px 6px; border-radius:5px; font-size:11px; font-weight:700; white-space:nowrap; }
+  .exp-s { background:#1E7A3A; color:#fff; }
+  .exp-maybe { background:var(--chipB); color:var(--gB); border:1px solid var(--gB); }
+  .exp-no { background:var(--bg); color:var(--muted); }
+  .exp-unk { background:var(--bg); color:var(--muted); opacity:.65; }
+  .pchip { background: var(--surface); }
+  .pchip .picon, .picon { font-weight: 800; }
+  .pchip-none { background: var(--bg); color: var(--muted); }
+  .pchip-unk { background: var(--bg); color: var(--muted); opacity: .65; }
+  :root[data-theme="cozy"] {
+    --bg: #F1E7D6; --surface: #FCF6EC; --ink: #4A4139; --muted: #8C7C69;
+    --line: #E4D7C1; --water: #C9D6CE; --land: #E8DCC7; --landline: #D8CAB2;
+    --path: #4F79B0; --subway: #C07E31; --walk: #A99A83;
+    --gA: #4F8A5B; --gB: #A97D1E; --gC: #B45838;
+    --chipA: #E6EEE2; --chipB: #F3E8D2; --chipC: #F1E0D3;
+    --office: #4A4139; --hl: #B06A43; --c2: #BC5480; --office2: #BC5480;
+    --shadow: 0 1px 3px rgba(120,90,50,.10), 0 4px 16px rgba(120,90,50,.10);
   }
+  .topbar { display: flex; justify-content: flex-end; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .topbar button { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 10px; font: inherit; font-size: 11px; cursor: pointer; }
+  .topbar button.on { border-color: var(--hl); color: var(--hl); font-weight: 600; }
+  .zoomctl { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 5px; z-index: 6; }
+  .zoomctl button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 17px; font-weight: 700; line-height: 1; cursor: pointer; box-shadow: var(--shadow); }
+  .zoomctl button:hover { border-color: var(--hl); color: var(--hl); }
+  .allin { font-weight: 700; }
+  #map { cursor: grab; }
 </style>
 
 <div class="wrap">
   <header>
-    <h1>Two-Bed Hunt, Quality Band: 33 Verified Units in Newer Towers</h1>
-    <p class="sub">All 2BR/2BA, band $4,750-5,500 (nets from $4,583), buildings 2016-2026, every unit live-verified by real browser Jul 11 and re-checked via per-unit deep links <b>Jul 12, 2026, ~3:45 PM ET</b> (28 of 33 still live; JSQ repriced +$10-15 overnight).
-       Commute anchor: <b>your office anchor</b>. Safety and cleanliness graded from cited crime and sanitation data.</p>
+    <div class="topbar" id="themebar"><span>Theme</span><button data-th="light">Light</button><button data-th="cozy">Cozy</button><button data-th="dark">Dark</button></div>
+    <h1>ApartmentOps: Verified 2BR/2BA Dashboard (Example)</h1>
+    <p class="sub">Example dashboard. Every 2BR/2BA unit is live-verified in a real browser with screenshot evidence and a per-unit deep link. Each unit shows two door-to-door commutes to two office anchors (toggle either or both on the map), a verified window exposure (Exp column; the sun marks a confirmed south corner), a Google Maps rating, on-site parking and monthly cost where a source publishes it, and an all-in monthly figure (rent plus both transit passes plus parking). Safety and cleanliness are graded from cited crime and sanitation sources. Building names and figures are real public market data; the office anchors are generic placeholders.</p>
   </header>
 
-  <div class="banner" id="banner"></div>
-
   <div class="kpis">
-    <div class="kpi"><div class="v num">28 / 33</div><div class="k">Live right now</div></div>
-    <div class="kpi"><div class="v num">13</div><div class="k">Buildings, 2016-2026</div></div>
+    <div class="kpi"><div class="v num">29 / 43</div><div class="k">Confirmed live (4 recheck)</div></div>
+    <div class="kpi"><div class="v num">16</div><div class="k">Buildings, JC + LIC</div></div>
     <div class="kpi"><div class="v num">26-47 min</div><div class="k">Door-to-door range</div></div>
-    <div class="kpi"><div class="v num">$4,695-5,526</div><div class="k">Gross range</div></div>
+    <div class="kpi"><div class="v num">$4,810-6,463</div><div class="k">Gross range</div></div>
     <div class="kpi"><div class="v num">$126-130</div><div class="k">Transit / month</div></div>
   </div>
 
@@ -249,35 +215,37 @@
           <span><i class="sw path"></i>PATH</span>
           <span><i class="sw subway"></i>Subway</span>
           <span><i class="sw walk"></i>Walk leg</span>
+          <span><i class="sw c2"></i>Office B route</span>
+        </div>
+        <div class="ctoggle" id="ctoggle">
+          <button data-cv="oa" class="oa">Office A</button>
+          <button data-cv="ob" class="ob">Office B</button>
+          <button data-cv="both">Both</button>
         </div>
       </div>
       <div style="position:relative">
-        <svg id="map" viewBox="0 0 960 640" role="img" aria-label="Map of 8 buildings with transit routes to your office"></svg>
+        <svg id="map" viewBox="0 0 960 640" role="img" aria-label="Map of buildings with transit routes to two office anchors"></svg>
+        <div class="zoomctl" id="zoomctl"><button data-z="in" aria-label="Zoom in">+</button><button data-z="out" aria-label="Zoom out">&#8722;</button><button data-z="reset" aria-label="Reset view">&#8634;</button></div>
         <div class="tip" id="tip"></div>
       </div>
     </div>
 
     <div class="panel">
-      <div class="actionpanel" id="actionpanel"></div>
       <div class="sortrow">
         Sort:
-        <button data-sort="commute" class="on">Commute</button>
+        <button data-sort="commute" class="on">Commute A</button>
+        <button data-sort="commute2">Commute B</button>
         <button data-sort="rent">Cheapest unit</button>
         <button data-sort="safety">Safety</button>
-        <button data-sort="band">Band</button>
+        <button data-sort="exp">Sun / south</button>
+        <button data-sort="grating">Google rating</button>
+        <button data-sort="allin">All-in cost</button>
       </div>
-      <div class="cmpbar" id="cmpbar" hidden>
-        <span id="cmpcount" class="num"></span>
-        <button id="cmpopen" type="button" disabled>Compare</button>
-        <span id="cmpnote" class="cmpnote"></span>
-      </div>
-      <div class="comparesec" id="comparesec" hidden></div>
       <div id="cards"></div>
     </div>
   </div>
 
   <div class="foot">
-    <div class="digest" id="digest"></div>
     <div class="fares">
       <b>Monthly commute cost (Jul 2026 fares, 42 rides):</b>
       PATH $3.10/ride multi-trip = <span class="num">$130.20</span> (Newport, Journal Sq, Hoboken walk-to-terminal) -
@@ -285,11 +253,10 @@
       Rivington via light rail instead of walking stacks HBLR $84/mo on top of PATH = <span class="num">$214.20</span>.
       PATH single $3.25 / 30-day $131.50; fares rose May 2026 (PATH) and Jan 2026 (MTA).
     </div>
-    <p class="method">Verification: UNIT data (rent, floor, availability) re-verified live with headless Chromium (Playwright) on Jul 11, 2026 (screenshots in reports/nyc-4500-sweep/shots/).
+    <p class="method">Verification: UNIT data (rent, floor, availability) re-verified live with headless Chromium (Playwright), with per-unit screenshot evidence.
       Commutes = walk to station + typical AM-peak wait + ride + walk to 5th Ave &amp; 19th St, using real station walk times
       (e.g. the Hamilton Park buildings are a 12 min walk to Newport PATH, not the marketed 5).
-      Safety and cleanliness are documentary area grades synthesized from the linked sources (crime statistics, sanitation and rodent-complaint data, resident reviews) - researched by agents with citations, not browser-verified, and not building guarantees. Click any grade chip to open its primary source; every unit row's listing link opens the deepest live page the site exposes (per-unit pages at Journal Squared, Urby, RentHop and Equity; building availability pages elsewhere). This is the $4,750-5,500 quality band (2BR/2BA, buildings 2017-2026, floor 10+ preferred): the sweep confirmed LIC, Downtown Brooklyn and Williamsburg new towers all clear ABOVE this band right now ($5,700-7,500), so the quality pocket is Journal Square plus select JC/Astoria buildings. Net-effective prices are year-one deals; budget gross for renewal. Treat exact rents as quote-of-the-day. Coastlines: NYC borough shoreline boundaries (NYC Open Data via dwillis/nyc-maps); the NJ bank is hand-traced to the same scale.
-      Price-snapshot series, action statuses, action bands and true-monthly-cost figures shown in this example file are illustrative sample data demonstrating the ledger, scoring and cost surfaces - real dashboards compute them from data/snapshots.jsonl, data/scores.json and scripts/costs.py results.</p>
+      Safety and cleanliness are documentary area grades synthesized from the linked sources (crime statistics, sanitation and rodent-complaint data, resident reviews) - researched by agents with citations, not browser-verified, and not building guarantees. Click any grade chip to open its primary source; every unit row's listing link opens the deepest live page the site exposes (per-unit pages at Journal Squared, Urby, RentHop and Equity; building availability pages elsewhere). This is the $4,750-5,500 quality band (2BR/2BA, buildings 2017-2026, floor 10+ preferred): the sweep confirmed LIC, Downtown Brooklyn and Williamsburg new towers all clear ABOVE this band right now ($5,700-7,500), so the quality pocket is Journal Square plus select JC/Astoria buildings. Net-effective prices are year-one deals; budget gross for renewal. Treat exact rents as quote-of-the-day. Coastlines: NYC borough shoreline boundaries (NYC Open Data via dwillis/nyc-maps); the NJ bank is hand-traced to the same scale.</p>
     <p class="src">
       Safety and cleanliness sources:
       <a href="https://crimegrade.org/safest-places-in-journal-square-jersey-city-nj/">CrimeGrade Journal Sq</a> -
@@ -308,8 +275,6 @@
       <a href="https://www.njtransit.com/adjustedfares">NJ Transit</a>.
     </p>
   </div>
-
-  <div id="onepager" class="onepager" hidden></div>
 </div>
 
 <script>
@@ -332,6 +297,9 @@
 
   // ---- stations -------------------------------------------------------------
   var STN = {
+    wtc:     { n: "World Trade Center (PATH/E)", ll: [40.7126,-74.0099] },
+    vernon:  { n: "Vernon Blvd-Jackson Av (7)", ll: [40.7427,-73.9537] },
+    gct:     { n: "Grand Central-42 St", ll: [40.7527,-73.9772] },
     newport: { n: "Newport PATH", ll: [40.7267,-74.0339] },
     jsq:     { n: "Journal Sq PATH", ll: [40.7328,-74.0629] },
     hoboken: { n: "Hoboken Terminal", ll: [40.7349,-74.0279] },
@@ -344,256 +312,53 @@
     rw23:    { n: "23 St R/W", ll: [40.7411,-73.9895] },
     grove:   { n: "Grove St PATH", ll: [40.7195,-74.0434] }
   };
-  var OFFICE = { n: "your office", ll: [40.7387,-73.9910] };
-
-  // ---- run log + weekly digest (illustrative - see method note) ------------
-  var RUNLOG = { last: "Jul 12, 2026 3:45 PM ET", legs_done: 5, legs_total: 5, overdue: false };
-  var MOVEIN = "2026-11-01";
-  var DIGEST = [
-    { kind: "DROP", text: "235 Grand #2906 (06-line): $5,305 -> $5,105, -3.8% / 14d" },
-    { kind: "DROP", text: "235 Grand #3306 (06-line): $5,355 -> $5,155, -3.7% / 14d" },
-    { kind: "DROP", text: "90 Columbus #2511: $5,520 -> $5,320, -3.6% / 7d" },
-    { kind: "NEW", text: "505 Summit #3113: new listing, floor 31, $5,601 gross (net $4,967)" },
-    { kind: "REMOVED", text: "The Journal #1314S: gone from the market (was $5,895 gross / $5,306 net)" }
-  ];
+  var OFFICE = { n: "Office A - Flatiron", ll: [40.7387,-73.9910] };
+  var OFFICE2 = { n: "Office B - Financial District", ll: [40.7069,-74.0113] };
 
   // ---- buildings + verified data -------------------------------------------
-  var B = [
-    { id: "jsq2", name: "Journal Squared Tower 2", addr: "615 Pavonia Ave, Jersey City (Journal Sq)",
-      ll: [40.7325,-74.0612], area: "Journal Square, JC",
-      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
-      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=615%20Pavonia%20Ave%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 35, range: "30-42", cost: 130, mode: "path",
-        route: "PATH at the building base, JSQ-33 to 23 St (19 min), walk 7 min",
-        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
-      units: [
-        { u: "3410", fl: 34, rent: 4810, sqft: 1048, avail: "Aug 13", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=28505300&unit-name=3410&tower=1335214",
-          snap: [{r:"Jun 28",p:4810},{r:"Jul 5",p:4810},{r:"Jul 12",p:4810}], act: "TourBooked", band: "TourNow", tmc: 4985,
-          prov: { rent: "FACT", orient: "FACT" } },
-        { u: "4104", fl: 41, rent: 4890, sqft: 1030, avail: "Aug 26", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=28505330&unit-name=4104&tower=1335214",
-          snap: [{r:"Jun 28",p:4890},{r:"Jul 5",p:4890},{r:"Jul 12",p:4890}], act: "ToContact", band: "Skip", tmc: 5065,
-          prov: { rent: "FACT", orient: "FACT" } },
- ],
-      ess: [["Food Story market, in-building","1 min"],["Duane Reade","2 min"],["PureGym","2 min"],["India Square groceries","6 min"]],
-      vibe: "2021 tower, 68 floors, PATH underneath. THE headline: #3410 is line 10, the floor-plan-VERIFIED SW corner - south glass in living room, kitchen and bedroom 2, west in the primary. #4104 (line 04) is verified NOT south. Aug dates line up with a Nov 1 start." },
-    { id: "jsq3", name: "Journal Squared Tower 3", addr: "595 Pavonia Ave, Jersey City (Journal Sq)",
-      ll: [40.7324,-74.0602], area: "Journal Square, JC",
-      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
-      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=595%20Pavonia%20Ave%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 35, range: "30-42", cost: 130, mode: "path",
-        route: "PATH at the complex, JSQ-33 to 23 St (19 min), walk 7 min",
-        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
-      units: [
-        { u: "4904", fl: 49, rent: 5415, sqft: 1066, avail: "Aug 19", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=39741972&unit-name=4904&tower=1776274",
-          snap: [{r:"Jun 28",p:5375},{r:"Jul 5",p:5395},{r:"Jul 12",p:5415}], act: "NEW", band: "Watch", tmc: 5590,
-          prov: { rent: "FACT", orient: "MISSING" } },
-        { u: "4802", fl: 48, rent: 5455, sqft: 1056, avail: "Sep 3", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=39741969&unit-name=4802&tower=1776274",
-          snap: [{r:"Jun 28",p:5455},{r:"Jul 5",p:5455},{r:"Jul 12",p:5455}], act: "NEW", band: "Skip", tmc: 5630,
-          prov: { rent: "FACT", orient: "FACT" } },
-        { u: "4702", fl: 47, rent: 5465, sqft: 1056, avail: "Oct 25", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=39741967&unit-name=4702&tower=1776274",
-          snap: [{r:"Jun 28",p:5465},{r:"Jul 5",p:5465},{r:"Jul 12",p:5465}], act: "NEW", band: "Skip", tmc: 5640,
-          prov: { rent: "FACT", orient: "FACT" } },
-        { u: "1812", fl: 18, rent: 5030, sqft: 1044, avail: "Sep 8", live: true, link: "https://www.journalsquared.com/availabilities/unit/?unitID=39741898&unit-name=1812&tower=1776274",
-          snap: [{r:"Jun 28",p:5030},{r:"Jul 5",p:5030},{r:"Jul 12",p:5030}], act: "NEW", band: "Watch", tmc: 5205,
-          prov: { rent: "FACT" } } ],
-      ess: [["Food Story market","1 min"],["Duane Reade","2 min"],["PureGym","2 min"],["India Square groceries","6 min"]],
-      vibe: "2024, the newest JSQ tower. #4904 is floor 49 - the highest unit on this board. Advertised prices are the 24-month Best Value term; 12-month runs ~$110 higher. #4702's Oct 25 date is prime Nov timing but it is line 02 - the VERIFIED NE corner - as is #4802 (the earlier $4,695 quote was a stale feed record; $5,455 is the live price). Best non-02 bet: #4904 (line 04, exposure unverified)." },
-    { id: "urby", name: "Journal Square Urby", addr: "532 Summit Ave, Jersey City (Journal Sq)",
-      ll: [40.7321,-74.0594], area: "Journal Square, JC",
-      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
-      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=532%20Summit%20Ave%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 34, range: "30-40", cost: 130, mode: "path",
-        route: "Walk 3 min to Journal Sq PATH, JSQ-33 to 23 St (19 min), walk 7 min",
-        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
-      units: [
-        { u: "1910", fl: 19, rent: 4855, avail: "Now", live: true, link: "https://www.urby.com/location/journal-square/availability/unit-1910-2-5031340",
-          snap: [{r:"Jun 28",p:4855},{r:"Jul 5",p:4855},{r:"Jul 12",p:4855}], act: "NEW", band: "Skip", tmc: 5030,
-          prov: { rent: "FACT", orient: "INFERRED" } },
-        { u: "2110", fl: 21, rent: 4925, avail: "Now", live: true, link: "https://www.urby.com/location/journal-square/availability/unit-2110-2-5031366",
-          snap: [{r:"Jun 28",p:4925},{r:"Jul 5",p:4925},{r:"Jul 12",p:4925}], act: "NEW", band: "Skip", tmc: 5100,
-          prov: { rent: "FACT", orient: "INFERRED" } },
-        { u: "802", fl: 8, rent: 4865, avail: "Now", live: true, link: "https://www.urby.com/location/journal-square/availability/unit-802-2-5031184",
-          snap: [{r:"Jun 28",p:4865},{r:"Jul 5",p:4865},{r:"Jul 12",p:4865}], act: "NEW", band: "Watch", tmc: 5040,
-          prov: { rent: "FACT", orient: "INFERRED" } } ],
-      ess: [["Food Story market","3 min"],["Duane Reade","3 min"],["PureGym","3 min"],["India Square groceries","6 min"]],
-      vibe: "2024 Urby, 2 bed + den layouts with published exposures: #1910 and #2110 are NE-corner 'NYC views, tons of natural light'; #802 is east-facing. Real corner light and views - but a north component, so no south sun. Up to 2 months free on select units." },
-    { id: "summit505", name: "505 Summit", addr: "505 Summit Ave, Jersey City (Journal Sq)",
-      ll: [40.7311,-74.0608], area: "Journal Square, JC",
-      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
-      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=505%20Summit%20Ave%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 37, range: "32-44", cost: 130, mode: "path",
-        route: "Walk 6-8 min (uphill) to Journal Sq PATH, JSQ-33 to 23 St, walk 7 min",
-        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
-      units: [
-        { u: "2901", fl: 29, rent: 5576, net: 4945, sqft: 1144, avail: "Now", live: true, link: "https://505summit.securecafe.com/onlineleasing/505-summit/rentaloptions.aspx?UnitID=47119139&FloorPlanID=6249972&myOlePropertyid=2285813",
-          snap: [{r:"Jun 28",p:5576},{r:"Jul 5",p:5576},{r:"Jul 12",p:5576}], act: "NEW", band: "Watch", tmc: 5751,
-          prov: { rent: "FACT", orient: "MISSING" } },
-        { u: "3113", fl: 31, rent: 5601, net: 4967, sqft: 924, avail: "Now", live: true, link: "https://www.505summit.com/availability",
-          snap: [{r:"Jul 12",p:5601}], act: "NEW", band: "Watch", tmc: 5776,
-          prov: { rent: "FACT", orient: "MISSING" } } ],
-      ess: [["Journal Sq PATH plaza","7 min"],["India Square groceries","8 min"],["Duane Reade","7 min"]],
-      vibe: "Brand-new 2026 Greystar tower (54 fl), grand-opening deal: 2.5 months free on 24 months plus a year of waived lifestyle fees - nets $4,945-4,967. Markets Statue-of-Liberty S-SSE views; per-unit exposure unpublished, so ask which 01/13-line floors face south. Budget the GROSS ($5,576+) for renewal." },
-    { id: "greyson", name: "The Greyson", addr: "25 Cottage St, Jersey City (Journal Sq)",
-      ll: [40.7342,-74.0604], area: "Journal Square, JC",
-      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
-      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=25%20Cottage%20St%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 36, range: "31-43", cost: 130, mode: "path",
-        route: "Walk 4-5 min to Journal Sq PATH, JSQ-33 to 23 St, walk 7 min",
-        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
-      units: [
-        { u: "2108", fl: 21, rent: null, net: 5156, avail: "Listed now", live: true, link: "https://www.thegreyson.com/availability?view=6ebe015364646572f2000268",
-          snap: [{r:"Jun 28",p:5156},{r:"Jul 5",p:5156},{r:"Jul 12",p:5156}], act: "NEW", band: "Watch", tmc: 5331,
-          prov: { rent: "MISSING", orient: "MISSING" } },
-        { u: "902", fl: 9, rent: null, net: 4973, avail: "Listed now", live: true, link: "https://www.thegreyson.com/availability?view=6ebfea83313338df4000023c",
-          snap: [{r:"Jun 28",p:4973},{r:"Jul 5",p:4973},{r:"Jul 12",p:4973}], act: "NEW", band: "Watch", tmc: 5148,
-          prov: { rent: "MISSING", orient: "MISSING" } } ],
-      ess: [["Journal Sq PATH plaza","5 min"],["India Square groceries","4 min"],["Duane Reade","5 min"]],
-      vibe: "2026 Handel-designed tower (29 fl, first residents June 2026) with a serrated glass facade built for bay-window light and Manhattan views. 2 months free on 24-month leases; prices shown are net-effective. Per-unit exposure unpublished - the facade design is the light story here." },
-    { id: "journaln", name: "The Journal (Kushner Towers)", addr: "Journal Square Plaza, Jersey City",
-      ll: [40.7336,-74.0640], area: "Journal Square, JC",
-      safety: { g: "C", c: "C" }, clean: { g: "C+", c: "C" },
-      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=Journal%20Square%20Plaza%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 34, range: "30-40", cost: 130, mode: "path",
-        route: "Tower above the PATH plaza, JSQ-33 to 23 St, walk 7 min",
-        legs: [["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]] },
-      units: [
-        { u: "3014N", fl: 30, rent: null, net: 5126, avail: "Listed now", live: true, link: "https://journaljc.securecafe.com/onlineleasing/the-journal/rentaloptions.aspx?UnitID=43311080&FloorPlanID=5580605&myOlePropertyid=1847855",
-          snap: [{r:"Jun 28",p:5126},{r:"Jul 5",p:5126},{r:"Jul 12",p:5126}], act: "NEW", band: "Skip", tmc: 5301,
-          prov: { rent: "MISSING", orient: "FACT" } },
-        { u: "2914N", fl: 29, rent: null, net: 5126, avail: "Listed now", live: true, link: "https://journaljc.com/availability",
-          snap: [{r:"Jun 28",p:5126},{r:"Jul 5",p:5126},{r:"Jul 12",p:5126}], act: "NEW", band: "Skip", tmc: 5301,
-          prov: { rent: "MISSING", orient: "FACT" } },
-        { u: "1314S", fl: 13, rent: 5895, net: 5306, sqft: 989, avail: "GONE", live: false, link: "https://journaljc.securecafe.com/onlineleasing/the-journal/rentaloptions.aspx?UnitID=45187136&FloorPlanID=6239865&myOlePropertyid=1847855",
-          snap: [{r:"Jun 28",p:5895},{r:"Jul 5",p:5895},{r:"Jul 12",p:5895}], act: "Contacted", band: "Skip", tmc: 6070,
-          prov: { rent: "FACT", orient: "MISSING" } } ],
-      ess: [["PATH at the door","1 min"],["India Square groceries","6 min"],["Duane Reade","3 min"]],
-      vibe: "2024-26 Kushner twin towers over the PATH. Net $5,126 on 2-months-free/20-month - gross runs ~$5,696, over your band at renewal; treat the net as a year-one deal. The 14-line here is the NORTH-plan stack per the floor-plan asset - ask leasing for a south-plan line instead." },
-    { id: "grand235", name: "235 Grand", addr: "235 Grand St, Jersey City (Downtown/Grove)",
-      ll: [40.7157,-74.0445], area: "Downtown JC - Grove St",
-      safety: { g: "A-", c: "A" }, clean: { g: "B+", c: "B" },
-      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=235%20Grand%20St%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 30, range: "26-36", cost: 130, mode: "path",
-        route: "Walk 6 min to Grove St PATH, JSQ-33 to 23 St (15 min), walk 7 min",
-        legs: [["walk","self","grove"],["path","grove","p23"],["walk","p23","office"]] },
-      units: [
-        { u: "2906", fl: 29, rent: 5105, sqft: 925, avail: "Now", live: true, link: "https://www.rentcafe.com/apartments/nj/jersey-city/235-grand/default.aspx",
-          snap: [{r:"Jun 14",p:5905},{r:"Jun 21",p:5905},{r:"Jun 28",p:5305},{r:"Jul 12",p:5105}], act: "Contacted", band: "Skip", tmc: 5280,
-          prov: { rent: "FACT", orient: "FACT" } },
-        { u: "3306", fl: 33, rent: 5155, sqft: 925, avail: "Now", live: true, link: "https://www.rentcafe.com/apartments/nj/jersey-city/235-grand/default.aspx",
-          snap: [{r:"Jun 14",p:5955},{r:"Jun 21",p:5955},{r:"Jun 28",p:5355},{r:"Jul 12",p:5155}], act: "NEW", band: "Skip", tmc: 5330,
-          prov: { rent: "FACT", orient: "FACT" } },
-        { u: "1005", fl: 10, rent: 5355, avail: "Nov 7 ($5,355-5,550 by term)", live: true, link: "https://235grand.securecafe.com/onlineleasing/235-grand/oleapplication.aspx?stepname=RentalOptions&myOlePropertyId=871333&FloorPlanID=2725112&UnitID=16194480&MoveInDate=11/7/2026",
-          snap: [{r:"Jun 28",p:5355},{r:"Jul 5",p:5355},{r:"Jul 12",p:5355}], act: "Contacted", band: "TourNow", tmc: 5530,
-          prov: { rent: "FACT", orient: "MISSING" } },
-        { u: "0705", fl: 7, rent: 5330, avail: "Aug 17", live: true, link: "https://www.235grand.com/floorplans/2-bedroom---2-bathroom",
-          snap: [{r:"Jun 28",p:5330},{r:"Jul 5",p:5330},{r:"Jul 12",p:5330}], act: "NEW", band: "Watch", tmc: 5505,
-          prov: { rent: "FACT", orient: "MISSING" } },
-        { u: "0405", fl: 4, rent: 5315, avail: "Aug 7", live: true, link: "https://www.235grand.com/floorplans/2-bedroom---2-bathroom",
-          snap: [{r:"Jun 28",p:5315},{r:"Jul 5",p:5315},{r:"Jul 12",p:5315}], act: "ToContact", band: "Watch", tmc: 5490,
-          prov: { rent: "FACT", orient: "MISSING" } },
-        { u: "0305", fl: 3, rent: 5315, avail: "Aug 30", live: true, link: "https://www.235grand.com/floorplans/2-bedroom---2-bathroom",
-          snap: [{r:"Jun 28",p:5315},{r:"Jul 5",p:5315},{r:"Jul 12",p:5315}], act: "NEW", band: "Watch", tmc: 5490,
-          prov: { rent: "FACT", orient: "MISSING" } } ],
-      ess: [["Grove St PATH + restaurants","6 min"],["ShopRite Metro Plaza","8 min"],["Whole Foods JC (Greene St)","10 min"],["Morris Canal waterfront","8 min"]],
-      vibe: "2019, 46 floors, best area grades and near-shortest commute; 06-line prices dropped ~$800 since June. Two stacks live: the 06 line (verified NE corner - great glass, no south sun) and NOW THE 05 LINE - the stack our floor-plate work flagged as the likely Sussex-St/SOUTH side. Unverified, but #1005 is available NOV 7, the best-timed unit on this board. Ask leasing to confirm the 05 exposure and you may have the whole brief in one unit." },
-    { id: "soholofts", name: "Soho Lofts", addr: "273 16th St, Jersey City (SoHo West)",
-      ll: [40.7331,-74.0451], area: "SoHo West (JC/Hoboken border)",
-      safety: { g: "n/a", c: "B" }, clean: { g: "n/a", c: "B" },
-      flood: { z: "X", link: "https://msc.fema.gov/portal/search?AddressQuery=273%2016th%20St%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 40, range: "34-48", cost: 130, mode: "path",
-        route: "Walk ~15 min to Newport PATH (or Hoboken HBLR), JSQ-33 to 14 St, walk 7 min",
-        legs: [["walk","self","newport"],["path","newport","p14"],["walk","p14","office"]] },
-      units: [
-        { u: "SL-1835", fl: 18, rent: 4935, net: 4583, sqft: 1201, avail: "GONE", live: false, link: "https://soholoftsjc.com/",
-          snap: [{r:"Jun 28",p:4935},{r:"Jul 5",p:4935},{r:"Jul 12",p:4935}], act: "Toured", band: "Skip", tmc: 5110,
-          prov: { rent: "FACT" } } ],
-      ess: [["ShopRite Madison St (Hoboken)","9 min"],["Trader Joe's Willow Ave","12 min"],["ResilienCity Park","10 min"]],
-      vibe: "2017 loft tower on the JC/Hoboken border: 1,201 sqft on floor 18 netting $4,583 - the space-per-dollar king of this board. Micro-area safety not yet graded (sits between Hoboken A- and Journal Sq C zones); the walk to any train is the real tax." },
-    { id: "devan", name: "The Devan", addr: "3 New York Ave, Jersey City (SoHo West/Heights)",
-      ll: [40.7375,-74.0451], area: "SoHo West (JC/Hoboken border)",
-      safety: { g: "n/a", c: "B" }, clean: { g: "n/a", c: "B" },
-      flood: { z: null, link: null },
-      commute: { min: 45, range: "38-55", cost: 130, mode: "path",
-        route: "Walk/bus ~18 min to Hoboken Terminal (or 9 St HBLR), HOB-33 PATH to 14 St, walk 7 min",
-        legs: [["walk","self","hoboken"],["path","hoboken","p14"],["walk","p14","office"]] },
-      units: [
-        { u: "333", fl: 3, rent: 5050, sqft: 1154, avail: "Aug 25", live: true, link: "https://thedevan.securecafe.com/onlineleasing/devan-propco-llc/availableunits.aspx?myOlePropertyId=1763306&floorPlans=5126789",
-          snap: [{r:"Jun 28",p:5050},{r:"Jul 5",p:5050},{r:"Jul 12",p:5050}], act: "ToContact", band: "Watch", tmc: 5225,
-          prov: { rent: "FACT" } },
-        { u: "358", fl: 3, rent: 5255, net: 4817, sqft: 1290, avail: "GONE", live: false, link: "https://thedevan.com/floorplan/?unit_id=5126814",
-          snap: [{r:"Jun 28",p:5255},{r:"Jul 5",p:5255},{r:"Jul 12",p:5255}], act: "Contacted", band: "Skip", tmc: 5430,
-          prov: { rent: "FACT" } },
-        { u: "442", fl: 4, rent: 5315, net: 4872, sqft: 1277, avail: "GONE", live: false, link: "https://thedevan.com/floorplan/?unit_id=5126810",
-          snap: [{r:"Jun 28",p:5315},{r:"Jul 5",p:5315},{r:"Jul 12",p:5315}], act: "Contacted", band: "Skip", tmc: 5490,
-          prov: { rent: "FACT" } } ],
-      ess: [["ShopRite Madison St","8 min"],["Trader Joe's Willow Ave","11 min"],["9 St-Congress HBLR","9 min"]],
-      vibe: "2024 building with the biggest layouts found (1,154-1,290 sqft) and nets to $4,817. Trade-offs: floors 3-4 only (fails the high-floor brief) and the longest JC commute here. Micro-area not yet safety-graded." },
-    { id: "halletts", name: "10 Halletts Point (Durst)", addr: "10 Halletts Point, Astoria waterfront",
-      ll: [40.7749,-73.9227], area: "Astoria waterfront, Queens",
-      safety: { g: "B+", c: "B" }, clean: { g: "B-", c: "B" },
-      flood: { z: "AE", link: "https://msc.fema.gov/portal/search?AddressQuery=10%20Halletts%20Point%2C%20Astoria%2C%20NY" },
-      commute: { min: 47, range: "40-55", cost: 126, mode: "subway",
-        route: "Walk ~15 min (or Durst shuttle) to Astoria Blvd N/W, to 23 St R/W (25 min), walk 5 min",
-        legs: [["walk","self","astbl"],["subway","astbl","rw23"],["walk","rw23","office"]] },
-      units: [
-        { u: "1507", fl: 15, rent: 5076, avail: "Now", live: true, link: "https://www.hallettspoint.com/residences/2-bedroom/10-halletts-point/apt-1507/",
-          snap: [{r:"Jun 28",p:5076},{r:"Jul 5",p:5076},{r:"Jul 12",p:5076}], act: "NEW", band: "Watch", tmc: 5247,
-          prov: { rent: "FACT" } },
-        { u: "0503", fl: 5, rent: 5374, avail: "Now", live: true, link: "https://www.hallettspoint.com/residences/2-bedroom/10-halletts-point/apt-503/",
-          snap: [{r:"Jun 28",p:5374},{r:"Jul 5",p:5374},{r:"Jul 12",p:5374}], act: "Toured", band: "Watch", tmc: 5545,
-          prov: { rent: "FACT", orient: "INFERRED" } } ],
-      ess: [["Building shuttle to subway","1 min"],["Astoria Park","12 min"],["City Fresh Market 24h","12 min"]],
-      vibe: "2019 Durst waterfront tower with per-unit pages; #0503 is a stated CORNER residence with floor-to-ceiling windows. Sister building 20 Halletts runs 2 months free - ask if it applies. The catch: an isolated waterfront pocket with thin street retail, shuttle-dependent transit, and the longest commute on this board." },
-    { id: "col90", name: "90 Columbus", addr: "90 Christopher Columbus Dr, Jersey City (Grove)",
-      ll: [40.7181,-74.0387], area: "Downtown JC - Grove St",
-      safety: { g: "A-", c: "A" }, clean: { g: "B+", c: "B" },
-      flood: { z: "AE", link: "https://msc.fema.gov/portal/search?AddressQuery=90%20Christopher%20Columbus%20Dr%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 28, range: "24-34", cost: 130, mode: "path",
-        route: "Grove St PATH inside the building podium, JSQ-33 to 23 St (15 min), walk 7 min",
-        legs: [["walk","self","grove"],["path","grove","p23"],["walk","p23","office"]] },
-      units: [
-        { u: "2511", fl: 25, rent: 5320, sqft: 965, avail: "Jul 20", live: true, link: "https://ironstate.com/property/90-columbus/floorplan/2442638/",
-          snap: [{r:"Jun 21",p:5520},{r:"Jun 28",p:5520},{r:"Jul 5",p:5520},{r:"Jul 12",p:5320}], act: "ToContact", band: "Watch", tmc: 5495,
-          prov: { rent: "FACT", orient: "MISSING" } },
-        { u: "3011", fl: 30, rent: 5370, sqft: 965, avail: "GONE", live: false, link: "https://ironstate.securecafe.com/onlineleasing/90-columbus/rentaloptions.aspx?UnitID=13527776&FloorPlanID=2442638&myOlePropertyid=728072",
-          snap: [{r:"Jun 28",p:5370},{r:"Jul 5",p:5370},{r:"Jul 12",p:5370}], act: "Contacted", band: "Skip", tmc: 5545,
-          prov: { rent: "FACT", orient: "MISSING" } },
-        { u: "3211", fl: 32, rent: 5410, sqft: 998, avail: "Sep 10", live: true, link: "https://ironstate.securecafe.com/onlineleasing/90-columbus/rentaloptions.aspx?UnitID=13527800&FloorPlanID=2442641&myOlePropertyid=728072",
-          snap: [{r:"Jun 28",p:5410},{r:"Jul 5",p:5410},{r:"Jul 12",p:5410}], act: "NEW", band: "Watch", tmc: 5585,
-          prov: { rent: "FACT", orient: "MISSING" } } ],
-      ess: [["Grove St PATH in the podium","1 min"],["Grove St restaurant row","3 min"],["ShopRite Metro Plaza","7 min"],["Whole Foods JC","9 min"]],
-      vibe: "2018, ~51 floors, and the PATH station is literally in the building - the shortest, driest commute on this board. All three units are the 11-line (exposure unverified; the cached map only maps the A-line as south). $500 look-and-lease credit running. Sep dates suit a Nov 1 start." },
-    { id: "vyv", name: "VYV North", addr: "474 Warren St, Jersey City (Downtown)",
-      ll: [40.7194,-74.0392], area: "Downtown JC - Grove St",
-      safety: { g: "A-", c: "A" }, clean: { g: "B+", c: "B" },
-      flood: { z: "AE", link: "https://msc.fema.gov/portal/search?AddressQuery=474%20Warren%20St%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 30, range: "26-36", cost: 130, mode: "path",
-        route: "Walk 5 min to Grove St PATH, JSQ-33 to 23 St, walk 7 min",
-        legs: [["walk","self","grove"],["path","grove","p23"],["walk","p23","office"]] },
-      units: [
-        { u: "N-2511", fl: 25, rent: 5448, sqft: 1084, avail: "Aug 5", live: true, link: "https://rent.brookfieldproperties.com/unit/?propertyId[]=1845044&floorplanId=5374638&unitId=40071676",
-          snap: [{r:"Jun 28",p:5448},{r:"Jul 5",p:5448},{r:"Jul 12",p:5448}], act: "ToContact", band: "Watch", tmc: 5623,
-          prov: { rent: "FACT", orient: "MISSING" } } ],
-      ess: [["Grove St PATH","5 min"],["ShopRite Metro Plaza","6 min"],["Newport Centre Mall","10 min"]],
-      vibe: "Brookfield twin towers; North is the 2017 tower (South is 2020). Floor 25, 1,084 sqft, per-unit Brookfield link. Building-wide 1.5-months-free promos come and go - ask. Exposure unverified." },
-    { id: "ellipse", name: "Ellipse", addr: "25 Park Lane S, Newport, Jersey City",
-      ll: [40.7278,-74.0308], area: "Newport waterfront, JC",
-      safety: { g: "A-", c: "A" }, clean: { g: "A-", c: "A" },
-      flood: { z: "AE", link: "https://msc.fema.gov/portal/search?AddressQuery=25%20Park%20Lane%20S%2C%20Jersey%20City%2C%20NJ" },
-      commute: { min: 26, range: "22-32", cost: 130, mode: "path",
-        route: "Walk 4 min to Newport PATH, JSQ-33 to 14 St, walk 7 min",
-        legs: [["walk","self","newport"],["path","newport","p14"],["walk","p14","office"]] },
-      units: [
-        { u: "204", fl: 2, rent: 5526, sqft: 1218, avail: "Aug 24", live: true, link: "https://www.newportrentals.com/apartments-jersey-city-for-rent/ellipse/",
-          snap: [{r:"Jun 28",p:5526},{r:"Jul 5",p:5526},{r:"Jul 12",p:5526}], act: "NEW", band: "Watch", tmc: 5701,
-          prov: { rent: "FACT" } } ],
-      ess: [["Newport PATH","4 min"],["Newport Green park","3 min"],["ShopRite Metro Plaza","8 min"],["Newport Centre Mall","6 min"]],
-      vibe: "2016 LeFrak waterfront ellipse tower - the only true-waterfront JC entry, and the shortest commute here (26 min). The catch: floor 2 and $5,526, a hair over your cap. Watch this building for higher-floor drops." }
-  ];
+  var B = [{"id":"jsq2","name":"Journal Squared Tower 2","addr":"615 Pavonia Ave, Jersey City (Journal Sq)","ll":[40.7325,-74.0612],"area":"Journal Square, JC","safety":{"g":"C","c":"C"},"clean":{"g":"C+","c":"C"},"commute":{"min":35,"range":"30-42","cost":130,"mode":"path","route":"PATH at the building base, JSQ-33 to 23 St (19 min), walk 7 min","legs":[["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]]},"units":[{"u":"3410","fl":34,"rent":4810,"sqft":1048,"avail":"Aug 13","live":true,"link":"https://www.journalsquared.com/availabilities/unit/?unitID=28505300&unit-name=3410&tower=1335214","exp":{"dir":"SW","south":true,"conf":"HIGH","src":"Floor-plan key plan: SW corner, south glass in living room, kitchen and BR2"}},{"u":"4104","fl":41,"rent":4965,"sqft":1030,"avail":"Aug 26","live":true,"link":"https://www.journalsquared.com/availabilities/unit/?unitID=28505330&unit-name=4104&tower=1335214","exp":{"dir":null,"south":false,"conf":"HIGH","src":"Floor-plan verified NOT south (line 04)"}}],"ess":[["Food Story market, in-building","1 min"],["Duane Reade","2 min"],["PureGym","2 min"],["India Square groceries","6 min"]],"vibe":"2021 tower, 68 floors, with PATH access below. Unit #3410 (line 10) is a floor-plan-verified SW corner with south glass in the living room, kitchen and second bedroom. #4104 (line 04) is verified not south.","commute2":{"min":33,"range":"29-38","cost":130,"mode":"path","route":"Walk 6 min to Journal Sq PATH, Newark-WTC PATH line to World Trade Center (16 min), then walk 8 min to Wall St","legs":[["walk","self","jsq"],["path","jsq","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.3,"count":1152,"url":"https://www.google.com/maps/search/?api=1&query=Journal%20Squared%20615%20Pavonia%20Ave%20Jersey%20City"},"parking":{"avail":"garage","cost":275,"note":"uhomes.com listing for Journal Squared (615 Pavonia Ave) states on-site parking: 'The temporary parking space is $245/month, and the monthly parking space is $275/month.'","url":"https://en.uhomes.com/us/jersey-city/detail-apartments-1490209"}},{"id":"jsq3","name":"Journal Squared Tower 3","addr":"595 Pavonia Ave, Jersey City (Journal Sq)","ll":[40.7324,-74.0602],"area":"Journal Square, JC","safety":{"g":"C","c":"C"},"clean":{"g":"C+","c":"C"},"commute":{"min":35,"range":"30-42","cost":130,"mode":"path","route":"PATH at the complex, JSQ-33 to 23 St (19 min), walk 7 min","legs":[["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]]},"units":[{"u":"4904","fl":49,"rent":5455,"sqft":1066,"avail":"Aug 19","live":true,"link":"https://www.journalsquared.com/availabilities/unit/?unitID=39741972&unit-name=4904&tower=1776274","exp":{"dir":null,"south":null,"conf":"UNK","src":"Line 04 exposure not yet verified"}},{"u":"4802","fl":48,"rent":5455,"sqft":1056,"avail":"Sep 3","live":true,"link":"https://www.journalsquared.com/availabilities/unit/?unitID=39741969&unit-name=4802&tower=1776274","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"Verified NE corner (line 02)"}},{"u":"4702","fl":47,"rent":5505,"sqft":1056,"avail":"Oct 25","live":true,"link":"https://www.journalsquared.com/availabilities/unit/?unitID=39741967&unit-name=4702&tower=1776274","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"Verified NE corner (line 02)"}},{"u":"1812","fl":18,"rent":5070,"sqft":1044,"avail":"Sep 8","live":true,"link":"https://www.journalsquared.com/availabilities/unit/?unitID=39741898&unit-name=1812&tower=1776274","exp":{"dir":null,"south":null,"conf":"UNK","src":"Line 12 exposure not yet verified"}}],"ess":[["Food Story market","1 min"],["Duane Reade","2 min"],["PureGym","2 min"],["India Square groceries","6 min"]],"vibe":"2024 tower, the newest in the complex. Line 02 units (#4802, #4702) are verified NE corners; line 04 (#4904) exposure is unverified. Advertised prices reflect the longer-term concession.","commute2":{"min":33,"range":"29-38","cost":130,"mode":"path","route":"Walk 6 min to Journal Sq PATH, Newark-WTC PATH line to World Trade Center (16 min), then walk 8 min to Wall St","legs":[["walk","self","jsq"],["path","jsq","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.3,"count":1152,"url":"https://www.google.com/maps/search/?api=1&query=Journal%20Squared%20615%20Pavonia%20Ave%20Jersey%20City"},"parking":{"avail":"garage","cost":275,"note":"uhomes.com listing for Journal Squared (615 Pavonia Ave) states on-site parking: 'The temporary parking space is $245/month, and the monthly parking space is $275/month.'","url":"https://en.uhomes.com/us/jersey-city/detail-apartments-1490209"}},{"id":"urby","name":"Journal Square Urby","addr":"532 Summit Ave, Jersey City (Journal Sq)","ll":[40.7321,-74.0594],"area":"Journal Square, JC","safety":{"g":"C","c":"C"},"clean":{"g":"C+","c":"C"},"commute":{"min":34,"range":"30-40","cost":130,"mode":"path","route":"Walk 3 min to Journal Sq PATH, JSQ-33 to 23 St (19 min), walk 7 min","legs":[["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]]},"units":[{"u":"1910","fl":19,"rent":4855,"avail":"GONE","live":false,"link":"https://www.urby.com/location/journal-square/availability/unit-1910-2-5031340","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"Published exposure: NE corner, north component - no south sun"}},{"u":"2110","fl":21,"rent":4925,"avail":"Now","live":true,"link":"https://www.urby.com/location/journal-square/availability/unit-2110-2-5031366","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"Published exposure: NE corner, north component - no south sun"}},{"u":"802","fl":8,"rent":null,"avail":"Now","live":true,"link":"https://www.urby.com/location/journal-square/availability/unit-802-2-5031184","net":4257,"exp":{"dir":"E","south":false,"conf":"HIGH","src":"Published exposure: east-facing"}}],"ess":[["Food Story market","3 min"],["Duane Reade","3 min"],["PureGym","3 min"],["India Square groceries","6 min"]],"vibe":"2024 building with 2 bed plus den layouts and published exposures. #1910 and #2110 are NE corners with strong natural light; #802 faces east. A north component means no direct south sun. Up to 2 months free on select units.","commute2":{"min":32,"range":"28-37","cost":130,"mode":"path","route":"Walk 4 min to Journal Sq PATH, Newark-WTC PATH line to World Trade Center (16 min), then walk 8 min to Wall St","legs":[["walk","self","jsq"],["path","jsq","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.9,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=Journal%20Square%20Urby%20Jersey%20City"},"parking":{"avail":"none","cost":null,"note":"Building's own urby.com site lists amenities but no parking. Listing FAQ states explicitly: 'there is no parking area at JSQ Urby. But residents can stop cars at the near","url":"https://en.uhomes.com/us/jersey-city/detail-apartments-1633805"}},{"id":"summit505","name":"505 Summit","addr":"505 Summit Ave, Jersey City (Journal Sq)","ll":[40.7311,-74.0608],"area":"Journal Square, JC","safety":{"g":"C","c":"C"},"clean":{"g":"C+","c":"C"},"commute":{"min":37,"range":"32-44","cost":130,"mode":"path","route":"Walk 6-8 min (uphill) to Journal Sq PATH, JSQ-33 to 23 St, walk 7 min","legs":[["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]]},"units":[{"u":"2901","fl":29,"rent":5576,"net":4945,"sqft":1144,"avail":"Now","live":"check","link":"https://505summit.securecafe.com/onlineleasing/505-summit/rentaloptions.aspx?UnitID=47119139&FloorPlanID=6249972&myOlePropertyid=2285813","exp":{"dir":null,"south":null,"conf":"UNK","src":"2-bed plan carries NO north arrow and the unit list was blocked (403), so line 01 could NOT be verified south. The S-SSE Statue-of-Liberty marketing is building-wide, not per-unit proof"}},{"u":"3113","fl":31,"rent":5601,"net":4967,"sqft":924,"avail":"GONE","live":false,"link":"https://www.505summit.com/availability","exp":{"dir":null,"south":null,"conf":"UNK","src":"Same as line 01: no north arrow on the plan, unit list blocked - line 13 exposure unverified, not confirmed south"}}],"ess":[["Journal Sq PATH plaza","7 min"],["India Square groceries","8 min"],["Duane Reade","7 min"]],"vibe":"2026 tower, 54 floors, with a grand-opening concession (2.5 months free on a 24-month term plus a year of waived lifestyle fees). Marketed for harbor views, but the 2-bed floor plans carry no north arrow, so the 01 and 13 line exposures are unverified.","commute2":{"min":35,"range":"31-41","cost":130,"mode":"path","route":"Walk 8 min to Journal Sq PATH, Newark-WTC PATH line to World Trade Center (16 min), then walk 8 min to Wall St","legs":[["walk","self","jsq"],["path","jsq","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.7,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=505%20Summit%20Ave%20Jersey%20City"},"parking":{"avail":"valet","cost":null,"note":"Building-direct amenities page lists 'Valet Parking,' EV charging, and a porte-cochere; aggregator listings (Apartments.com/Greystar) corroborate an on-site parking garag","url":"https://www.505summit.com/amenities"}},{"id":"greyson","name":"The Greyson","addr":"25 Cottage St, Jersey City (Journal Sq)","ll":[40.7342,-74.0604],"area":"Journal Square, JC","safety":{"g":"C","c":"C"},"clean":{"g":"C+","c":"C"},"commute":{"min":36,"range":"31-43","cost":130,"mode":"path","route":"Walk 4-5 min to Journal Sq PATH, JSQ-33 to 23 St, walk 7 min","legs":[["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]]},"units":[{"u":"2108","fl":21,"rent":null,"net":5156,"avail":"Listed now","live":true,"link":"https://www.thegreyson.com/availability?view=6ebe015364646572f2000268","exp":{"dir":"NW","south":false,"conf":"HIGH","src":"VERIFIED: Residence 08 floor-plan key plan (north arrow) + OSM - windows face NW (Cottage St north + Homestead Pl west)"}},{"u":"902","fl":9,"rent":null,"net":4973,"avail":"Listed now","live":true,"link":"https://www.thegreyson.com/availability?view=6ebfea83313338df4000023c","exp":{"dir":null,"south":null,"conf":"UNK","src":"Line 02 not currently available; no key plan renders and unit images are not orientation-consistent - exposure could not be confirmed or excluded"}}],"ess":[["Journal Sq PATH plaza","5 min"],["India Square groceries","4 min"],["Duane Reade","5 min"]],"vibe":"2026 tower, 29 floors, with a serrated glass facade built for bay-window light and skyline views. 2 months free on 24-month leases; listed prices are net-effective. Per-unit exposure is unpublished.","commute2":{"min":34,"range":"30-40","cost":130,"mode":"path","route":"Walk 7 min to Journal Sq PATH, Newark-WTC PATH line to World Trade Center (16 min), then walk 8 min to Wall St","legs":[["walk","self","jsq"],["path","jsq","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.6,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=The%20Greyson%20apartments%20Jersey%20City"},"parking":{"avail":"unknown","cost":null,"note":"No citable source states parking specifics. The Greystar property-manager listing (full amenities + costs/pricing sections), the building's own thegreyson.com, the develo","url":"https://www.greystar.com/the-greyson-jersey-city-nj/p_23045"}},{"id":"journaln","name":"The Journal (Kushner Towers)","addr":"Journal Square Plaza, Jersey City","ll":[40.7336,-74.064],"area":"Journal Square, JC","safety":{"g":"C","c":"C"},"clean":{"g":"C+","c":"C"},"commute":{"min":34,"range":"30-40","cost":130,"mode":"path","route":"Tower above the PATH plaza, JSQ-33 to 23 St, walk 7 min","legs":[["walk","self","jsq"],["path","jsq","p23"],["walk","p23","office"]]},"units":[{"u":"3014N","fl":30,"rent":null,"net":5126,"avail":"Listed now","live":"check","link":"https://journaljc.securecafe.com/onlineleasing/the-journal/rentaloptions.aspx?UnitID=43311080&FloorPlanID=5580605&myOlePropertyid=1847855","exp":{"dir":"N","south":false,"conf":"MED","src":"14-line is the north-plan stack per the floor-plan asset"}},{"u":"2914N","fl":29,"rent":5756,"net":null,"avail":"Listed now","live":true,"link":"https://journaljc.com/availability","exp":{"dir":"N","south":false,"conf":"MED","src":"14-line is the north-plan stack per the floor-plan asset"}},{"u":"1314S","fl":13,"rent":5895,"net":5306,"sqft":989,"avail":"GONE","live":false,"link":"https://journaljc.securecafe.com/onlineleasing/the-journal/rentaloptions.aspx?UnitID=45187136&FloorPlanID=6239865&myOlePropertyid=1847855","exp":{"dir":null,"south":null,"conf":"UNK","src":"South tower, line exposure not verified"}}],"ess":[["PATH at the door","1 min"],["India Square groceries","6 min"],["Duane Reade","3 min"]],"vibe":"2024-2026 twin towers above the PATH. Concession pricing runs about $5,126 net on a 20-month term. The 14-line is the north-plan stack per the floor-plan asset.","commute2":{"min":32,"range":"28-37","cost":130,"mode":"path","route":"Walk 5 min to Journal Sq PATH, Newark-WTC PATH line to World Trade Center (16 min), then walk 8 min to Wall St","legs":[["walk","self","jsq"],["path","jsq","wtc"],["walk","wtc","office2"]]},"grating":null,"parking":{"avail":"garage","cost":300,"note":"On-site garage confirmed by multiple listing sites (Apartments.com, ApartmentList, StreetEasy all list 'Garage'/parking). Monthly rate not stated on the building's own si","url":"https://en.uhomes.com/us/jersey-city/detail-apartments-1667809"}},{"id":"grand235","name":"235 Grand","addr":"235 Grand St, Jersey City (Downtown/Grove)","ll":[40.7157,-74.0445],"area":"Downtown JC - Grove St","safety":{"g":"A-","c":"A"},"clean":{"g":"B+","c":"B"},"commute":{"min":30,"range":"26-36","cost":130,"mode":"path","route":"Walk 6 min to Grove St PATH, JSQ-33 to 23 St (15 min), walk 7 min","legs":[["walk","self","grove"],["path","grove","p23"],["walk","p23","office"]]},"units":[{"u":"2906","fl":29,"rent":4995,"sqft":925,"avail":"Now (3rd cut, -$110)","live":true,"link":"https://www.rentcafe.com/apartments/nj/jersey-city/235-grand/default.aspx","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"06-line verified NE corner - great glass, no south sun"}},{"u":"3306","fl":33,"rent":5155,"sqft":925,"avail":"GONE","live":false,"link":"https://www.rentcafe.com/apartments/nj/jersey-city/235-grand/default.aspx","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"06-line verified NE corner - great glass, no south sun"}},{"u":"1005","fl":10,"rent":5355,"avail":"Nov 7 ($5,355-5,950 by term)","live":true,"link":"https://235grand.securecafe.com/onlineleasing/235-grand/oleapplication.aspx?stepname=RentalOptions&myOlePropertyId=871333&FloorPlanID=2725112&UnitID=16194480&MoveInDate=11/7/2026","exp":{"dir":null,"south":null,"conf":"LOW","src":"CONFLICT: 235 Grand has a south (Sussex St / Statue-of-Liberty) face, but the ONLY published 2BR/2BA floor plan is the NE-corner Residence 06 and the 05-line is grouped under it. A south 2BR is NOT confirmed"}},{"u":"0705","fl":7,"rent":4955,"avail":"GONE (leased ~Jul 15)","live":false,"link":"https://www.235grand.com/floorplans/2-bedroom---2-bathroom","exp":{"dir":null,"south":null,"conf":"LOW","src":"CONFLICT: only the NE-corner Residence 06 2BR floor plan is published; the 05-line is grouped under it. South NOT confirmed"}},{"u":"0405","fl":4,"rent":5315,"avail":"Aug 7 (repriced +$320)","live":true,"link":"https://www.235grand.com/floorplans/2-bedroom---2-bathroom","exp":{"dir":null,"south":null,"conf":"LOW","src":"CONFLICT: only the NE-corner Residence 06 2BR floor plan is published; the 05-line is grouped under it. South NOT confirmed"}},{"u":"0305","fl":3,"rent":5315,"avail":"Aug 30","live":true,"link":"https://www.235grand.com/floorplans/2-bedroom---2-bathroom","exp":{"dir":null,"south":null,"conf":"LOW","src":"CONFLICT: only the NE-corner Residence 06 2BR floor plan is published; the 05-line is grouped under it. South NOT confirmed"}},{"u":"2506","fl":25,"rent":5140,"sqft":925,"avail":"Aug 21 (NEW 7/15)","live":true,"link":"https://www.235grand.com/floorplans/2-bedroom---2-bathroom","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"06-line verified NE corner - great glass, no south sun"}},{"u":"1006","fl":10,"rent":5045,"sqft":925,"avail":"Sep 18 (NEW 7/15; 06-line = NE, no direct sun)","live":true,"link":"https://www.235grand.com/floorplans/2-bedroom---2-bathroom","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"06-line verified NE corner - great glass, no south sun"}}],"ess":[["Grove St PATH + restaurants","6 min"],["ShopRite Metro Plaza","8 min"],["Whole Foods JC (Greene St)","10 min"],["Morris Canal waterfront","8 min"]],"vibe":"2019 tower, 46 floors, with strong area grades and a short commute. The 06-line is a verified NE corner; the 05-line is grouped under the same published NE floor plan, so a south 2BR is not confirmed at this building.","commute2":{"min":24,"range":"20-29","cost":130,"mode":"path","route":"Walk 6 min to Grove St PATH, Newark-WTC line to World Trade Center (8 min), walk 8 min to Wall St","legs":[["walk","self","grove"],["path","grove","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.2,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=235%20Grand%20apartments%20Jersey%20City"},"parking":{"avail":"garage","cost":250,"note":"On-site garage confirmed (building amenities list garage parking); listing feeds (Homes.com/ApartmentFinder) state $250/mo per vehicle, max 1. Waitlist not stated. Buildi","url":"https://www.homes.com/property/235-grand-jersey-city-nj/fjn624lzcq71e/"}},{"id":"soholofts","name":"Soho Lofts","addr":"273 16th St, Jersey City (SoHo West)","ll":[40.7331,-74.0451],"area":"SoHo West (JC/Hoboken border)","safety":{"g":"n/a","c":"B"},"clean":{"g":"n/a","c":"B"},"commute":{"min":40,"range":"34-48","cost":130,"mode":"path","route":"Walk ~15 min to Newport PATH (or Hoboken HBLR), JSQ-33 to 14 St, walk 7 min","legs":[["walk","self","newport"],["path","newport","p14"],["walk","p14","office"]]},"units":[{"u":"SL-1835","fl":18,"rent":4935,"net":4583,"sqft":1201,"avail":"GONE","live":false,"link":"https://soholoftsjc.com/","exp":{"dir":null,"south":null,"conf":"UNK","src":"OSM confirms a near-cardinal tower but no public source maps line 35 to a facade - exposure unverified"}}],"ess":[["ShopRite Madison St (Hoboken)","9 min"],["Trader Joe's Willow Ave","12 min"],["ResilienCity Park","10 min"]],"vibe":"2017 loft building on the Jersey City and Hoboken border. About 1,201 sqft on floor 18 at roughly $4,583 net, the strongest space-per-dollar in the set. Micro-area safety is not yet graded and transit is a longer walk.","commute2":{"min":34,"range":"30-40","cost":130,"mode":"path","route":"Walk ~12 min to Newport PATH, Hoboken-WTC line to World Trade Center, walk 8 min to Wall St","legs":[["walk","self","newport"],["path","newport","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.4,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=Soho%20Lofts%20273%2016th%20St%20Jersey%20City"},"parking":{"avail":"garage","cost":null,"note":"Building-direct site (soholoftsjc.com redirects to verisresidential.com Soho Lofts page) confirms on-site resident parking provided by Parkade, handled via the Parkade ap","url":"https://verisresidential.com/jersey-city-nj-apartments/soho-lofts/"}},{"id":"devan","name":"The Devan","addr":"3 New York Ave, Jersey City (SoHo West/Heights)","ll":[40.7375,-74.0451],"area":"SoHo West (JC/Hoboken border)","safety":{"g":"n/a","c":"B"},"clean":{"g":"n/a","c":"B"},"commute":{"min":45,"range":"38-55","cost":130,"mode":"path","route":"Walk/bus ~18 min to Hoboken Terminal (or 9 St HBLR), HOB-33 PATH to 14 St, walk 7 min","legs":[["walk","self","hoboken"],["path","hoboken","p14"],["walk","p14","office"]]},"units":[{"u":"333","fl":3,"rent":5050,"sqft":1154,"avail":"Aug 25","live":"check","link":"https://thedevan.securecafe.com/onlineleasing/devan-propco-llc/availableunits.aspx?myOlePropertyId=1763306&floorPlans=5126789","exp":{"dir":null,"south":null,"conf":"UNK","src":"OSM footprint: the only southerly face is the SSW south end, but no public source ties unit 333 to a facade - unverified"}},{"u":"358","fl":3,"rent":5255,"net":4817,"sqft":1290,"avail":"GONE","live":false,"link":"https://thedevan.com/floorplan/?unit_id=5126814","exp":{"dir":null,"south":null,"conf":"UNK","src":"OSM footprint gives facade bearings but unit 358 cannot be tied to one - unverified"}},{"u":"442","fl":4,"rent":5315,"net":4872,"sqft":1277,"avail":"GONE","live":false,"link":"https://thedevan.com/floorplan/?unit_id=5126810","exp":{"dir":null,"south":null,"conf":"UNK","src":"OSM footprint gives facade bearings but unit 442 cannot be tied to one - unverified"}}],"ess":[["ShopRite Madison St","8 min"],["Trader Joe's Willow Ave","11 min"],["9 St-Congress HBLR","9 min"]],"vibe":"2024 building with the largest layouts in the set (1,154-1,290 sqft). Available units are on floors 3-4 only, and the commute is the longest among the Jersey City entries. Micro-area not yet safety-graded.","commute2":{"min":40,"range":"35-47","cost":130,"mode":"path","route":"Walk to Hoboken Terminal, Hoboken-WTC PATH to World Trade Center (12 min), walk 8 min to Wall St","legs":[["walk","self","hoboken"],["path","hoboken","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.6,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=The%20Devan%203%20New%20York%20Ave%20Jersey%20City"},"parking":{"avail":"garage","cost":null,"note":"On-site enclosed garage confirmed by building amenities page ('EV charging stations, garage parking') and jerseycityfyi.com article; monthly rate not published on any cit","url":"https://thedevan.com/amenities/"}},{"id":"halletts","name":"10 Halletts Point (Durst)","addr":"10 Halletts Point, Astoria waterfront","ll":[40.7749,-73.9227],"area":"Astoria waterfront, Queens","safety":{"g":"B+","c":"B"},"clean":{"g":"B-","c":"B"},"commute":{"min":47,"range":"40-55","cost":126,"mode":"subway","route":"Walk ~15 min (or Durst shuttle) to Astoria Blvd N/W, to 23 St R/W (25 min), walk 5 min","legs":[["walk","self","astbl"],["subway","astbl","rw23"],["walk","rw23","office"]]},"units":[{"u":"1507","fl":15,"rent":5076,"avail":"Now","live":true,"link":"https://www.hallettspoint.com/residences/2-bedroom/10-halletts-point/apt-1507/","exp":{"dir":"N","south":false,"conf":"HIGH","src":"VERIFIED: Durst building-direct Residence 07 floor plan - windows face north"}},{"u":"0503","fl":5,"rent":5374,"avail":"GONE","live":false,"link":"https://www.hallettspoint.com/residences/2-bedroom/10-halletts-point/apt-503/","exp":{"dir":null,"south":null,"conf":"LOW","src":"03-line not currently available; footprint suggests a west exposure but could not be confirmed"}}],"ess":[["Building shuttle to subway","1 min"],["Astoria Park","12 min"],["City Fresh Market 24h","12 min"]],"vibe":"2019 waterfront tower with per-unit floor-plan pages. #0503 is a stated corner residence with floor-to-ceiling windows. An isolated waterfront pocket with thin street retail, shuttle-dependent transit and the longest commute in the set.","commute2":{"min":53,"range":"48-60","cost":126,"mode":"subway","route":"Walk ~15 min (or shuttle) to Astoria Blvd N/W, ride to Cortlandt/Rector St (~42 min), walk 5 min to Wall St","legs":[["walk","self","astbl"],["subway","astbl","wtc"],["walk","wtc","office2"]]},"grating":{"stars":3.7,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=10%20Halletts%20Point%20Astoria"},"parking":{"avail":"garage","cost":null,"note":"Building's own amenities page confirms 'on-site attended parking garages' (6sqft describes it as an underground garage; nybits/apartment listings also list a parking gara","url":"https://www.hallettspoint.com/amenities/"}},{"id":"col90","name":"90 Columbus","addr":"90 Christopher Columbus Dr, Jersey City (Grove)","ll":[40.7181,-74.0387],"area":"Downtown JC - Grove St","safety":{"g":"A-","c":"A"},"clean":{"g":"B+","c":"B"},"commute":{"min":28,"range":"24-34","cost":130,"mode":"path","route":"Grove St PATH inside the building podium, JSQ-33 to 23 St (15 min), walk 7 min","legs":[["walk","self","grove"],["path","grove","p23"],["walk","p23","office"]]},"units":[{"u":"2511","fl":25,"rent":5320,"sqft":965,"avail":"Jul 20","live":true,"link":"https://ironstate.com/property/90-columbus/floorplan/2442638/","exp":{"dir":"NNE","south":false,"conf":"HIGH","src":"VERIFIED: Ironstate 2-bed plan key plan + OSM footprint - single-aspect windows face NNE, opposite the building's south A-line"}},{"u":"3011","fl":30,"rent":5370,"sqft":965,"avail":"GONE","live":false,"link":"https://ironstate.securecafe.com/onlineleasing/90-columbus/rentaloptions.aspx?UnitID=13527776&FloorPlanID=2442638&myOlePropertyid=728072","exp":{"dir":"NNE","south":false,"conf":"HIGH","src":"VERIFIED: same 11-line stack, single-aspect windows face NNE, not south"}},{"u":"3211","fl":32,"rent":5410,"sqft":998,"avail":"Sep 10","live":"check","link":"https://ironstate.securecafe.com/onlineleasing/90-columbus/rentaloptions.aspx?UnitID=13527800&FloorPlanID=2442641&myOlePropertyid=728072","exp":{"dir":"NNE","south":false,"conf":"HIGH","src":"VERIFIED: Ironstate 2-bed plan F key plan + OSM - 11-line windows face NNE, not south"}}],"ess":[["Grove St PATH in the podium","1 min"],["Grove St restaurant row","3 min"],["ShopRite Metro Plaza","7 min"],["Whole Foods JC","9 min"]],"vibe":"2018 tower, about 51 floors, with a PATH station inside the building for the shortest commute in the set. All three units are the 11-line, verified NNE (floor-plan key plan plus footprint), opposite the building's south stack.","commute2":{"min":22,"range":"19-27","cost":130,"mode":"path","route":"Walk 4 min to Grove St PATH, Newark-WTC line to World Trade Center (8 min), walk 8 min to Wall St","legs":[["walk","self","grove"],["path","grove","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.1,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=90%20Columbus%20apartments%20Jersey%20City"},"parking":{"avail":"garage","cost":null,"note":"Reputable coverage (Brownstoner/Jersey Digs) confirms an on-site enclosed ~1,000-space resident parking garage with EV charging; Ironstate building-direct page and Apartm","url":"https://www.brownstoner.com/sponsored/jersey-city-apartments-for-rent-90-columbus-amenities-grove-street-path-train/"}},{"id":"vyv","name":"VYV North","addr":"474 Warren St, Jersey City (Downtown)","ll":[40.7194,-74.0392],"area":"Downtown JC - Grove St","safety":{"g":"A-","c":"A"},"clean":{"g":"B+","c":"B"},"commute":{"min":30,"range":"26-36","cost":130,"mode":"path","route":"Walk 5 min to Grove St PATH, JSQ-33 to 23 St, walk 7 min","legs":[["walk","self","grove"],["path","grove","p23"],["walk","p23","office"]]},"units":[{"u":"N-2511","fl":25,"rent":5314,"sqft":1084,"avail":"Aug 5","live":true,"link":"https://rent.brookfieldproperties.com/unit/?propertyId[]=1845044&floorplanId=5374638&unitId=40071676","exp":{"dir":"SW","south":true,"conf":"HIGH","src":"VERIFIED: OSM footprint (near-cardinal tower) + floor-plan key plan agree the 11-line windows face SW - a real south corner"}}],"ess":[["Grove St PATH","5 min"],["ShopRite Metro Plaza","6 min"],["Newport Centre Mall","10 min"]],"vibe":"2017 tower in a twin-tower pair. Floor 25, 1,084 sqft. Verified south: the floor plan and footprint agree that #N-2511 is a SW corner with south light and harbor and skyline views. Building-wide concession promotions come and go.","commute2":{"min":23,"range":"20-28","cost":130,"mode":"path","route":"Walk 5 min to Grove St PATH, Newark-WTC line to World Trade Center (8 min), walk 8 min to Wall St","legs":[["walk","self","grove"],["path","grove","wtc"],["walk","wtc","office2"]]},"grating":{"stars":3.7,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=VYV%20apartments%20Jersey%20City"},"parking":{"avail":"garage","cost":275,"note":"On-site VYV Garage confirmed at 474 Warren St; monthly parking $275/mo (+~$30.25 tax) per third-party booking sites. Brookfield building-direct site does not state a resi","url":"https://www.whereipark.com/parking/jersey-city-nj/vyv-garage-474-Warren-ct"}},{"id":"ellipse","name":"Ellipse","addr":"25 Park Lane S, Newport, Jersey City","ll":[40.7278,-74.0308],"area":"Newport waterfront, JC","safety":{"g":"A-","c":"A"},"clean":{"g":"A-","c":"A"},"commute":{"min":26,"range":"22-32","cost":130,"mode":"path","route":"Walk 4 min to Newport PATH, JSQ-33 to 14 St, walk 7 min","legs":[["walk","self","newport"],["path","newport","p14"],["walk","p14","office"]]},"units":[{"u":"204","fl":2,"rent":5522,"sqft":1218,"avail":"Aug 24","live":true,"link":"https://www.newportrentals.com/apartments-jersey-city-for-rent/ellipse/","exp":{"dir":"NW","south":false,"conf":"HIGH","src":"VERIFIED: building-direct Residence 04 floor plan - windows face NW"}}],"ess":[["Newport PATH","4 min"],["Newport Green park","3 min"],["ShopRite Metro Plaza","8 min"],["Newport Centre Mall","6 min"]],"vibe":"2016 waterfront tower and the shortest commute in the set. The available unit is on floor 2 at $5,526; higher floors turn over periodically.","commute2":{"min":21,"range":"18-27","cost":130,"mode":"path","route":"Walk 4 min to Newport PATH, Hoboken-WTC line to World Trade Center (7 min), walk 8 min to Wall St","legs":[["walk","self","newport"],["path","newport","wtc"],["walk","wtc","office2"]]},"grating":{"stars":3.7,"count":142,"url":"https://www.google.com/maps/search/?api=1&query=Ellipse%20at%20Newport%20Jersey%20City"},"parking":{"avail":"garage","cost":250,"note":"Official Newport Rentals 'Ellipse Garage' page states resident monthly rates of $250 (unreserved) and $300 (reserved); on-site 230-car garage at 25 Park Lane South. No wa","url":"https://promo.parking.com/newport-rentals-ellipse-garage/"}},{"id":"tfc","name":"TF Cornerstone (Center Blvd)","addr":"4540-4720 Center Blvd, Hunters Point LIC","ll":[40.7462,-73.958],"area":"Hunters Point, LIC","safety":{"g":"B-","c":"B"},"clean":{"g":"B+","c":"B"},"commute":{"min":37,"range":"33-42","cost":126,"mode":"subway","route":"TFC shuttle or 7 min walk to Vernon-Jackson (7), to Grand Central, transfer 6 to 23 St, walk 6 min","legs":[["walk","self","vernon"],["subway","vernon","gct"],["subway","gct","office"]]},"units":[{"u":"517 (4610)","fl":5,"rent":5960,"avail":"Now","live":true,"link":"https://tfc.com/apartments/4610-center-blvd/517","exp":{"dir":"N","south":false,"conf":"HIGH","src":"VERIFIED: TF Cornerstone unit data tags 517 as Northern exposure"}},{"u":"1801 (4540)","fl":18,"rent":6270,"avail":"Now","live":true,"link":"https://tfc.com/apartments/4540-center-blvd/1801","exp":{"dir":"SW","south":true,"conf":"HIGH","src":"VERIFIED: TF Cornerstone unit data tags 1801 as a Corner with Southern + Western + Southwest exposure - a real south corner"}}],"ess":[["Vernon-Jackson 7 (shuttle)","1 min"],["Gantry Plaza State Park","5 min"],["Hunters Point South Park","6 min"]],"vibe":"No-fee waterfront towers on the Center Boulevard waterfront. #517 at 4610 ($5,960) has a stated northern exposure; #1801 at 4540 ($6,270) is a verified SW corner (the operator's unit data tags it southern and western exposure). A free shuttle serves the nearest 7 train; concessions apply to studios and 1-bedrooms only.","commute2":{"min":40,"range":"36-46","cost":126,"mode":"subway","route":"TFC shuttle or walk to Vernon-Jackson (7), transfer at Court Sq to the E to World Trade Center, walk 8 min to Wall St","legs":[["walk","self","vernon"],["subway","vernon","wtc"],["walk","wtc","office2"]]},"grating":{"stars":3.8,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=4610%20Center%20Blvd%20Long%20Island%20City"},"parking":{"avail":"garage","cost":null,"note":"On-site parking garage / valet at TF Cornerstone Center Blvd confirmed (6sqft, transparentcity, building amenities list Valet); no monthly rate publicly published.","url":"https://www.transparentcity.co/buildings/678-4545-center-boulevard"}},{"id":"gantry","name":"Gantry Park Landing","addr":"2-14 50th Ave, Hunters Point LIC","ll":[40.7432,-73.9579],"area":"Hunters Point, LIC","safety":{"g":"B-","c":"B"},"clean":{"g":"B+","c":"B"},"commute":{"min":38,"range":"34-43","cost":126,"mode":"subway","route":"Walk 6 min to Vernon-Jackson (7), to Grand Central, transfer 6 to 23 St, walk 6 min","legs":[["walk","self","vernon"],["subway","vernon","gct"],["subway","gct","office"]]},"units":[{"u":"PH4W","fl":12,"rent":6463,"avail":"Now","live":true,"link":"https://gantryparklanding.com/availability/","exp":{"dir":"WNW","south":false,"conf":"MED","src":"OSM footprint: the PH west end faces WNW - west, not south"}}],"ess":[["Vernon-Jackson 7","6 min"],["Gantry Plaza State Park","2 min"],["Center Blvd waterfront","3 min"]],"vibe":"Waterfront building at Gantry Plaza, beside the Center Boulevard towers. The available in-band 2BR/2BA is PH4W, a penthouse-tier unit at $6,463. Same waterfront commute tradeoff as its neighbors.","commute2":{"min":41,"range":"37-47","cost":126,"mode":"subway","route":"Walk to Vernon-Jackson (7), transfer at Court Sq to the E to World Trade Center, walk 8 min to Wall St","legs":[["walk","self","vernon"],["subway","vernon","wtc"],["walk","wtc","office2"]]},"grating":{"stars":4.1,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=Gantry%20Park%20Landing%20Long%20Island%20City"},"parking":{"avail":"none","cost":null,"note":"Building-direct site (About/Amenities pages) lists no parking; corroborated by amenity lists on transparentcity.co and nybits.com that omit parking, and a CityRealty-sour","url":"https://gantryparklanding.com/amenities/"}},{"id":"aquablu","name":"Aquablu (Newport)","addr":"110 River Dr S, Newport, JC","ll":[40.7275,-74.0325],"area":"Newport waterfront, JC","safety":{"g":"A-","c":"A"},"clean":{"g":"A-","c":"A"},"commute":{"min":27,"range":"23-33","cost":130,"mode":"path","route":"Walk 5 min to Newport PATH, JSQ-33 to 23 St, walk 6 min","legs":[["walk","self","newport"],["path","newport","p23"],["walk","p23","office"]]},"units":[{"u":"714","fl":7,"rent":4993,"sqft":1242,"avail":"Now","live":true,"link":"https://www.newportrentals.com/apartments-jersey-city-for-rent/aquablu/residence-714/","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"VERIFIED: OSM + key plan - line 14 is the NE-corner stack, faces NE"}},{"u":"314","fl":3,"rent":5173,"sqft":1242,"avail":"Now","live":true,"link":"https://www.newportrentals.com/apartments-jersey-city-for-rent/aquablu/residence-314/","exp":{"dir":"NE","south":false,"conf":"HIGH","src":"VERIFIED: same NE-corner line 14 stack, faces NE"}},{"u":"331","fl":3,"rent":5198,"sqft":1210,"avail":"Aug 19","live":true,"link":"https://www.newportrentals.com/apartments-jersey-city-for-rent/aquablu/residence-331/","exp":{"dir":"NE","south":false,"conf":"MED","src":"Newport key plan line 31 - faces NE"}},{"u":"2302","fl":23,"rent":5353,"sqft":1115,"avail":"Jul 23","live":true,"link":"https://www.newportrentals.com/apartments-jersey-city-for-rent/aquablu/residence-2302/","exp":{"dir":"E","south":false,"conf":"HIGH","src":"VERIFIED: OSM footprint + Newport key plan - line 02 is on the east wall, faces E"}},{"u":"2802","fl":28,"rent":5628,"sqft":1115,"avail":"Now","live":true,"link":"https://www.newportrentals.com/apartments-jersey-city-for-rent/aquablu/residence-2802/","exp":{"dir":"E","south":false,"conf":"HIGH","src":"VERIFIED: same east-wall line 02 stack, faces E"}}],"ess":[["Newport PATH","5 min"],["Newport Centre Mall","4 min"],["ShopRite Metro Plaza","8 min"],["Newport Green park","3 min"]],"vibe":"Newport waterfront tower beside Ellipse. Verified 2BR/2BA from $4,993 (1,242 sqft), with large 1,100-1,240 sqft layouts and strong area grades; #2802 ($5,628, floor 28) is the higher-band unit. Roughly a 27-minute PATH commute; listed prices are total-monthly.","commute2":{"min":22,"range":"19-28","cost":130,"mode":"path","route":"Walk 5 min to Newport PATH, Hoboken-WTC line to World Trade Center (7 min), walk 8 min to Wall St","legs":[["walk","self","newport"],["path","newport","wtc"],["walk","wtc","office2"]]},"grating":{"stars":3.7,"count":null,"url":"https://www.google.com/maps/search/?api=1&query=Aquablu%20at%20Newport%20Jersey%20City"},"parking":{"avail":"garage","cost":null,"note":"Newport Rentals' own Aquablu building page lists 'Garage parking available' (on-site garage). No source states the monthly cost or waitlist, so those are left unknown rat","url":"https://www.newportrentals.com/jersey-city-apartment-buildings/aquablu/"}}];
 
   // ---- render map -----------------------------------------------------------
   var svg = document.getElementById("map");
   var NS = "http://www.w3.org/2000/svg";
+  function expBadge(e){
+    if(!e) return "<span class='exp exp-unk' title='Orientation not checked'>?</span>";
+    var t=(e.src||"")+" ["+e.conf+"]";
+    if(e.south===true) return "<span class='exp exp-s' title=\""+t+"\">\u2600 "+(e.dir||"S")+"</span>";
+    if(e.south===null && e.dir && /S/.test(e.dir)) return "<span class='exp exp-maybe' title=\""+t+"\">"+e.dir+"?</span>";
+    if(e.conf==='UNK' || e.south===null) return "<span class='exp exp-unk' title=\""+t+"\">?</span>";
+    return "<span class='exp exp-no' title=\""+t+"\">"+(e.dir||"not S")+"</span>";
+  }
+  function money2(n){ return "$" + Math.round(n).toLocaleString(); }
+  function allIn(b, u){
+    var base = (u.rent != null) ? u.rent : (u.net != null ? u.net : 0);
+    var ca = (b.commute && b.commute.cost) || 0;
+    var cb = (b.commute2 && b.commute2.cost) || 0;
+    var p = b.parking, park = 0, pnote = "", exact = true;
+    if (p && (p.avail === "garage" || p.avail === "valet")) {
+      if (p.cost != null) { park = p.cost; pnote = " + parking $" + p.cost; }
+      else { pnote = " + parking (rate not published)"; exact = false; }
+    } else if (p && p.avail === "none") { pnote = " (no on-site parking)"; }
+    var total = base + ca + cb + park;
+    var title = "All-in / mo: rent " + money2(base) + " + Office A transit $" + ca + " + Office B transit $" + cb + pnote;
+    return { total: total, title: title, exact: exact };
+  }
+  function allInCell(b, u){
+    var a = allIn(b, u);
+    return "<td class='num allin' title=\"" + a.title + "\">" + money2(a.total) + (a.exact ? "" : "*") + "</td>";
+  }
+  function minAllIn(b){ var m = Infinity; b.units.forEach(function(u){ var t = allIn(b, u).total; if (t < m) m = t; }); return m; }
+  function parkChip(p){
+    if(!p) return "<span class='chip pchip-unk' title='Parking not checked'>P n/a</span>";
+    var t=(p.note||"").replace(/"/g,"'");
+    if(p.avail==='none') return "<span class='chip pchip-none' title=\""+t+"\">P: none</span>";
+    if(p.avail==='unknown') return "<span class='chip pchip-unk' title=\""+t+"\">P: n/a</span>";
+    var kind=(p.avail==='valet')?'valet':'garage';
+    var label="P: "+kind+(p.cost!=null?" $"+p.cost+"/mo":"");
+    return p.url ? "<a class='chip pchip' href='"+p.url+"' target='_blank' rel='noopener' title=\""+t+"\">"+label+"</a>"
+                 : "<span class='chip pchip' title=\""+t+"\">"+label+"</span>";
+  }
+  function expRank(b){var best=9;b.units.forEach(function(u){var e=u.exp;var r=!e?3:e.south===true?0:(e.south===null&&e.dir&&/S/.test(e.dir))?1:(e.conf==='UNK'||e.south===null)?2:3;if(r<best)best=r;});return best;}
   function el(tag, attrs, parent) {
     var e = document.createElementNS(NS, tag);
     for (var k in attrs) e.setAttribute(k, attrs[k]);
@@ -606,7 +371,7 @@
   });
   var gl = [ ["HUDSON RIVER", 40.757, -74.014, -78], ["EAST RIVER", 40.748, -73.952, -55],
              ["MANHATTAN", 40.776, -73.963, 0], ["QUEENS", 40.762, -73.898, 0],
-             ["JERSEY CITY", 40.716, -74.058, 0], ["HOBOKEN", 40.746, -74.041, 0] ];
+             ["JERSEY CITY", 40.716, -74.058, 0], ["HOBOKEN", 40.746, -74.041, 0], ["LONG ISLAND CITY", 40.756, -73.947, 0] ];
   gl.forEach(function (g) {
     var p = px(g[1], g[2]);
     el("text", { x: p[0], y: p[1], "class": "geo-label", "text-anchor": "middle",
@@ -614,14 +379,12 @@
   });
 
   var routesG = el("g", {});
+  var routes2G = el("g", {});
   var stnsG = el("g", {});
   var marksG = el("g", {});
 
-  function legPoints(b, leg) {
-    var a = leg[1] === "self" ? b.ll : (leg[1] === "office" ? OFFICE.ll : STN[leg[1]].ll);
-    var c = leg[2] === "self" ? b.ll : (leg[2] === "office" ? OFFICE.ll : STN[leg[2]].ll);
-    return [a, c];
-  }
+  function endLL(b, e) { return e === "self" ? b.ll : (e === "office" ? OFFICE.ll : (e === "office2" ? OFFICE2.ll : STN[e].ll)); }
+  function legPoints(b, leg) { return [endLL(b, leg[1]), endLL(b, leg[2])]; }
 
   B.forEach(function (b) {
     var g = el("g", { "class": "rt", "data-b": b.id }, routesG);
@@ -636,6 +399,18 @@
     });
   });
 
+  B.forEach(function (b) {
+    if (!b.commute2) return;
+    var g = el("g", { "class": "rt2", "data-b": b.id }, routes2G);
+    b.commute2.legs.forEach(function (leg) {
+      var pts = legPoints(b, leg);
+      var a = px(pts[0][0], pts[0][1]), c = px(pts[1][0], pts[1][1]);
+      var mx = (a[0] + c[0]) / 2, my = (a[1] + c[1]) / 2 + Math.min(28, Math.hypot(c[0]-a[0], c[1]-a[1]) * .12);
+      var d = "M" + a[0].toFixed(1) + " " + a[1].toFixed(1) + " Q" + mx.toFixed(1) + " " + my.toFixed(1) + " " + c[0].toFixed(1) + " " + c[1].toFixed(1);
+      el("path", { d: d, "class": leg[0] === "walk" ? "rt2-walk" : "rt2-transit" }, g);
+    });
+  });
+
   Object.keys(STN).forEach(function (k) {
     var p = px(STN[k].ll[0], STN[k].ll[1]);
     var c = el("circle", { cx: p[0], cy: p[1], r: 3.5, "class": "stn" }, stnsG);
@@ -645,7 +420,73 @@
   var op = px(OFFICE.ll[0], OFFICE.ll[1]);
   var og = el("g", { "class": "office-mark" }, marksG);
   el("path", { d: "M " + op[0] + " " + (op[1]-9) + " l 7 9 l -7 9 l -7 -9 Z", fill: "var(--office)", stroke: "var(--surface)", "stroke-width": 2 }, og);
-  el("text", { x: op[0] + 12, y: op[1] - 8 }, og).textContent = "YOUR OFFICE";
+  el("text", { x: op[0] + 12, y: op[1] - 8 }, og).textContent = "OFFICE A - FLATIRON";
+
+  var op2 = px(OFFICE2.ll[0], OFFICE2.ll[1]);
+  var og2 = el("g", { "class": "office2-mark" }, marksG);
+  el("rect", { x: op2[0] - 7, y: op2[1] - 7, width: 14, height: 14, rx: 2, fill: "var(--c2)" }, og2);
+  el("text", { x: op2[0] + 12, y: op2[1] + 4 }, og2).textContent = "OFFICE B - FIN. DISTRICT";
+
+  function setCView(m) {
+    routesG.style.display = (m === "ob") ? "none" : "";
+    routes2G.style.display = (m === "oa") ? "none" : "";
+    og.style.opacity = (m === "ob") ? .3 : 1;
+    og2.style.opacity = (m === "oa") ? .3 : 1;
+    document.querySelectorAll("#ctoggle button").forEach(function (bn) { bn.classList.toggle("on", bn.getAttribute("data-cv") === m); });
+  }
+  document.querySelectorAll("#ctoggle button").forEach(function (bn) {
+    bn.addEventListener("click", function () { setCView(bn.getAttribute("data-cv")); });
+  });
+  setCView("both");
+
+  // --- map zoom / pan ---
+  var V0 = { x: 0, y: 0, w: W, h: H }, VIEW = { x: 0, y: 0, w: W, h: H };
+  function applyView(){ svg.setAttribute("viewBox", VIEW.x.toFixed(1) + " " + VIEW.y.toFixed(1) + " " + VIEW.w.toFixed(1) + " " + VIEW.h.toFixed(1)); }
+  function clampView(){
+    if (VIEW.w > V0.w) VIEW.w = V0.w;
+    if (VIEW.w < 220) VIEW.w = 220;
+    VIEW.h = VIEW.w * (V0.h / V0.w);
+    if (VIEW.x < 0) VIEW.x = 0;
+    if (VIEW.y < 0) VIEW.y = 0;
+    if (VIEW.x + VIEW.w > V0.w) VIEW.x = V0.w - VIEW.w;
+    if (VIEW.y + VIEW.h > V0.h) VIEW.y = V0.h - VIEW.h;
+  }
+  function clientToView(cx, cy){ var r = svg.getBoundingClientRect(); return { x: VIEW.x + (cx - r.left) / r.width * VIEW.w, y: VIEW.y + (cy - r.top) / r.height * VIEW.h }; }
+  function zoomAt(factor, cx, cy){
+    var p = clientToView(cx, cy), nw = VIEW.w * factor;
+    if (nw > V0.w) nw = V0.w; if (nw < 220) nw = 220;
+    var nh = nw * (V0.h / V0.w);
+    VIEW.x = p.x - (p.x - VIEW.x) * (nw / VIEW.w);
+    VIEW.y = p.y - (p.y - VIEW.y) * (nh / VIEW.h);
+    VIEW.w = nw; VIEW.h = nh; clampView(); applyView();
+  }
+  var mapRect = function(){ return svg.getBoundingClientRect(); };
+  svg.addEventListener("wheel", function(ev){ ev.preventDefault(); zoomAt(ev.deltaY > 0 ? 1.12 : 0.89, ev.clientX, ev.clientY); }, { passive: false });
+  var dragging = false, lastX = 0, lastY = 0;
+  svg.addEventListener("mousedown", function(ev){ if (ev.target.closest && ev.target.closest(".bmark")) return; dragging = true; lastX = ev.clientX; lastY = ev.clientY; svg.style.cursor = "grabbing"; });
+  window.addEventListener("mousemove", function(ev){ if (!dragging) return; var r = mapRect(); VIEW.x -= (ev.clientX - lastX) / r.width * VIEW.w; VIEW.y -= (ev.clientY - lastY) / r.height * VIEW.h; lastX = ev.clientX; lastY = ev.clientY; clampView(); applyView(); });
+  window.addEventListener("mouseup", function(){ dragging = false; svg.style.cursor = ""; });
+  document.querySelectorAll("#zoomctl button").forEach(function(bn){
+    bn.addEventListener("click", function(){
+      var r = mapRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, z = bn.getAttribute("data-z");
+      if (z === "in") zoomAt(0.8, cx, cy);
+      else if (z === "out") zoomAt(1.25, cx, cy);
+      else { VIEW = { x: 0, y: 0, w: V0.w, h: V0.h }; applyView(); }
+    });
+  });
+
+  // --- theme switch (Light / Cozy / Dark) ---
+  var root = document.documentElement;
+  function setTheme(t){
+    root.setAttribute("data-theme", t);
+    try { localStorage.setItem("apt-theme", t); } catch (e) {}
+    document.querySelectorAll("#themebar button").forEach(function(bn){ bn.classList.toggle("on", bn.getAttribute("data-th") === t); });
+  }
+  document.querySelectorAll("#themebar button").forEach(function(bn){ bn.addEventListener("click", function(){ setTheme(bn.getAttribute("data-th")); }); });
+  (function(){ var saved; try { saved = localStorage.getItem("apt-theme"); } catch (e) {}
+    if (saved) setTheme(saved);
+    else { var d = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches; document.querySelectorAll("#themebar button").forEach(function(bn){ bn.classList.toggle("on", bn.getAttribute("data-th") === (d ? "dark" : "light")); }); }
+  })();
 
   var tip = document.getElementById("tip");
   var mapcard = document.getElementById("mapcard");
@@ -661,6 +502,9 @@
     // Per-building label nudges: the JSQ pair and the Hamilton Park pair sit
     // on nearly identical coordinates, so labels fan out around the cluster.
     var LBL = {
+      tfc:       { dx: 13,  dy: -8,  anchor: "start" },
+      gantry:    { dx: 13,  dy: 14,  anchor: "start" },
+      aquablu:   { dx: -12, dy: 12,  anchor: "end" },
       journaln:  { dx: -13, dy: -26, anchor: "end" },
       jsq2:      { dx: -13, dy: -8,  anchor: "end" },
       summit505: { dx: -11, dy: 26,  anchor: "end" },
@@ -677,8 +521,12 @@
     var o = LBL[b.id] || { dx: 12, dy: 4, anchor: "start" };
     if (!LBL[b.id] && p[0] > W - 190) { o = { dx: -12, dy: 4, anchor: "end" }; }
     var short = { jsq2: "JSQ Tower 2", jsq3: "JSQ Tower 3", journaln: "The Journal", summit505: "505 Summit", grand235: "235 Grand", halletts: "10 Halletts Pt", urby: "Urby", col90: "90 Columbus", vyv: "VYV", ellipse: "Ellipse", greyson: "Greyson", soholofts: "Soho Lofts", devan: "The Devan" };
-    el("text", { x: p[0] + o.dx, y: p[1] + o.dy, "text-anchor": o.anchor }, g).textContent =
-      (short[b.id] || b.name) + "  " + b.commute.min + "m";
+    var lt = el("text", { x: p[0] + o.dx, y: p[1] + o.dy, "text-anchor": o.anchor }, g);
+    lt.appendChild(document.createTextNode((short[b.id] || b.name) + "  "));
+    el("tspan", {}, lt).textContent = b.commute.min;
+    lt.appendChild(document.createTextNode("/"));
+    el("tspan", { fill: "var(--c2)" }, lt).textContent = (b.commute2 ? b.commute2.min : "?");
+    lt.appendChild(document.createTextNode("m"));
     g.addEventListener("mouseenter", function (ev) { showTip(b, ev); focusB(b.id, false); });
     g.addEventListener("mousemove", function (ev) { moveTip(ev); });
     g.addEventListener("mouseleave", function () { tip.style.opacity = 0; focusB(null, false); });
@@ -704,6 +552,9 @@
 
   var JSQ_SRC = { safety: "https://crimegrade.org/safest-places-in-journal-square-jersey-city-nj/", clean: "https://www.niche.com/places-to-live/n/journal-square-jersey-city-nj/reviews/" };
   var LINKS = {
+    tfc: { site: "https://tfc.com/availabilities?neighborhood=long-island-city", safety: "https://crimegrade.org/safest-places-in-long-island-city-queens-ny/", clean: "https://a816-dohbesp.nyc.gov/IndicatorPublic/rats/" },
+    gantry: { site: "https://gantryparklanding.com/availability/", safety: "https://crimegrade.org/safest-places-in-long-island-city-queens-ny/", clean: "https://a816-dohbesp.nyc.gov/IndicatorPublic/rats/" },
+    aquablu: { site: "https://www.newportrentals.com/apartments-jersey-city-for-rent/aquablu/", safety: "https://www.neighborhoodscout.com/nj/jersey-city/crime", clean: "https://jerseydigs.com/jersey-city-trash/" },
     jsq2: { site: "https://www.journalsquared.com/availabilities/", safety: JSQ_SRC.safety, clean: JSQ_SRC.clean },
     jsq3: { site: "https://www.journalsquared.com/availabilities/", safety: JSQ_SRC.safety, clean: JSQ_SRC.clean },
     urby: { site: "https://www.urby.com/location/journal-square/availability", safety: JSQ_SRC.safety, clean: JSQ_SRC.clean },
@@ -724,52 +575,6 @@
   var cardsRoot = document.getElementById("cards");
   function chipCls(c) { return c === "A" ? "cA" : (c === "B" ? "cB" : "cC"); }
   function money(n) { return "$" + n.toLocaleString(); }
-  function bandCls(band) { return band === "TourNow" ? "cA" : (band === "Watch" ? "cB" : "cN"); }
-  function floodCls(z) { return z === "X" ? "cA" : (z === "AE" ? "cB" : "cN"); }
-  function runDate(r) { return new Date(r + ", 2026"); }
-
-  // ---- unit index + compare selection state (D1 / D5 look units up by key) --
-  var UNIT_INDEX = {};
-  B.forEach(function (b) {
-    b.units.forEach(function (u) { UNIT_INDEX[b.id + "-" + u.u] = { u: u, b: b }; });
-  });
-  var compareSet = {};
-
-  // ---- provenance dots: only render for INFERRED/MISSING, FACT stays clean --
-  function provDot(status, title) {
-    if (!status || status === "FACT") return "";
-    return "<span class='provdot " + (status === "MISSING" ? "pMISS" : "pINF") + "' title='" + title + "'></span>";
-  }
-
-  // ---- sparkline + delta badge from a unit's snap series ---------------------
-  function sparkSVG(snap) {
-    if (!snap || snap.length < 2) return "";
-    var w = 60, h = 16, pad = 2;
-    var prices = snap.map(function (s) { return s.p; }).filter(function (p) { return p != null; });
-    if (prices.length < 2) return "";
-    var lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
-    var span = hi - lo || 1;
-    var step = (w - pad * 2) / (snap.length - 1);
-    var pts = snap.map(function (s, i) {
-      var x = pad + i * step;
-      var y = h - pad - ((s.p - lo) / span) * (h - pad * 2);
-      return x.toFixed(1) + "," + y.toFixed(1);
-    }).join(" ");
-    return "<svg class='spark' viewBox='0 0 " + w + " " + h + "' width='" + w + "' height='" + h + "'>" +
-      "<polyline points='" + pts + "' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>";
-  }
-  function badgeFor(u) {
-    if (!u.snap || u.snap.length < 2) return null;
-    var removedHit = DIGEST.some(function (d) { return d.kind === "REMOVED" && d.text.indexOf("#" + u.u) !== -1; });
-    if (removedHit) return { cls: "bREM", text: "REMOVED" };
-    var a = u.snap[u.snap.length - 2], b = u.snap[u.snap.length - 1];
-    if (a.p != null && b.p != null && b.p < a.p) {
-      var pct = ((b.p - a.p) / a.p) * 100;
-      var days = Math.round((runDate(b.r) - runDate(a.r)) / 86400000);
-      return { cls: "bDROP", text: pct.toFixed(1) + "% / " + days + "d" };
-    }
-    return null;
-  }
 
   function renderCards(order) {
     cardsRoot.innerHTML = "";
@@ -778,22 +583,12 @@
       card.className = "bcard"; card.id = "card-" + b.id;
       var L = LINKS[b.id] || {};
       var rows = b.units.map(function (u) {
-        var key = b.id + "-" + u.u;
-        var prov = u.prov || {};
-        var unitDot = provDot(prov.orient, "orientation: " + prov.orient + " - " + (prov.orient === "MISSING" ? "not yet verified, ask leasing" : "landlord-published, not floor-plan verified"));
-        var rentDot = provDot(prov.rent, "rent: " + prov.rent + " - gross not published, net-effective quote only");
-        var priceText = u.rent != null ? money(u.rent) : (u.net != null ? money(u.net) + " net" : "-");
-        var badge = badgeFor(u);
-        var badgeHTML = badge ? " <span class='badge " + badge.cls + "' title='Weekly price change'>" + badge.text + "</span>" : "";
-        return "<tr class='" + (u.live === false ? "rowgone" : "") + "'>" +
-          "<td><input type='checkbox' class='cmpchk' data-key='" + key + "' aria-label='Compare " + b.name + " #" + u.u + "'" + (compareSet[key] ? " checked" : "") + "></td>" +
-          "<td class='num'>" + u.u + unitDot + "</td><td class='num'>" + (u.fl == null ? "-" : u.fl) + "</td>" +
-          "<td class='num'>" + priceText + rentDot + (u.note === "net" ? " net" : "") + (u.rent != null && u.net ? " <span style='color:var(--muted)'>(net " + money(u.net) + ")</span>" : "") + sparkSVG(u.snap) + badgeHTML + "</td>" +
-          "<td class='num'>" + (u.sqft ? u.sqft : "-") + "</td><td>" + u.avail + "</td>" +
-          "<td><span class='chip " + bandCls(u.band) + "' title='Action-priority band'><span class='dot'></span>" + u.band + "</span></td>" +
+        return "<tr class='" + (u.live === false ? "rowgone" : "") + "'><td class='num'>" + u.u + "</td><td class='num'>" + (u.fl == null ? "-" : u.fl) + "</td>" +
+          "<td class='num'>" + (u.rent != null ? money(u.rent) : (u.net != null ? money(u.net) + " net" : "-")) + (u.note === "net" ? " net" : "") + (u.rent != null && u.net ? " <span style='color:var(--muted)'>(net " + money(u.net) + ")</span>" : "") + "</td>" +
+          allInCell(b, u) + "<td class='num'>" + (u.sqft ? u.sqft : "-") + "</td><td>" + u.avail + "</td>" +
+          "<td>" + expBadge(u.exp) + "</td>" +
           "<td class='lnk'><a href='" + (u.link || L.unit || "#") + "' target='_blank' rel='noopener'>listing</a></td>" +
-          "<td>" + (u.live === false ? "<span class='gone'>gone 7/11</span>" : "<span class='liveok'>live 7/11</span>") + "</td>" +
-          "<td class='lnk'><a href='#' class='pplink' data-key='" + key + "'>one-pager</a></td></tr>";
+          "<td>" + (u.live === false ? "<span class='gone'>gone 7/18</span>" : (u.live === "check" ? "<span class='recheck'>recheck 7/18</span>" : "<span class='liveok'>live 7/18</span>")) + "</td></tr>";
       }).join("");
       var ess = b.ess.map(function (e) { return "<span><b>" + e[0] + "</b> " + e[1] + "</span>"; }).join("");
       card.innerHTML =
@@ -803,14 +598,18 @@
                   : "<span class='chip' style='background:var(--bg);color:var(--muted)' title='Micro-area not yet graded'>Safety n/a</span>") +
         (L.clean ? "<a class='chip " + chipCls(b.clean.c) + "' href='" + L.clean + "' target='_blank' rel='noopener' title='Area cleanliness grade - opens source'><span class='dot'></span>Clean " + b.clean.g + "</a>"
                  : "<span class='chip' style='background:var(--bg);color:var(--muted)' title='Micro-area not yet graded'>Clean n/a</span>") +
-        (b.flood && b.flood.z ? "<a class='chip " + floodCls(b.flood.z) + "' href='" + b.flood.link + "' target='_blank' rel='noopener' title='FEMA flood zone " + b.flood.z + " - opens map viewer'><span class='dot'></span>Flood " + b.flood.z + "</a>"
-                              : "<span class='chip' style='background:var(--bg);color:var(--muted)' title='Flood zone not yet fetched'>Flood n/a</span>") +
+        (b.grating ? "<a class='chip gchip' href='" + b.grating.url + "' target='_blank' rel='noopener' title='Google Maps rating - opens the listing'><span class='gstar'>\u2605</span> " + b.grating.stars.toFixed(1) + (b.grating.count ? " (" + b.grating.count.toLocaleString() + ")" : "") + " Google</a>" : "<span class='chip' style='background:var(--bg);color:var(--muted)' title='No Google Maps listing rating found'><span class='gstar' style='color:var(--muted)'>\u2605</span> n/a Google</span>") +
+        parkChip(b.parking) +
         "</div></div>" +
-        "<div class='commute'><span class='big num'>" + b.commute.min + " min</span>" +
+        "<div class='crow oa'><span class='who'>Office A - Flatiron</span><span class='big num'>" + b.commute.min + " min</span>" +
         "<span class='num'>(" + b.commute.range + ")</span>" +
         "<span class='cost num'>$" + b.commute.cost + "/mo</span></div>" +
         "<p class='route'>" + b.commute.route + "</p>" +
-        "<table class='units'><thead><tr><th></th><th>Unit</th><th>Fl</th><th>Rent</th><th>Sqft</th><th>Avail</th><th>Band</th><th></th><th>Status</th><th></th></tr></thead><tbody>" + rows + "</tbody></table>" +
+        (b.commute2 ? ("<div class='crow ob'><span class='who'>Office B - FiDi</span><span class='big num'>" + b.commute2.min + " min</span>" +
+        "<span class='num'>(" + b.commute2.range + ")</span>" +
+        "<span class='cost num'>$" + b.commute2.cost + "/mo</span></div>" +
+        "<p class='route'>" + b.commute2.route + "</p>") : "") +
+        "<table class='units'><thead><tr><th>Unit</th><th>Fl</th><th>Rent</th><th title='All-in monthly = rent + Office A transit + Office B transit + parking (where the rate is published; * = parking rate not yet published)'>All-in</th><th>Sqft</th><th>Avail</th><th title='Window exposure: sun = verified south'>Exp</th><th></th><th>Status</th></tr></thead><tbody>" + rows + "</tbody></table>" +
         "<div class='ess'>" + ess + "</div>" +
         "<p class='vibe'>" + b.vibe + "</p>";
       card.addEventListener("mouseenter", function () { focusB(b.id, false); });
@@ -831,20 +630,18 @@
 
   var sorters = {
     commute: function (a, b) { return a.commute.min - b.commute.min; },
+    commute2: function (a, b) { return (a.commute2 ? a.commute2.min : 999) - (b.commute2 ? b.commute2.min : 999); },
     rent: function (a, b) {
       var ma = Math.min.apply(null, a.units.map(function (u) { return (u.net != null ? u.net : u.rent) || 99999; }));
       var mb = Math.min.apply(null, b.units.map(function (u) { return (u.net != null ? u.net : u.rent) || 99999; }));
       return ma - mb;
     },
+    exp: function (a, b) { return expRank(a) - expRank(b) || a.commute.min - b.commute.min; },
+    allin: function (a, b) { return minAllIn(a) - minAllIn(b); },
+    grating: function (a, b) { return (b.grating ? b.grating.stars : -1) - (a.grating ? a.grating.stars : -1); },
     safety: function (a, b) {
       var rank = { "A-": 1, "B+": 2, "B": 3, "C+": 4, "C": 5, "n/a": 6 };
       return (rank[a.safety.g] || 9) - (rank[b.safety.g] || 9) || a.commute.min - b.commute.min;
-    },
-    band: function (a, b) {
-      var rank = { TourNow: 1, Watch: 2, Skip: 3 };
-      var ra = Math.min.apply(null, a.units.map(function (u) { return rank[u.band] || 9; }));
-      var rb = Math.min.apply(null, b.units.map(function (u) { return rank[u.band] || 9; }));
-      return ra - rb || a.commute.min - b.commute.min;
     }
   };
   document.querySelectorAll(".sortrow button").forEach(function (btn) {
@@ -855,230 +652,6 @@
     });
   });
 
-  // ---- compare view (D1): checkbox per unit row, sticky bar, pivot table ----
-  function compareCount() {
-    var n = 0;
-    for (var k in compareSet) if (compareSet[k]) n++;
-    return n;
-  }
-  function syncCompareUI(blockedMsg) {
-    var n = compareCount();
-    var bar = document.getElementById("cmpbar");
-    var btn = document.getElementById("cmpopen");
-    var note = document.getElementById("cmpnote");
-    bar.hidden = n === 0;
-    document.getElementById("cmpcount").textContent = n + (n === 1 ? " unit selected" : " units selected");
-    btn.disabled = n < 2;
-    btn.textContent = n >= 2 ? "Compare " + n + " units" : "Compare";
-    note.textContent = blockedMsg || (n >= 8 ? "Compare is capped at 8 units." : "");
-  }
-  function onCompareToggle(key, checked, cb) {
-    if (checked && compareCount() >= 8) {
-      cb.checked = false;
-      syncCompareUI("Compare is capped at 8 units - uncheck one first.");
-      return;
-    }
-    if (checked) { compareSet[key] = true; } else { delete compareSet[key]; }
-    syncCompareUI();
-    if (!document.getElementById("comparesec").hidden) renderCompareTable();
-  }
-  cardsRoot.addEventListener("change", function (ev) {
-    var cb = ev.target.closest ? ev.target.closest(".cmpchk") : null;
-    if (!cb) return;
-    onCompareToggle(cb.getAttribute("data-key"), cb.checked, cb);
-  });
-  cardsRoot.addEventListener("click", function (ev) {
-    var a = ev.target.closest ? ev.target.closest(".pplink") : null;
-    if (!a) return;
-    ev.preventDefault();
-    openOnePager(a.getAttribute("data-key"));
-  });
-  document.getElementById("cmpopen").addEventListener("click", function () { renderCompareTable(); });
-
-  function renderCompareTable() {
-    var sec = document.getElementById("comparesec");
-    var cols = [];
-    B.forEach(function (b) {
-      b.units.forEach(function (u) {
-        var key = b.id + "-" + u.u;
-        if (compareSet[key]) cols.push(UNIT_INDEX[key]);
-      });
-    });
-    if (!cols.length) { sec.hidden = true; return; }
-    function row(label, fn) {
-      return "<tr><th class='rowlbl'>" + label + "</th>" + cols.map(fn).join("") + "</tr>";
-    }
-    var head = cols.map(function (c) {
-      return "<th><a href='" + (c.u.link || "#") + "' target='_blank' rel='noopener'>" + c.b.name + " #" + c.u.u + "</a></th>";
-    }).join("");
-    var rentRow = row("Rent (gross / net)", function (c) {
-      return "<td class='num'>" + (c.u.rent != null ? money(c.u.rent) : "-") + " / " + (c.u.net != null ? money(c.u.net) : "-") + "</td>";
-    });
-    var tmcRow = row("True monthly cost", function (c) { return "<td class='num'>" + money(c.u.tmc) + "</td>"; });
-    var pfsRow = row("Price / sqft", function (c) {
-      if (!c.u.sqft) return "<td class='num'>n/a</td>";
-      var base = c.u.rent != null ? c.u.rent : c.u.net;
-      return "<td class='num'>$" + Math.round(base / c.u.sqft) + "/sqft</td>";
-    });
-    var commuteRow = row("Commute", function (c) { return "<td class='num'>" + c.b.commute.min + " min - $" + c.b.commute.cost + "/mo</td>"; });
-    var safetyRow = row("Safety / Clean", function (c) { return "<td>" + c.b.safety.g + " / " + c.b.clean.g + "</td>"; });
-    var floodRow = row("Flood", function (c) { return "<td>" + (c.b.flood && c.b.flood.z ? c.b.flood.z : "n/a") + "</td>"; });
-    var bandRow = row("Band", function (c) { return "<td><span class='chip " + bandCls(c.u.band) + "'><span class='dot'></span>" + c.u.band + "</span></td>"; });
-    var orientRow = row("Orientation status", function (c) { return "<td>" + ((c.u.prov && c.u.prov.orient) || "MISSING") + "</td>"; });
-    var availRow = row("Available", function (c) { return "<td>" + c.u.avail + "</td>"; });
-    var liveRow = row("Live status", function (c) { return "<td>" + (c.u.live === false ? "gone" : "live") + "</td>"; });
-    var buildingsInvolved = {};
-    cols.forEach(function (c) { buildingsInvolved[c.b.id] = c.b; });
-    var labelSets = Object.keys(buildingsInvolved).map(function (id) {
-      return buildingsInvolved[id].ess.map(function (e) { return e[0]; });
-    });
-    var shared = labelSets.length ? labelSets.reduce(function (acc, arr) {
-      return acc.filter(function (x) { return arr.indexOf(x) !== -1; });
-    }) : [];
-    var amenRow = "<tr><th class='rowlbl'>Shared amenities</th><td colspan='" + cols.length + "'>" +
-      (shared.length ? shared.join(", ") : "none shared") + "</td></tr>";
-    sec.innerHTML = "<div class='comparehead'><h2>Comparing " + cols.length + " units</h2><button id='cmpclose' type='button'>Close</button></div>" +
-      "<div class='cmpscroll'><table class='compare'><thead><tr><th></th>" + head + "</tr></thead><tbody>" +
-      rentRow + tmcRow + pfsRow + commuteRow + safetyRow + floodRow + bandRow + orientRow + availRow + liveRow + amenRow +
-      "</tbody></table></div>";
-    sec.hidden = false;
-    document.getElementById("cmpclose").addEventListener("click", function () { sec.hidden = true; });
-  }
-
-  // ---- action panel (D4): move-in countdown + units grouped by act status ---
-  var ACT_ORDER = ["NEW", "ToContact", "Contacted", "TourBooked", "Toured", "Applied", "Rejected", "Skipped", "Secured"];
-  function apRow(r) {
-    var price = r.u.rent != null ? money(r.u.rent) : (r.u.net != null ? money(r.u.net) + " net" : "-");
-    return "<li><a href='" + (r.u.link || "#") + "' target='_blank' rel='noopener'>" + r.b.name + " #" + r.u.u + "</a>" +
-      "<span class='apmeta num'>" + price + " - " + r.b.commute.min + " min</span></li>";
-  }
-  function renderActionPanel() {
-    var el = document.getElementById("actionpanel");
-    var groups = {};
-    var allUnits = [];
-    B.forEach(function (b) {
-      b.units.forEach(function (u) {
-        var rec = { u: u, b: b };
-        allUnits.push(rec);
-        var act = u.act || "NEW";
-        (groups[act] = groups[act] || []).push(rec);
-      });
-    });
-
-    // Move-in countdown: computed from the dashboard's own stamped date, not
-    // Date.now() - this is a static example file. A real dashboard build step
-    // stamps "today" at render time instead of hardcoding it here.
-    var STAMPED_TODAY = "2026-07-12";
-    var daysToMoveIn = MOVEIN ? Math.round((new Date(MOVEIN) - new Date(STAMPED_TODAY)) / 86400000) : null;
-    var html = "<div class='apheader'>" +
-      (daysToMoveIn != null
-        ? "<span class='apdays num'>" + daysToMoveIn + "</span><span class='apdayslbl'>days to target move-in (" + MOVEIN + ")</span>"
-        : "<span class='apdayslbl'>No move-in target set</span>") +
-      "</div>";
-
-    // Pinned: still-live NEW units in a high-priority band (TourNow or Watch,
-    // i.e. not Skip) - surfaced above the lifecycle groups so a fresh
-    // high-band listing does not wait behind the rest of the NEW bucket.
-    var pinned = allUnits.filter(function (r) { return r.u.act === "NEW" && r.u.live !== false && r.u.band !== "Skip"; });
-    if (pinned.length) {
-      html += "<div class='apgroup'><div class='apglabel'>Pinned - new, live, high-band</div><ul class='aplist'>" +
-        pinned.map(apRow).join("") + "</ul></div>";
-    }
-
-    ACT_ORDER.forEach(function (act) {
-      var list = groups[act];
-      if (!list || !list.length) return;
-      html += "<div class='apgroup'><div class='apglabel'>" + act + " (" + list.length + ")</div><ul class='aplist'>" +
-        list.map(apRow).join("") + "</ul></div>";
-    });
-    el.innerHTML = html;
-  }
-
-  // ---- print one-pager (D5): mark a unit, render it, hand off to print ------
-  function gaugePct(band) { return band === "TourNow" ? 100 : (band === "Watch" ? 55 : 20); }
-  function gaugeColor(band) { return band === "TourNow" ? "var(--gA)" : (band === "Watch" ? "var(--gB)" : "var(--muted)"); }
-  function waterfallRow(label, value) { return "<tr><td>" + label + "</td><td class='num'>" + value + "</td></tr>"; }
-  function negotiationLine(u) {
-    var badge = badgeFor(u);
-    if (!badge || badge.cls !== "bDROP") return null;
-    var last2 = u.snap[u.snap.length - 2], latest = u.snap[u.snap.length - 1];
-    var pct = ((latest.p - last2.p) / last2.p) * 100;
-    var first = u.snap[0];
-    var weeksListed = Math.max(1, Math.round((runDate(latest.r) - runDate(first.r)) / (7 * 86400000)));
-    // Simple labeled heuristic, not a real negotiation formula - about half a
-    // week of ask per point of the observed percentage cut, minimum 1 week.
-    var weeksFree = Math.max(1, Math.round(Math.abs(pct) / 2));
-    return "listed " + weeksListed + " week" + (weeksListed === 1 ? "" : "s") + ", price cut " + Math.abs(pct).toFixed(1) +
-      "% - reasonable ask: " + weeksFree + " week" + (weeksFree === 1 ? "" : "s") + " free";
-  }
-  function openOnePager(key) {
-    var rec = UNIT_INDEX[key];
-    if (!rec) return;
-    var u = rec.u, b = rec.b;
-    var prov = u.prov || {};
-    var orientStatus = prov.orient || "MISSING";
-    var gross = u.rent != null ? money(u.rent) : "MISSING";
-    var concession = (u.rent != null && u.net != null) ? ("-" + money(u.rent - u.net)) : "MISSING";
-    var neg = negotiationLine(u);
-    var el = document.getElementById("onepager");
-    el.innerHTML =
-      "<h1>" + b.name + " #" + u.u + "</h1>" +
-      "<div class='gauge'><div class='gaugefill' style='width:" + gaugePct(u.band) + "%;background:" + gaugeColor(u.band) + "'></div></div>" +
-      "<p class='gaugelbl'>Action band: " + (u.band || "MISSING") + "</p>" +
-      "<h2>Cost waterfall (sample data - see method note)</h2>" +
-      "<table class='wftable'>" +
-      waterfallRow("Gross rent", gross) +
-      waterfallRow("Concession", concession) +
-      waterfallRow("Amortized fees", money(45)) +
-      waterfallRow("Transit (monthly)", money(b.commute.cost)) +
-      waterfallRow("True monthly cost", money(u.tmc)) +
-      "</table>" +
-      "<p class='opchips'>Flood: " + (b.flood && b.flood.z ? b.flood.z : "MISSING") +
-      " - Safety: " + (b.safety && b.safety.g ? b.safety.g : "MISSING") +
-      " - Cleanliness: " + (b.clean && b.clean.g ? b.clean.g : "MISSING") + "</p>" +
-      "<p class='opchips'>Orientation: " + orientStatus + " - " +
-      (orientStatus === "MISSING" ? "not yet verified, ask leasing" : "landlord-published, not floor-plan verified") + "</p>" +
-      "<p class='opchips'>Available: " + (u.avail || "MISSING") + " - Live status: " + (u.live === false ? "gone" : "live") +
-      " - Checked: " + (RUNLOG.last || "MISSING") + "</p>" +
-      "<h2>Tour questions</h2>" +
-      "<ol class='opq'>" +
-      "<li>Are the concession terms being put in writing before applying?</li>" +
-      "<li>Does this exact unit match the model/photos - can leasing provide current photos of it?</li>" +
-      "<li>What is the measured walk time to transit, not the marketed estimate?</li>" +
-      "<li>What is the full fee schedule - application, admin, amenity, pet, move-in?</li>" +
-      "</ol>" +
-      (neg ? "<p class='opneg'>Negotiation note (sample data): " + neg + "</p>" : "");
-    el.hidden = false;
-    window.print();
-  }
-
-  // ---- freshness banner: green/yellow/red from the run-log heartbeat --------
-  function renderBanner() {
-    var el = document.getElementById("banner");
-    var color = "gA", reason = "all fresh";
-    if (RUNLOG.overdue) {
-      color = "gC"; reason = "hydrate overdue since " + RUNLOG.last;
-    } else if (RUNLOG.legs_done < RUNLOG.legs_total) {
-      color = "gB"; reason = (RUNLOG.legs_total - RUNLOG.legs_done) + " research leg(s) still pending";
-    }
-    el.innerHTML = "<span class='dot' style='background:var(--" + color + ")'></span>" +
-      "Hydrated <b>" + RUNLOG.last + "</b> - " + RUNLOG.legs_done + "/" + RUNLOG.legs_total + " research legs - " + reason;
-  }
-
-  // ---- weekly digest card: NEW / REMOVED / DROP entries ---------------------
-  function renderDigest() {
-    var el = document.getElementById("digest");
-    if (!DIGEST.length) { el.innerHTML = "<b>This week</b><p class='vibe'>No changes since last run.</p>"; return; }
-    var items = DIGEST.map(function (d) {
-      var color = d.kind === "DROP" ? "gA" : (d.kind === "REMOVED" ? "gC" : "gB");
-      return "<li><span class='dtag' style='color:var(--" + color + ")'>" + d.kind + "</span>" + d.text + "</li>";
-    }).join("");
-    el.innerHTML = "<b>This week</b><ul class='digestlist'>" + items + "</ul>";
-  }
-
-  renderBanner();
-  renderDigest();
-  renderActionPanel();
   renderCards(B.slice().sort(sorters.commute));
 })();
 </script>

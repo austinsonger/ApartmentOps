@@ -159,7 +159,9 @@ Per-building enrichments keyed by building slug:
     "address": "1 Example Ave, City, ST",
     "lat": 40.0, "lon": -74.0,
     "flood": {"zone": "X", "sfha": false, "source_url": "https://...", "viewer_url": "https://...", "fetched_at": "..."},
-    "rent_control": {"status": "UNKNOWN", "cap_pct": null, "source": null, "resolved_at": null}
+    "rent_control": {"status": "UNKNOWN", "cap_pct": null, "source": null, "resolved_at": null},
+    "grating": {"stars": 4.3, "count": 1152, "url": "https://www.google.com/maps/search/?api=1&query=..."},
+    "parking": {"avail": "garage", "cost": 250, "note": "on-site garage; $250/mo per <source>", "url": "https://..."}
   }
 }
 ```
@@ -169,6 +171,18 @@ plus an `error` field on service failure - render n/a, never guess).
 `rent_control` follows the cite-or-UNKNOWN procedure in
 `references/costs.md` and caps the year-2 renewal assumption in
 `scripts/costs.py`.
+`grating` is the building's Google Maps rating, name-verified against the
+listing; `count` is null when the signed-out Maps view hides it; the whole
+object is absent (chip renders n/a) when no rating was verified. `parking`
+records on-site parking: `avail` is `garage`/`valet`/`none`/`unknown` and
+`cost` is a monthly rate ONLY when a real source publishes it (else null,
+with the availability still shown). Both feed the dashboard's chips and the
+all-in cost figure. A unit's window exposure lives on the unit in
+verified.json as `exp: {dir, south, conf, src}` (three-signal orientation
+consensus; `south` is true/false/null, `conf` HIGH/MED/LOW/UNK). A second
+commute anchor is an optional `commute2` block (same shape as the
+transit.json commute, `legs` ending at `office2`) for a two-office
+household; the dashboard draws both and shows both per unit.
 
 ## apartmentops/data/scores.json  (written by: research; read by: dashboard, backlog)
 

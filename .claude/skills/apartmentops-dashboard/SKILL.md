@@ -2,10 +2,13 @@
 name: apartmentops-dashboard
 description: >-
   ApartmentOps stage 4 - build or re-hydrate the interactive map dashboard.
-  Renders every verified unit onto a to-scale SVG map with commute lines to
-  the user's anchor (time + monthly cost per leg), safety and cleanliness
-  grade chips that link to their sources, per-unit listing deep links, and
-  live/gone badges - then publishes it as an artifact with a stable URL.
+  Renders every verified unit onto a zoomable, to-scale SVG map with commute
+  lines to one or two office anchors (time + monthly cost per leg), safety and
+  cleanliness grade chips that link to their sources, verified window exposure
+  (south-facing), Google Maps ratings, on-site parking and cost, an all-in
+  monthly figure, per-unit listing deep links, and live/gone badges, in a
+  light, cozy, or dark theme - then publishes it as an artifact with a stable
+  URL.
   "Hydrate" mode re-checks every unit against its own deep link and updates
   prices and gone badges without re-hunting. Use when the user says "build
   the dashboard", "update my dashboard", "hydrate", "is everything still
@@ -159,6 +162,53 @@ that make it trustworthy rather than decorative:
   the section rather than printing a null ask - this is a number the user
   says or types themselves, nothing here drafts or sends an offer. Every
   field with no data prints the literal word MISSING, screen or paper.
+
+### Interaction and per-unit signals (shown in the example dashboard)
+
+Each degrades to n/a or is simply absent when its input is missing, never faked.
+
+- **Dual commute anchors.** A building may carry a second commute
+  `commute2` (same shape as `commute`: `min`, `range`, `cost`, `mode`,
+  `route`, `legs`, with `legs` ending at `office2`) for a two-office
+  household. Define a second office `OFFICE2` and draw its routes in a
+  distinct color layer. A three-way map toggle shows the first anchor's
+  routes, the second's, or both; each unit card shows both door-to-door
+  rows, color-coded to their office; provide a sort key per anchor. A
+  building with no `commute2` simply shows one commute.
+- **Verified window exposure.** Each unit may carry an `exp` object
+  `{dir, south, conf, src}` (`dir` a compass string or null, `south`
+  true/false/null, `conf` HIGH/MED/LOW/UNK, `src` the evidence). Render an
+  Exp column: a sun-marked badge for `south:true`, an amber "S?" for a
+  suspected-but-unverified southerly line, a plain direction for verified
+  not-south, and a muted "?" for unknown; hover shows `src` and `conf`. A
+  "Sun / south" sort floats confirmed and suspected south to the top. This
+  is the output of the three-signal orientation consensus (floor-plan key
+  plan plus footprint bearing plus listing statement); never assert south
+  without evidence, UNKNOWN is a valid, correct result.
+- **Google Maps rating.** A building may carry `grating: {stars, count,
+  url}`, read from its Google listing and name-verified against the
+  building. Render a star chip linking to the listing, with the review
+  count when the source exposes it; no verified rating renders "n/a". A
+  "Google rating" sort ranks by stars.
+- **On-site parking.** A building may carry `parking: {avail, cost, note,
+  url}` where `avail` is garage/valet/none/unknown and `cost` is a monthly
+  rate ONLY when a real source publishes it. Render a parking chip linked
+  to the source, the sourcing caveat on hover. "none" (no on-site parking)
+  and "n/a" (no source) are first-class honest states; a garage with no
+  published rate shows availability without a price, never a guessed one.
+- **All-in monthly cost.** An All-in column per unit = gross rent + each
+  commute's monthly transit cost + parking (only when the rate is
+  published). Hover shows the breakdown; a unit whose building has a
+  garage but no published rate carries a "*" and excludes parking rather
+  than padding the total. An "All-in cost" sort ranks cheapest first.
+- **Zoomable map.** The commute map has plus / minus / reset controls,
+  wheel-to-zoom centered on the cursor, and drag-to-pan, clamped so it
+  never zooms past the full extent or pans off the shorelines. Marker
+  hover and click still work (pan skips when the drag starts on a marker).
+- **Theme switch.** Beyond light and dark, a `:root[data-theme="cozy"]`
+  warm palette and a Light / Cozy / Dark control in the header, persisted
+  in localStorage and defaulting to the viewer's system light/dark. All
+  three palettes are token-only overrides on the same markup.
 
 ## Hydrate (re-verification without re-hunting)
 
