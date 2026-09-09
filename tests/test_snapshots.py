@@ -1,6 +1,6 @@
 """Tests for the snapshot ledger and delta engine (epic E2).
 
-Run with: /Users/aaron/Code/ApartmentOps/.venv/bin/python -m pytest tests/test_snapshots.py -q
+Run with: python -m pytest tests/test_snapshots.py -q (from the repo root)
 """
 
 from __future__ import annotations
@@ -53,15 +53,15 @@ def _row(unit_id, run_id, observed_at, price=2500, availability="2026-08-01", st
 def test_append_rows_happy_path_two_runs(tmp_path):
     path = tmp_path / "snapshots.jsonl"
     rows1 = [
-        _row("tower2-3410", "hyd-1", "2026-07-01T10:00:00-04:00", price=2500),
-        _row("tower2-3411", "hyd-1", "2026-07-01T10:00:05-04:00", price=2600),
+        _row("tower2-2207", "hyd-1", "2026-07-01T10:00:00-04:00", price=2500),
+        _row("tower2-2208", "hyd-1", "2026-07-01T10:00:05-04:00", price=2600),
     ]
     n1 = append_rows(path, "hyd-1", rows1)
     assert n1 == 2
 
     rows2 = [
-        _row("tower2-3410", "hyd-2", "2026-07-08T10:00:00-04:00", price=2450),
-        _row("tower2-3411", "hyd-2", "2026-07-08T10:00:05-04:00", price=2600),
+        _row("tower2-2207", "hyd-2", "2026-07-08T10:00:00-04:00", price=2450),
+        _row("tower2-2208", "hyd-2", "2026-07-08T10:00:05-04:00", price=2600),
     ]
     n2 = append_rows(path, "hyd-2", rows2)
     assert n2 == 2
@@ -542,9 +542,12 @@ def test_cli_append_diff_drops_digest_runlog_check(tmp_path):
     assert r.returncode == 0, r.stderr
     assert "## What changed this week" in r.stdout
 
+    # Pin the heartbeat timestamp so the two --now checks below are
+    # reproducible regardless of the real clock.
     stats = _stats(changes=1)
     r = _run_cli(
-        ["append", "--run-id", "hyd-2", "--target", "runlog", "--path", str(runlog_path)],
+        ["append", "--run-id", "hyd-2", "--target", "runlog", "--path", str(runlog_path),
+         "--at", "2026-07-15T12:00:00+00:00"],
         stdin_payload=stats,
     )
     assert r.returncode == 0, r.stderr

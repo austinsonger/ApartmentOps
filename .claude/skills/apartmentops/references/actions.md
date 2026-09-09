@@ -17,11 +17,11 @@ shapes and the ownership rules.
 One entry per unit id, keyed at the top level of the document:
 
 ```yaml
-example-tower-2-3410:
+example-tower-2-2207:
   status: NEW
   note: ""
   updated_at: "2026-07-15"
-example-tower-2-3512:
+example-tower-2-2311:
   status: Contacted
   note: "Emailed leasing office 7/12, waiting on a callback"
   updated_at: "2026-07-12"
@@ -79,11 +79,11 @@ silently losing the user's intent.
 `data/backlog-state.json`. `backlog.unit_key(unit)` derives this id: it
 prefers an explicit `unit_id` field on the verified-unit record if one
 exists (future scan/verify tickets may add one), and otherwise falls back
-to a slug of `building` + `unit`, e.g. `"Example Tower 2"` unit `"3410"`
-becomes `example-tower-2-3410`.
+to a slug of `building` + `unit`, e.g. `"Example Tower 2"` unit `"2207"`
+becomes `example-tower-2-2207`.
 
 Note this fallback slug style does NOT match the example keys shown in
-`verify_units.py`'s docstring (e.g. `"tower2-3410"`) - `verify_units.py`
+`verify_units.py`'s docstring (e.g. `"tower2-2207"`) - `verify_units.py`
 does not derive a key itself, its `"key"` field is caller-supplied input
 in the checks file the caller builds, so there is nothing there to match
 against. Whoever wires `verified.json` writing should adopt an explicit
@@ -95,8 +95,8 @@ the id and every consumer must call it rather than re-deriving one.
 
 ```json
 {
-  "example-tower-2-3410": {"resurfaced": 2, "last_run_id": "hyd-20260708-090000"},
-  "example-tower-2-3512": {"resurfaced": 0, "last_run_id": "hyd-20260701-090000"}
+  "example-tower-2-2207": {"resurfaced": 2, "last_run_id": "hyd-20260708-090000"},
+  "example-tower-2-2311": {"resurfaced": 0, "last_run_id": "hyd-20260701-090000"}
 }
 ```
 

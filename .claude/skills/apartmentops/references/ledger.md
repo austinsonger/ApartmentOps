@@ -22,15 +22,15 @@ never rewritten, never compacted, never sorted in place. Downstream reads
 computation groups and sorts by `run_id` / `observed_at` itself.
 
 ```json
-{"unit_id": "tower2-3410", "url": "https://example.com/tower2/3410",
+{"unit_id": "tower2-2207", "url": "https://example.com/tower2/2207",
  "observed_at": "2026-07-13T14:02:11-04:00", "run_id": "hyd-20260713-1402",
  "price": 2450, "availability": "2026-08-01", "status": "live",
- "fetch_evidence": "apartmentops/shots/tower2-3410.png"}
+ "fetch_evidence": "apartmentops/shots/tower2-2207.png"}
 ```
 
 | Field | Type | Notes |
 |---|---|---|
-| `unit_id` | string | Same key used for screenshots elsewhere in the pipeline, e.g. `"tower2-3410"`. Not enforced to a specific format, just required and non-empty. |
+| `unit_id` | string | Same key used for screenshots elsewhere in the pipeline, e.g. `"tower2-2207"`. Not enforced to a specific format, just required and non-empty. |
 | `url` | string | The URL re-checked this run (normally `unit_deep_link` from `verified.json`). |
 | `observed_at` | string | ISO 8601 with a timezone offset. Required on every row; used to order runs and compute windows. |
 | `run_id` | string | See "run_id semantics" below. Every row appended together in one `append_rows()` call must carry the identical run_id. |

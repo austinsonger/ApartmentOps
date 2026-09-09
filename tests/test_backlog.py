@@ -20,8 +20,8 @@ import backlog
 # --------------------------------------------------------------------------
 
 
-def make_unit(area="jc-heights", building="Tower 2", unit="3410", live=True,
-              price=4800, deep_link="https://example.com/u/3410"):
+def make_unit(area="area-slug-1", building="Tower 2", unit="2207", live=True,
+              price=4800, deep_link="https://example.com/u/2207"):
     record = {
         "building": building,
         "unit": unit,
@@ -48,7 +48,7 @@ def test_sync_new_units_appends_only_missing_units():
         "u1": {"status": "Contacted", "note": "called them", "updated_at": "2026-01-01"},
     }
     original_actions = copy.deepcopy(actions)
-    verified_units = {"u1": make_unit(), "u2": make_unit(unit="3512")}
+    verified_units = {"u1": make_unit(), "u2": make_unit(unit="2311")}
 
     result = backlog.sync_new_units(actions, verified_units, now="2026-07-15")
 
@@ -62,7 +62,7 @@ def test_sync_new_units_appends_only_missing_units():
 
 def test_sync_new_units_is_idempotent():
     actions = {}
-    verified_units = {"u1": make_unit(), "u2": make_unit(unit="3512")}
+    verified_units = {"u1": make_unit(), "u2": make_unit(unit="2311")}
 
     once = backlog.sync_new_units(actions, verified_units, now="2026-07-15")
     twice = backlog.sync_new_units(once, verified_units, now="2026-07-22")
@@ -391,7 +391,7 @@ def test_backlog_markdown_renders_rows_and_stale_section():
         "backlog": [
             {
                 "unit_id": "u1",
-                "area": "jc-heights",
+                "area": "area-slug-1",
                 "score": 4.62,
                 "band": "TourNow",
                 "deep_link": "https://example.com/u/1",
@@ -441,13 +441,13 @@ def test_describe_sync_reports_creation_appended_and_no_changes():
 
 
 def test_unit_key_prefers_explicit_id():
-    unit = {"unit_id": "explicit-id", "building": "Tower 2", "unit": "3410"}
+    unit = {"unit_id": "explicit-id", "building": "Tower 2", "unit": "2207"}
     assert backlog.unit_key(unit) == "explicit-id"
 
 
 def test_unit_key_falls_back_to_slug():
-    unit = {"building": "Example Tower 2", "unit": "3410"}
-    assert backlog.unit_key(unit) == "example-tower-2-3410"
+    unit = {"building": "Example Tower 2", "unit": "2207"}
+    assert backlog.unit_key(unit) == "example-tower-2-2207"
 
 
 # --------------------------------------------------------------------------
@@ -582,10 +582,10 @@ def test_append_new_entries_creates_file_when_missing(tmp_path):
 def test_unit_key_style_does_not_match_verify_units_example_key():
     # Regression guard for the actions.md join-key documentation defect:
     # unit_key()'s fallback slug must NOT collide with verify_units.py's
-    # compact "tower2-3410" example key style for the same building/unit.
-    unit = {"building": "Tower 2", "unit": "3410"}
-    assert backlog.unit_key(unit) == "tower-2-3410"
-    assert backlog.unit_key(unit) != "tower2-3410"
+    # compact "tower2-2207" example key style for the same building/unit.
+    unit = {"building": "Tower 2", "unit": "2207"}
+    assert backlog.unit_key(unit) == "tower-2-2207"
+    assert backlog.unit_key(unit) != "tower2-2207"
 
 
 # --------------------------------------------------------------------------
@@ -600,12 +600,12 @@ def test_cli_end_to_end_writes_actions_and_state(tmp_path, monkeypatch, capsys):
     state_path = tmp_path / "backlog-state.json"
 
     verified_path.write_text(json.dumps([
-        {"building": "Tower 2", "unit": "3410", "area": "jc-heights",
-         "live": True, "unit_deep_link": "https://example.com/u/3410",
+        {"building": "Tower 2", "unit": "2207", "area": "area-slug-1",
+         "live": True, "unit_deep_link": "https://example.com/u/2207",
          "rent_verified": 4800},
     ]))
     scores_path.write_text(json.dumps({
-        "tower-2-3410": {"composite": 4.7, "band": "TourNow"},
+        "tower-2-2207": {"composite": 4.7, "band": "TourNow"},
     }))
 
     base_argv = [
@@ -623,12 +623,12 @@ def test_cli_end_to_end_writes_actions_and_state(tmp_path, monkeypatch, capsys):
     # actions.yml created with the unit initialized as NEW
     assert actions_path.exists()
     created = backlog.load_actions(actions_path)
-    assert created["tower-2-3410"]["status"] == "NEW"
+    assert created["tower-2-2207"]["status"] == "NEW"
 
     # state file written (unit registered but not yet shown - first run)
     assert state_path.exists()
     state = json.loads(state_path.read_text())
-    assert state["tower-2-3410"] == {"resurfaced": 0, "last_run_id": "run-A"}
+    assert state["tower-2-2207"] == {"resurfaced": 0, "last_run_id": "run-A"}
 
     stdout = capsys.readouterr().out
     payload = json.loads(stdout)
@@ -641,11 +641,11 @@ def test_cli_end_to_end_writes_actions_and_state(tmp_path, monkeypatch, capsys):
     assert rc2 == 0
     stdout2 = capsys.readouterr().out
     payload2 = json.loads(stdout2)
-    assert [row["unit_id"] for row in payload2["backlog"]] == ["tower-2-3410"]
+    assert [row["unit_id"] for row in payload2["backlog"]] == ["tower-2-2207"]
 
     # actions.yml entry for the unit was never rewritten by the second run
     after_second = backlog.load_actions(actions_path)
-    assert after_second["tower-2-3410"]["status"] == "NEW"
+    assert after_second["tower-2-2207"]["status"] == "NEW"
 
 
 def test_cli_preserves_hand_authored_actions_yml_across_scan_and_hydrate(
@@ -661,7 +661,7 @@ def test_cli_preserves_hand_authored_actions_yml_across_scan_and_hydrate(
 
     hand_authored = (
         "# call back after 5pm\n"
-        "tower-2-3512:\n"
+        "tower-2-2311:\n"
         "  status: Contacted\n"
         "  note: \"left a voicemail\"\n"
         "  updated_at: \"2026-07-01\"\n"
@@ -669,11 +669,11 @@ def test_cli_preserves_hand_authored_actions_yml_across_scan_and_hydrate(
     actions_path.write_text(hand_authored)
 
     verified_path.write_text(json.dumps([
-        {"building": "Tower 2", "unit": "3512", "area": "jc-heights",
-         "live": True, "unit_deep_link": "https://example.com/u/3512",
+        {"building": "Tower 2", "unit": "2311", "area": "area-slug-1",
+         "live": True, "unit_deep_link": "https://example.com/u/2311",
          "rent_verified": 4700},
-        {"building": "Tower 2", "unit": "3410", "area": "jc-heights",
-         "live": True, "unit_deep_link": "https://example.com/u/3410",
+        {"building": "Tower 2", "unit": "2207", "area": "area-slug-1",
+         "live": True, "unit_deep_link": "https://example.com/u/2207",
          "rent_verified": 4800},
     ]))
 
@@ -684,7 +684,7 @@ def test_cli_preserves_hand_authored_actions_yml_across_scan_and_hydrate(
         "--state", str(state_path),
     ]
 
-    # scan run: discovers the new tower-2-3410 unit
+    # scan run: discovers the new tower-2-2207 unit
     monkeypatch.setattr(sys, "argv", base_argv + ["--run-id", "scan-A", "--now", "2026-07-15"])
     assert backlog.main() == 0
     capsys.readouterr()
@@ -692,7 +692,7 @@ def test_cli_preserves_hand_authored_actions_yml_across_scan_and_hydrate(
     after_scan = actions_path.read_text()
     assert after_scan.startswith(hand_authored)
     assert "# call back after 5pm" in after_scan
-    assert "tower-2-3410" in after_scan
+    assert "tower-2-2207" in after_scan
 
     # hydrate run: same units, nothing new - file must be byte-for-byte
     # identical to right after the scan run
@@ -703,9 +703,9 @@ def test_cli_preserves_hand_authored_actions_yml_across_scan_and_hydrate(
 
     # the hand-set status and note are still exactly what the user wrote
     final = backlog.load_actions(actions_path)
-    assert final["tower-2-3512"] == {
+    assert final["tower-2-2311"] == {
         "status": "Contacted",
         "note": "left a voicemail",
         "updated_at": "2026-07-01",
     }
-    assert final["tower-2-3410"]["status"] == "NEW"
+    assert final["tower-2-2207"]["status"] == "NEW"

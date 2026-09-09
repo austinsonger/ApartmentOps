@@ -1,0 +1,98 @@
+# ApartmentOps source policy - what each listing surface can prove.
+# Copy to apartmentops/sources.yml and add one entry per operator or platform
+# as the scan meets it. verify_units.py (--policy) and the dashboard's hydrate
+# read this list; a URL with no matching entry falls back to heuristics (a URL
+# that names the unit token is its own page, an index-looking path is an
+# index), which is safe against false gones but NOT against an operator whose
+# per-unit page renders any invented unit id - write the entry.
+#
+# Matching is by substring against the URL, FIRST MATCH WINS: list the more
+# specific pattern (a per-unit path) before the generic one (its index).
+#
+# Fields per entry:
+#   match           substring of the URL this entry governs
+#   kind            own_page   - one unit's own page
+#                   table      - an operator availability table listing units
+#                   index      - a lazy-loading or paginated listing index
+#                   plan_page  - one floor plan covering several units
+#                   aggregator - a third-party syndication page
+#                   gated      - behind a session or login wall
+#                   untrusted  - renders any unit id; never evidence either way
+#   live_evidence   the unit token on this surface proves the unit is live
+#   gone_evidence   the unit token ABSENT from this surface proves it is gone
+#                   (only ever true for own_page and complete tables)
+#   price_evidence  a price read here may be written (own page or own row only)
+#   complete        table only: the table is unpaginated and lists every unit
+#   price_layer     net | base | total - the layer this surface shows when the
+#                   page itself does not say (a net-effective asterisk, "base
+#                   rent" or "total monthly" on the page always win)
+#   note            free text; shows up in the verdict's reason
+#
+# The patterns below are generic path shapes, not real operators; replace
+# them with the hosts you actually meet.
+
+sources:
+  - match: "/inventory/unit/"
+    kind: untrusted
+    live_evidence: false
+    gone_evidence: false
+    price_evidence: false
+    note: "Serves the inventory database, not the vacancy list; an invented unit id renders a priced page. The index below is the only admissible surface for this operator."
+  - match: "/inventory"
+    kind: table
+    complete: true
+    live_evidence: true
+    gone_evidence: true
+    price_evidence: true
+    price_layer: base
+    note: "Unpaginated operator table; authoritative for this operator."
+  - match: "availableunits.aspx"
+    kind: table
+    complete: true
+    live_evidence: true
+    gone_evidence: true
+    price_evidence: true
+    price_layer: base
+    note: "Leasing-portal availability table that renders publicly with base rents."
+  - match: "oleapplication.aspx"
+    kind: gated
+    live_evidence: false
+    gone_evidence: false
+    price_evidence: false
+    note: "Application step; always behind a session wall."
+  - match: "/onlineleasing/"
+    kind: gated
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+    note: "Session-gated leasing portal; pages expire on their own, so a missing unit is unverifiable."
+  - match: "/floorplans/unit-"
+    kind: own_page
+    live_evidence: true
+    gone_evidence: true
+    price_evidence: true
+    note: "Single-unit page."
+  - match: "/availability"
+    kind: table
+    complete: true
+    live_evidence: true
+    gone_evidence: true
+    price_evidence: true
+    note: "Unpaginated availability table; the price layer is read off the page (asterisk = net effective)."
+  - match: "/floorplans/"
+    kind: plan_page
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+    note: "One plan, several units; a price is only trustworthy in the unit's own row."
+  - match: "/floor-plans/"
+    kind: plan_page
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+  - match: "/apartments/"
+    kind: index
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+    note: "Partial lazy-loaded renders are common; absence is not proof."

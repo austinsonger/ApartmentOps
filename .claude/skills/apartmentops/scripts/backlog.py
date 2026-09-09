@@ -122,9 +122,9 @@ def unit_key(unit: dict) -> str:
     Prefers an explicit ``unit_id`` field on the verified-unit record.
     Falls back to a slug of building + unit number, since verified.json
     does not yet guarantee an explicit id field: building "Example Tower 2"
-    unit "3410" becomes "example-tower-2-3410". Note this fallback is NOT
+    unit "2207" becomes "example-tower-2-2207". Note this fallback is NOT
     the same key style as the example keys in verify_units.py's docstring
-    (e.g. "tower2-3410") - verify_units.py never derives a key itself, its
+    (e.g. "tower2-2207") - verify_units.py never derives a key itself, its
     "key" field is caller-supplied input, so there is no shared derivation
     to match. Whoever wires verified.json writing should adopt an explicit
     unit_id field eventually so this fallback stops being load-bearing.

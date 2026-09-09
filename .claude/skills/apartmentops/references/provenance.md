@@ -102,12 +102,17 @@ generic `config_gates` dict `evaluate_gates` expects, e.g.:
 | `unit.baths: {value: 2, mode: hard}` | `baths` | `{"field": "baths", "op": "gte", "value": 2, "mode": "hard"}` |
 | `gates.in_unit_laundry: {value: true, mode: hard}` | `in_unit_laundry` | `{"field": "in_unit_laundry", "op": "eq", "value": true, "mode": "hard"}` |
 | `gates.floor_min: {value: 10, mode: bonus}` | `floor` | `{"field": "floor", "op": "gte", "value": 10, "mode": "bonus"}` |
-| `gates.exposure_blocked: [N]` (non-empty) | `light_view`/`exposure` | `{"field": "exposure", "op": "not_in", "value": ["N"], "mode": "hard"}` |
+| `gates.exposure_blocked: [N]` (non-empty) | `exp` via `gates.exp_gate_field` | `{"field": "exp", "op": "not_in", "value": ["N"], "mode": "hard"}` |
 | `budget.gross_max: 5000` | `rent_verified` | `{"field": "rent_verified", "op": "lte", "value": 5000, "mode": "hard"}` |
 
 `exposure_preferred` and an empty `exposure_blocked` are not hard gates -
 they are preference inputs to scoring, not translated into `config_gates`
 at all.
+
+Orientation has exactly one canonical spelling on a verified unit: the `exp` object `{dir, south, conf, src}` defined in `references/contracts.md`.
+`evaluate_gates` does a flat `unit.get(field)` and would read a bare `exp.dir` string as a FACT even when `conf` is LOW or UNK, so an exposure gate never reads `exp` directly.
+The caller derives the gate's field with `gates.exp_gate_field(unit["exp"])` and evaluates against a copy of the unit where `exp` is replaced by that provenance object: `conf: HIGH` becomes a FACT (value `dir`, source and evidence `src`), `MED` / `LOW` become INFERRED (confidence 0.6 / 0.3, which the gate reads as UNKNOWN), and `UNK`, a null `dir`, or a missing `exp` become MISSING.
+The scan phase's `light_view` string is raw input only; it is normalized into `exp` before anything downstream reads it.
 
 ### Verify-before-tour checklist and the TourNow band
 

@@ -451,8 +451,11 @@ def test_cli_build_writes_lines_index_and_report(tmp_path):
     trajectories_path = tmp_path / "trajectories.json"
     trajectories_path.write_text(json.dumps(TRAJECTORIES))
 
+    # Pin "today" so the trailing 12-month window is reproducible: the
+    # fixture's 2025-09 / 2025-10 observations must stay inside it.
     proc = subprocess.run(
-        [sys.executable, str(SCRIPT), "build", str(verified_path), str(lines_dir), str(trajectories_path)],
+        [sys.executable, str(SCRIPT), "build", str(verified_path), str(lines_dir), str(trajectories_path),
+         "--now", "2026-07-15T00:00:00+00:00"],
         capture_output=True,
         text=True,
         check=True,

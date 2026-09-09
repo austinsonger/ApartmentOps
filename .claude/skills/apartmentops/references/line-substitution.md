@@ -140,7 +140,7 @@ The CLI's `build` command expects this dict as a ready-made JSON file.
 
 ### `build_lines_index()` output shape (this is `apartmentops/data/lines.json`)
 
-The CLI (`python3 line_advisor.py build verified.json lines_dir trajectories.json`)
+The CLI (`python3 line_advisor.py build verified.json lines_dir trajectories.json [--now ISO-8601]`, where `--now` pins the trailing 12-month window's "today" for a reproducible run)
 writes:
 
 ```json

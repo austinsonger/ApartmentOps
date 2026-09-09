@@ -59,8 +59,8 @@ so you can re-run any single stage without redoing the others.
                                timeline
 ```
 
-- **Onboard.** Asks where you commute to (down to the corner - a Financial
-  District office and a Flatiron office produce completely different winning
+- **Onboard.** Asks where you commute to (down to the corner - a downtown
+  office and a midtown office produce completely different winning
   neighborhoods), your budget as a gross band, and which requirements are
   hard gates vs scoring bonuses. Geocodes the anchor and writes `config.yml`.
 - **Scan.** Fans out parallel researchers per neighborhood, then confirms
@@ -127,7 +127,9 @@ so you can re-run any single stage without redoing the others.
 
 ## What it looks like
 
-Same pipeline, two different cities, light and dark:
+Early, minimal layout in two cities, light and dark; the current dashboard
+adds an Exp column, all-in cost, ratings, parking, gates, move-in fit and a
+Light / Cozy / Dark switch (see the example dashboard):
 
 | | Light | Dark |
 |---|---|---|
@@ -144,9 +146,14 @@ subagents cut corners when the rules are implicit:
 - **Liveness or it does not count.** A listing must be verifiably live on the
   day of the check. Years-old syndicated listings look identical to real ones
   until you read the page's own dates.
-- **Per-unit deep links beat index pages.** Availability indexes paginate and
-  lazy-load, producing false "gone" verdicts; verify against the unit's own
-  page and keep that link.
+- **Evidence is per source, not per link type.**
+  An index or root page confirms a unit is live but never proves it gone: indexes paginate and lazy-load.
+  A login wall, bot wall, CAPTCHA interstitial, empty shell, or fetch error keeps the prior verdict and can never overturn a prior gone.
+  A complete, unpaginated operator table that omits a unit IS evidence of gone.
+  Some operators render any invented unit id with a price on their per-unit deep link, so a per-source policy can declare those deep links inadmissible and the operator's index authoritative.
+  Prices are read only from the unit's own page or its own table row, never from a price sitting near a unit token on an index, and the price layer (net-effective, base rent, total monthly) is recorded with the price.
+  Label rows such as "2BR-3" carry no unit number and can never be verified gone.
+  The policy is a `sources:` list in `apartmentops/sources.yml` (shape in `references/contracts.md`, starter in `examples/sources.example.yml`); `verify_units.py` and hydrate read it and return a three-state verdict, live / check / gone, where check means "keep what is on file".
 - **Human-in-the-loop.** ApartmentOps never submits applications, books
   tours, or contacts a broker or leasing office. It produces drafts and
   links; you send them. Read-only browsing of public pages only - no logins,
@@ -160,8 +167,11 @@ deadline - comes out of plain, tested Python, not the model doing math in
 its head. Eleven modules under `.claude/skills/apartmentops/scripts/`
 (`costs.py`, `snapshots.py`, `gates.py`, `scoring.py`, `photo_hash.py`,
 `lease_dates.py`, and five more, alongside the original `geocode.py` and
-`verify_units.py`) are covered by a 399-test pytest suite - run it with
-`pytest tests/` from the repo root. The model's job in every skill is to
+`verify_units.py`) are covered by a 445-test pytest suite (441 tests over
+twelve of the thirteen modules - `geocode.py` is a live Nominatim call and
+has no test file - plus 4 tests for the example-data generator under
+`assets/`) - run it with `pytest tests/` from the repo root. The model's
+job in every skill is to
 call these functions, read what they return, and narrate it with citations;
 it never computes a dollar figure, a percentage, or a hash distance by
 hand. If a script returns MISSING or null, that is what reaches you -
@@ -212,7 +222,8 @@ repo - read it before adding a feature. The four that matter most:
                               snapshots, photo_hash, lease_dates, line_advisor,
                               extract_embedded, flood, backlog, doctor_searches)
                               plus the original geocode.py and verify_units.py
-    assets/example-dashboard.html  a finished dashboard to study
+    assets/example-dashboard.html  a finished dashboard to study (synthetic, seeded data)
+    assets/make_example_data.py    the seeded generator for that example data
   apartmentops-scan/        hunt + browser-verify
   apartmentops-research/    safety, cleanliness, transit, scoring
   apartmentops-dashboard/   build + hydrate the map
@@ -220,8 +231,9 @@ repo - read it before adding a feature. The four that matter most:
 examples/config.example.yml
 examples/scoring.example.yml
 examples/extractor.example.yml
+examples/sources.example.yml   per-source liveness / gone / price evidence policy
 docs/screenshots/
-tests/                      pytest suite for every scripts/ module (399 tests)
+tests/                      pytest suite (445 tests) for twelve of the thirteen scripts/ modules (geocode.py is untested) plus assets/make_example_data.py
 ```
 
 ## License

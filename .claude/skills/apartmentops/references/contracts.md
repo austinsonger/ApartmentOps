@@ -6,7 +6,7 @@ outputs here - nothing else is shared state. Timestamps are ISO 8601 with
 timezone. Prices are monthly USD numbers (no strings, no "$").
 
 **unit_id convention (used by every per-unit file below):** slugified
-building name + "-" + unit token, e.g. `example-tower-2-3410`. This is what
+building name + "-" + unit token, e.g. `example-tower-2-2207`. This is what
 `backlog.unit_key()` in `scripts/backlog.py` produces; use it everywhere a
 file keys on a unit so joins stay trivial.
 
@@ -60,6 +60,33 @@ Onboarding also copies `examples/scoring.example.yml` to
 scores against - see `references/scoring.md`) and creates
 `apartmentops/data/actions.yml` (see below).
 
+## apartmentops/sources.yml  (written by: scan as it meets each operator, hand-maintained; read by: scan verify, dashboard hydrate)
+
+The per-source evidence policy: what each listing surface can prove.
+Verdicts are per source, never per link type - an index page confirms live but never proves gone, a complete unpaginated operator table that omits a unit is gone evidence, and some operators render any invented unit id with a price on their per-unit deep link, so their index, not the deep link, is authoritative.
+Matching is by substring against the URL and the FIRST match wins, so a per-unit path must be listed before the index pattern it sits under.
+A URL with no matching entry falls back to `verify_units.py`'s heuristics (a URL naming the unit token is its own page, an index-looking path is an index), which cannot produce a false gone but will read an untrusted deep link as a false live - write the entry.
+
+```yaml
+sources:
+  - match: "/inventory/unit/"   # substring of the URL this entry governs
+    kind: untrusted                  # own_page | table | index | plan_page | aggregator | gated | untrusted
+    live_evidence: false             # token present here proves live
+    gone_evidence: false             # token absent here proves gone (own_page and complete tables only)
+    price_evidence: false            # a price read here may be written
+    note: "renders any invented unit id with a price; the index below is authoritative"
+  - match: "/inventory"
+    kind: table
+    complete: true                   # table only: unpaginated, lists every unit
+    live_evidence: true
+    gone_evidence: true
+    price_evidence: true
+    price_layer: base                # net | base | total when the page itself does not say
+```
+
+Starter file with every kind: `examples/sources.example.yml`.
+Prices are admissible only from the unit's own page (`own_page`) or the unit's own row in a `table`; a price near a unit token on an index is never written, and the detected layer (a net-effective asterisk, "base rent", "total monthly") travels with the price so a net figure is never stored as gross.
+
 ## apartmentops/data/candidates.json  (written by: scan, hunt phase)
 
 Raw finds before verification. Array of unit objects:
@@ -69,21 +96,24 @@ Raw finds before verification. Array of unit objects:
   "building": "Example Tower 2",
   "address": "1 Example Ave, City, ST",
   "area": "area-slug-1",
-  "unit": "3410",
-  "floor": 34,
-  "rent_gross": 4810,
+  "unit": "2207",
+  "floor": 22,
+  "rent_gross": 4380,
   "rent_net": null,
   "concession": "up to 1 month free on select units",
-  "beds": 2, "baths": 2, "sqft": 1048,
-  "available": "2026-08-13",
-  "year_built": 2021,
-  "light_view": "SW corner per official key plan",
+  "beds": 2, "baths": 2, "sqft": 1130,
+  "available": "2026-09-02",
+  "year_built": 2019,
+  "light_view": "south-facing per key plan",
   "url": "https://... (page the fact came from)",
   "verify_url": "https://... (best headless-loadable page)",
   "source": "building-direct",
   "found_at": "2026-01-01T18:00:00-05:00"
 }
 ```
+
+`light_view` is the raw orientation text exactly as the listing or key plan states it.
+It is input only: the verify phase normalizes it into the canonical `exp` object (next section) and nothing downstream reads `light_view`.
 
 ## apartmentops/data/verified.json  (written by: scan, verify phase; read by: research, dashboard)
 
@@ -97,10 +127,10 @@ either shape and normalizes).
 {
   "live": true,
   "verified_at": "2026-01-01T18:24:00-05:00",
-  "rent_verified": 4810,
+  "rent_verified": 4380,
   "rent_is_net": false,
   "unit_deep_link": "https://... (per-unit page if one exists, else null)",
-  "screenshot": "apartmentops/shots/tower2-3410.png",
+  "screenshot": "apartmentops/shots/tower2-2207.png",
   "scam_flags": [],
   "profile": "primary",
   "extraction": {"rent_verified": "embedded:next_data", "beds": "dom"},
@@ -120,9 +150,29 @@ and `references/constraints.json`. `scam_flags` is populated from the
 photo-hash net (`scripts/photo_hash.py`, see `data/photo_hashes.json` below)
 as well as the text scam screen.
 
+### Orientation: the canonical `exp` object
+
+Orientation is spelled exactly one way on a verified unit: `exp`.
+The scan phase's `light_view` string is raw input that the verify phase normalizes into it; `exposure` is not a unit field anywhere in the pipeline (config.yml's `exposure_preferred` / `exposure_blocked` are gate names, not fields).
+
+```json
+"exp": {"dir": "S", "south": true, "conf": "HIGH", "src": "Floor-plan key plan: south-facing glass across the living room"}
+```
+
+- `dir`: a compass string (`N`, `NE`, `E`, `SE`, `S`, `SW`, `W`, `NW`) or null when unknown.
+- `south`: `true` (verified south-facing glass), `false` (verified not south), or `null` (unresolved).
+- `conf`: `HIGH` / `MED` / `LOW` / `UNK` - the three-signal orientation consensus (floor-plan key plan, footprint bearing, listing statement) confidence.
+- `src`: the evidence, a URL, file path, or verbatim quote; never empty when `conf` is not `UNK`.
+
+The dashboard renders `exp` as the Exp badge (`south: true` sun badge, suspected-but-unverified southerly line amber, verified not-south plain, unknown muted).
+An exposure hard gate never reads `exp` directly: the producer derives the gate's field with `gates.exp_gate_field(exp)` (HIGH -> FACT, MED / LOW -> INFERRED and therefore UNKNOWN at the gate, UNK or null `dir` -> MISSING) and evaluates against a copy of the unit whose `exp` is that provenance object - see `references/provenance.md`.
+UNKNOWN is a valid, correct result; never assert south without evidence.
+
 Re-verification (hydrate) updates `live`, `verified_at`, `rent_verified` in
 place and never deletes rows - a gone unit with `live: false` is market
-history worth keeping. Every hydrate also appends to the snapshot ledger and
+history worth keeping.
+Each re-check yields a three-state verdict (`scripts/verify_units.py`, per the `sources.yml` policy above): `live` updates all three fields (`rent_verified` only when the price is admissible), `gone` sets `live: false` and `verified_at`, and `check` (a wall, shell, index without the token, fetch error, untrusted surface, or a live read contradicting a prior gone) touches nothing - the prior verdict and its date are carried, and a check can never overturn a prior gone.
+Every hydrate also appends to the snapshot ledger and
 run log (next section) - that is what powers deltas, sparklines, and the
 freshness banner.
 
@@ -161,7 +211,9 @@ Per-building enrichments keyed by building slug:
     "flood": {"zone": "X", "sfha": false, "source_url": "https://...", "viewer_url": "https://...", "fetched_at": "..."},
     "rent_control": {"status": "UNKNOWN", "cap_pct": null, "source": null, "resolved_at": null},
     "grating": {"stars": 4.3, "count": 1152, "url": "https://www.google.com/maps/search/?api=1&query=..."},
-    "parking": {"avail": "garage", "cost": 250, "note": "on-site garage; $250/mo per <source>", "url": "https://..."}
+    "parking": {"avail": "garage", "cost": 250, "note": "on-site garage; $250/mo per <source>", "url": "https://..."},
+    "gate": {"ok": true, "why": "every hard gate PASS: baths 2 (listing), in-unit laundry (building FAQ)"},
+    "fees": [{"label": "amenity fee", "monthly": 75, "source": "https://...", "mandatory": true}]
   }
 }
 ```
@@ -177,9 +229,11 @@ object is absent (chip renders n/a) when no rating was verified. `parking`
 records on-site parking: `avail` is `garage`/`valet`/`none`/`unknown` and
 `cost` is a monthly rate ONLY when a real source publishes it (else null,
 with the availability still shown). Both feed the dashboard's chips and the
-all-in cost figure. A unit's window exposure lives on the unit in
-verified.json as `exp: {dir, south, conf, src}` (three-signal orientation
-consensus; `south` is true/false/null, `conf` HIGH/MED/LOW/UNK). A second
+all-in cost figure.
+`gate` is the building-level roll-up of the hard gates, tri-state: `ok: true` when every hard gate on every live unit is a FACT-backed PASS, `false` when any is a FAIL (the dashboard marks the building disqualified and sorts it last in every order), `null` when unresolved (rendered as a distinct unknown chip, never as a pass or a fail); `why` names the gates and sources behind the verdict.
+`fees` lists known mandatory monthly fees with a published amount and a source; the dashboard's all-in figure adds them, an empty list adds nothing and reads "none on file", and a fee is never guessed.
+A unit's window exposure lives on the unit in verified.json as the canonical `exp` object (see the verified.json section above).
+A second
 commute anchor is an optional `commute2` block (same shape as the
 transit.json commute, `legs` ending at `office2`) for a two-office
 household; the dashboard draws both and shows both per unit.
@@ -188,7 +242,7 @@ household; the dashboard draws both and shows both per unit.
 
 ```json
 {
-  "example-tower-2-3410": {
+  "example-tower-2-2207": {
     "composite": 78.5,
     "band": "Watch",
     "renormalized": [],
@@ -306,8 +360,9 @@ that LINK to their sources, per-unit rows with deep links and live/gone
 badges, light and dark themes. Publish as an artifact and keep republishing
 the same file path so the URL stays stable.
 
-Beyond the map and cards, the dashboard renders (each degrades to n/a or
-hides when its input file is missing - nothing is ever faked): a freshness
+Beyond the map and cards, and not shown in the example file, the dashboard
+renders (each degrades to n/a or hides when its input file is missing -
+nothing is ever faked): a freshness
 and confidence banner (last hydrate, research legs, green/yellow/red via the
 run-log heartbeat), a weekly delta digest section (`snapshots.digest_markdown`),
 per-unit price sparklines with NEW / PRICE-DROP / REMOVED badges (hidden

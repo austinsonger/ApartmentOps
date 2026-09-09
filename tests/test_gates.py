@@ -409,3 +409,52 @@ def test_cli_wrong_arg_count(capsys):
     rc = gates.main(["only_one.json"])
     assert rc == 2
     assert "usage" in capsys.readouterr().err.lower()
+
+
+# ---------------------------------------------------------------------------
+# exp_gate_field: the canonical exp object -> the field an exposure gate reads
+# ---------------------------------------------------------------------------
+
+EXPOSURE_GATE = {"no_north": {"field": "exp", "op": "not_in", "value": ["N"], "mode": "hard"}}
+
+
+def _gate_exp(exp):
+    unit = {"unit": "2207", "exp": exp}
+    return gates.evaluate_gates(EXPOSURE_GATE, {**unit, "exp": gates.exp_gate_field(unit.get("exp"))})["no_north"]
+
+
+def test_exp_gate_field_high_confidence_is_a_fact_with_source():
+    f = gates.exp_gate_field({"dir": "SW", "south": True, "conf": "HIGH", "src": "key plan p.3"})
+    assert f["status"] == gates.FACT
+    assert f["value"] == "SW"
+    assert f["source"] == "key plan p.3"
+    assert _gate_exp({"dir": "SW", "south": True, "conf": "HIGH", "src": "key plan p.3"}) == gates.GATE_PASS
+    assert _gate_exp({"dir": "N", "south": False, "conf": "HIGH", "src": "key plan p.3"}) == gates.GATE_FAIL
+
+
+@pytest.mark.parametrize("conf,confidence", [("MED", 0.6), ("LOW", 0.3)])
+def test_exp_gate_field_med_low_are_inferred_and_unknown_at_the_gate(conf, confidence):
+    exp = {"dir": "N", "south": False, "conf": conf, "src": "listing text"}
+    f = gates.exp_gate_field(exp)
+    assert f["status"] == gates.INFERRED
+    assert f["confidence"] == confidence
+    assert gates.normalize_field(f)["status"] == gates.INFERRED  # survives the 0.3 floor
+    assert _gate_exp(exp) == gates.GATE_UNKNOWN  # a north-facing guess never FAILs a hard gate
+
+
+def test_exp_gate_field_unknown_or_missing_is_missing():
+    for exp in (None, {}, {"dir": None, "south": None, "conf": "HIGH", "src": None},
+                {"dir": "S", "south": None, "conf": "UNK", "src": "suspected from line"},
+                {"dir": "S", "conf": "weird", "src": None}):
+        f = gates.exp_gate_field(exp)
+        assert f["status"] == gates.MISSING
+        assert f["value"] is None
+        assert _gate_exp(exp) == gates.GATE_UNKNOWN
+
+
+def test_bare_exp_dir_read_directly_would_be_a_false_fact():
+    # The reason the derivation exists: a raw exp object is not a provenance
+    # field, and its dir string alone would grade as FACT regardless of conf.
+    raw = {"dir": "N", "south": False, "conf": "UNK", "src": None}
+    assert gates.exp_gate_field(raw)["status"] == gates.MISSING
+    assert gates.normalize_field(raw["dir"])["status"] == gates.FACT

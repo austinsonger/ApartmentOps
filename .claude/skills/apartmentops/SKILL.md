@@ -62,8 +62,8 @@ actually fetched.
 ### Step 1 - The commute anchor (most important question)
 
 Ask where they commute to, down to the street corner. The anchor changes
-everything: a Financial District office and a Flatiron office produce
-completely different winning neighborhoods, and marketing walk times lie.
+everything: a downtown office and a midtown office produce completely
+different winning neighborhoods, and marketing walk times lie.
 Verify the address exists (web search), then geocode it with
 `scripts/geocode.py` (Nominatim, 1 req/sec). Store address + lat/lon.
 
@@ -151,9 +151,9 @@ Step 6 also:
 - **Liveness or it does not count:** a listing must be verifiably live on the
   day of the check. Stale syndication pages ("zombie listings") look real and
   are not - years-old listings resurface on syndication pages looking current.
-- **Per-unit deep links beat index pages:** availability index pages paginate
-  and lazy-load, producing false "gone" verdicts. Verify against the unit's
-  own page whenever one exists, and harvest those links when found.
+- **Evidence is per source, not per link type:** an index or root page confirms live but never proves gone; a login wall, bot wall, CAPTCHA interstitial, empty shell, or fetch error keeps the prior verdict and can never overturn a prior gone; a complete, unpaginated operator table that omits a unit IS evidence of gone; a per-unit deep link is admissible only when the source policy says so (some operators render any invented unit id with a price).
+  Prices come only from the unit's own page or its own table row, with the price layer recorded; a price near a unit token on an index is unusable.
+  The policy is the `sources:` list in `apartmentops/sources.yml` (`references/contracts.md`); harvest deep links when found, and record a policy entry for every operator you meet.
 - **Human-in-the-loop:** never submit applications, book tours, send
   emails/messages to brokers or leasing offices, or click
   Book/Submit/Confirm/Apply on any site. Produce drafts and links; the user
@@ -167,7 +167,9 @@ Step 6 also:
   Read it before any stage work.
 - `scripts/geocode.py` - Nominatim geocoder (polite rate limit built in).
 - `scripts/verify_units.py` - headless-Chromium liveness checker: feed it a
-  JSON list of {key, token, url}, get per-unit live/price verdicts. Requires
+  JSON list of {key, token, url} plus `--policy apartmentops/sources.yml`,
+  get a per-unit three-state verdict (live / check / gone) with the reason,
+  an admissible price with its layer, and a screenshot. Requires
   `pip install playwright && playwright install chromium` once.
 - `scripts/extract_embedded.py` - pulls listing fields from a page's
   embedded JSON (`__NEXT_DATA__`, ld+json, `window.NAME =`) before any DOM
@@ -212,9 +214,14 @@ Step 6 also:
   extracts against.
 - `references/line-substitution.md` - the per-building line-map schema and
   the trailing-letter trust rule.
-- `assets/example-dashboard.html` - a real finished dashboard to study
+- `assets/example-dashboard.html` - a finished example dashboard to study
   before building one (structure, map projection, grade chips, link rows).
+  Its buildings, units, prices, grades and commutes are synthetic, generated
+  by `assets/make_example_data.py` from one fixed seed; only the map
+  geography (shorelines, stations) and the transit fare table in the footer
+  are real.
 
 The repo's `tests/` directory (root level, alongside this skill tree) covers
-every script above - run `pytest` from the repo root before trusting a
-change to any of them.
+every script above except `geocode.py` (a live Nominatim call with no
+offline test) - run `pytest` from the repo root before trusting a change to
+any of them.

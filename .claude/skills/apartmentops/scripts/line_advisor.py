@@ -32,7 +32,7 @@ in):
     from line_advisor import unit_line, suggest, build_lines_index
 
 CLI usage (reads/writes real files):
-    python3 line_advisor.py build verified.json lines_dir trajectories.json > lines.json
+    python3 line_advisor.py build verified.json lines_dir trajectories.json [--now ISO-8601] > lines.json
 
 Where lines_dir contains one YAML file per building
 (apartmentops/data/lines/{building-slug}.yml) and trajectories.json is the
@@ -413,21 +413,37 @@ def load_all_line_maps(directory: str | pathlib.Path) -> dict:
     return maps
 
 
+USAGE = "usage: line_advisor.py build verified.json lines_dir trajectories.json [--now ISO-8601]"
+
+
 def main() -> int:
-    if len(sys.argv) != 5 or sys.argv[1] != "build":
-        print(
-            "usage: line_advisor.py build verified.json lines_dir trajectories.json",
-            file=sys.stderr,
-        )
+    argv = list(sys.argv[1:])
+    now = None
+    if "--now" in argv:
+        i = argv.index("--now")
+        if i + 1 >= len(argv):
+            print(USAGE, file=sys.stderr)
+            return 2
+        now = _parse_dt(argv[i + 1])
+        if now is None:
+            print(USAGE, file=sys.stderr)
+            return 2
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=datetime.timezone.utc)
+        del argv[i:i + 2]
+    if len(argv) != 4 or argv[0] != "build":
+        print(USAGE, file=sys.stderr)
         return 2
 
-    verified_path, lines_dir, trajectories_path = sys.argv[2], sys.argv[3], sys.argv[4]
+    verified_path, lines_dir, trajectories_path = argv[1], argv[2], argv[3]
 
     verified_units = json.loads(pathlib.Path(verified_path).read_text())
     line_maps_by_building = load_all_line_maps(lines_dir)
     trajectories = json.loads(pathlib.Path(trajectories_path).read_text())
 
-    index, report = build_lines_index(verified_units, line_maps_by_building, trajectories)
+    # --now pins the trailing-window "today" so a run (or a test) is
+    # reproducible; the default is the real clock.
+    index, report = build_lines_index(verified_units, line_maps_by_building, trajectories, now=now)
     json.dump({"lines": index, "report": report}, sys.stdout, indent=1)
     print()
     return 0

@@ -519,8 +519,8 @@ def test_rank_by_tco24_requires_gross_per_unit():
 def _sample_inputs() -> dict:
     return {
         "units": {
-            "tower2-3410": _full_unit(),
-            "tower2-3411": {"gross": 4600, "term_months": 12},
+            "tower2-2207": _full_unit(),
+            "tower2-2208": {"gross": 4600, "term_months": 12},
         },
     }
 
@@ -556,14 +556,14 @@ def test_build_results_income_annual_is_a_runtime_keyword_never_echoed():
     assert "income_annual" not in blob
     assert "ratio" not in blob
     # the boolean derived from the run-time income is still present
-    qualification = result["units"]["tower2-3410"]["qualification"]
+    qualification = result["units"]["tower2-2207"]["qualification"]
     assert qualification["qualifies"] in (True, False)
     assert set(qualification.keys()) == {"required_income", "qualifies"}
 
 
 def test_build_results_without_income_leaves_qualifies_none():
     result = costs.build_results(_sample_inputs())
-    qualification = result["units"]["tower2-3410"]["qualification"]
+    qualification = result["units"]["tower2-2207"]["qualification"]
     assert qualification["qualifies"] is None
 
 
@@ -575,8 +575,8 @@ def test_build_results_engine_version_and_assumptions_present():
 
 def test_build_results_complete_unit_and_missing_fee_unit_side_by_side():
     result = costs.build_results(_sample_inputs())
-    complete = result["units"]["tower2-3410"]["true_monthly_cost_12"]
-    incomplete = result["units"]["tower2-3411"]["true_monthly_cost_12"]
+    complete = result["units"]["tower2-2207"]["true_monthly_cost_12"]
+    incomplete = result["units"]["tower2-2208"]["true_monthly_cost_12"]
     assert complete["complete"] is True
     assert incomplete["complete"] is False
 
@@ -585,7 +585,7 @@ def test_build_results_ranking_present_for_multiple_units():
     result = costs.build_results(_sample_inputs())
     assert "ranking" in result
     ids = [row["unit_id"] for row in result["ranking"]["by_tco_24"]]
-    assert set(ids) == {"tower2-3410", "tower2-3411"}
+    assert set(ids) == {"tower2-2207", "tower2-2208"}
 
 
 def test_build_results_no_ranking_for_single_unit():
@@ -613,7 +613,7 @@ def test_build_results_current_lease_produces_renewal_scenario():
     data = _sample_inputs()
     data["current_lease"] = {"gross": 4300, "assumed_increase_pct": 3.0, "rent_control": None}
     result = costs.build_results(data)
-    scenario = result["units"]["tower2-3410"]["renewal_vs_relocate"]
+    scenario = result["units"]["tower2-2207"]["renewal_vs_relocate"]
     assert scenario["cheaper"] in ("renew", "relocate")
     assert isinstance(scenario["renew_24mo"], float)
     assert isinstance(scenario["relocate_24mo"], float)
@@ -621,7 +621,7 @@ def test_build_results_current_lease_produces_renewal_scenario():
 
 def test_build_results_omits_renewal_scenario_when_no_current_lease():
     result = costs.build_results(_sample_inputs())
-    assert "renewal_vs_relocate" not in result["units"]["tower2-3410"]
+    assert "renewal_vs_relocate" not in result["units"]["tower2-2207"]
 
 
 def test_build_results_unit_without_term_months_uses_default_and_does_not_crash():
@@ -711,7 +711,7 @@ def test_cli_income_flag_never_appears_in_output(tmp_path):
     assert "income_annual" not in result.stdout
     assert "ratio" not in result.stdout
     parsed = json.loads(result.stdout)
-    qualification = parsed["units"]["tower2-3410"]["qualification"]
+    qualification = parsed["units"]["tower2-2207"]["qualification"]
     assert qualification["qualifies"] in (True, False)
     assert set(qualification.keys()) == {"required_income", "qualifies"}
 

@@ -33,7 +33,7 @@ config_gates shape::
       "floor_min":       {"field": "floor", "op": "gte",
                            "value": 10, "mode": "bonus"},
       "rent_max":        {"field": "rent_verified", "op": "lte",
-                           "value": 4900, "mode": "hard"},
+                           "value": 3500, "mode": "hard"},
     }
 
 "field" names a key in the unit dict (defaults to the gate name itself if
@@ -175,6 +175,43 @@ _OPS.update({
     ">=": _OPS["gte"], "<=": _OPS["lte"],
     ">": _OPS["gt"], "<": _OPS["lt"],
 })
+
+
+EXP_CONF_FACT = "HIGH"
+# MED / LOW map to INFERRED confidences at or above the 0.3 floor, so the
+# value survives normalization but a hard gate still reads it as UNKNOWN.
+EXP_CONF_INFERRED = {"MED": 0.6, "LOW": 0.3}
+
+
+def exp_gate_field(exp: Any) -> dict[str, Any]:
+    """Derive the provenance field an exposure gate evaluates from a unit's
+    canonical `exp` object {dir, south, conf, src} (references/contracts.md).
+
+    evaluate_gates() does a flat unit.get(field) and would read a bare
+    `dir` string as a FACT even when `conf` is LOW or UNK, so an exposure
+    gate never reads `exp` directly: evaluate against a copy of the unit
+    whose "exp" is replaced by this object, e.g.
+        evaluate_gates(config_gates, {**unit, "exp": exp_gate_field(unit.get("exp"))})
+
+    - conf HIGH and a non-null dir -> FACT (value dir, source/evidence src)
+    - conf MED / LOW -> INFERRED (confidence 0.6 / 0.3), UNKNOWN at the gate
+    - conf UNK, a null or missing dir, or no exp at all -> MISSING
+    """
+    if not isinstance(exp, dict):
+        return {"value": None, "status": MISSING, "source": None, "evidence": None}
+    direction = exp.get("dir")
+    conf = str(exp.get("conf") or "").upper()
+    src = exp.get("src")
+    if direction is None or conf in ("", "UNK"):
+        return {"value": None, "status": MISSING, "source": src, "evidence": src}
+    if conf == EXP_CONF_FACT:
+        return {"value": direction, "status": FACT, "source": src, "evidence": src}
+    if conf in EXP_CONF_INFERRED:
+        return {
+            "value": direction, "status": INFERRED, "source": src, "evidence": src,
+            "confidence": EXP_CONF_INFERRED[conf],
+        }
+    return {"value": None, "status": MISSING, "source": src, "evidence": src}
 
 
 def evaluate_gates(config_gates: dict[str, dict[str, Any]], unit: dict[str, Any]) -> dict[str, str]:

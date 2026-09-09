@@ -85,9 +85,11 @@ truncation reads as "covered everything" when it did not.
 
 For each candidate (rank by fit, cap sensibly, loop batches until the target
 count is confirmed): load `verify_url` in headless Chromium - the bundled
-`../apartmentops/scripts/verify_units.py` does the mechanical check (token
-present, nearby price, screenshot), or drive Playwright directly when a page
-needs interaction.
+`../apartmentops/scripts/verify_units.py` does the mechanical check (a
+three-state verdict live / check / gone with its reason, an admissible price
+with its layer, a screenshot; pass `--policy apartmentops/sources.yml`), or
+drive Playwright directly when a page needs interaction.
+A `check` verdict at scan time means the unit was NOT verified (a wall, shell, index without the token, or fetch error): never write it with `live: true`; re-verify against another public surface or leave it out of verified.json with the reason in the run report.
 
 Before falling back to DOM parsing, read fields from the page's own embedded
 payload first: `../apartmentops/scripts/extract_embedded.py`'s
@@ -116,10 +118,9 @@ Confirm:
    or syndicated ghost listings; a zombie listing from years ago looks
    identical to a real one until you check the page's own dates.
 2. **Price** - as shown on the page, classified net vs gross.
-3. **Per-unit deep link** - harvest hrefs containing the unit number; store
-   the deepest one. Index pages paginate and lazy-load, so a later re-check
-   against an index produces false "gone" verdicts; the deep link is the
-   durable handle.
+3. **Per-unit deep link and source policy** - harvest hrefs containing the unit number and store the deepest one; it is the durable handle for hydrate.
+   Then record what that link can prove in the `sources:` list of `apartmentops/sources.yml` (shape in `../apartmentops/references/contracts.md`): an index page confirms live but never proves gone (it paginates and lazy-loads), a complete unpaginated operator table that omits a unit is gone evidence, and an operator whose per-unit page renders any invented unit id with a price gets `kind: untrusted` so its index, not its deep link, is authoritative.
+   Prices are admissible only from the unit's own page or its own table row; note the price layer (net-effective asterisk, base rent, total monthly) per source.
 4. **Screenshot** to `apartmentops/shots/` - permanent evidence that this was
    live on this date, since the link itself will outlive the unit.
 5. **Scam screen** - price far below the building's own comps, no-deposit

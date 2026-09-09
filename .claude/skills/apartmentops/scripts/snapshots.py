@@ -10,10 +10,10 @@ rendered weekly digest, and a heartbeat run-log the freshness banner keys
 on. No network calls anywhere in this file.
 
 Row schema (one JSON object per line in snapshots.jsonl):
-    {"unit_id": "tower2-3410", "url": "https://...",
+    {"unit_id": "tower2-2207", "url": "https://...",
      "observed_at": "2026-07-13T14:02:11-04:00", "run_id": "hyd-20260713-1402",
      "price": 2450, "availability": "2026-08-01", "status": "live",
-     "fetch_evidence": "apartmentops/shots/tower2-3410.png"}
+     "fetch_evidence": "apartmentops/shots/tower2-2207.png"}
 
 See ../references/ledger.md for the full schema, the run_id convention, the
 heartbeat contract, and the loud-error rule this module enforces.
@@ -25,7 +25,7 @@ Library usage (import directly - no subprocess needed):
 
 CLI usage:
     python3 snapshots.py append --run-id hyd-20260713-1402 < rows.json
-    python3 snapshots.py append --run-id hyd-20260713-1402 --target runlog < stats.json
+    python3 snapshots.py append --run-id hyd-20260713-1402 --target runlog [--at ISO-8601] < stats.json
     python3 snapshots.py diff [--path FILE]
     python3 snapshots.py drops [--min-pct 5] [--window-days 14] [--path FILE]
     python3 snapshots.py digest [--drop-pct 5] [--window-days 14] [--path FILE]
@@ -644,7 +644,7 @@ def _cmd_append(args: argparse.Namespace) -> int:
     else:
         if not isinstance(payload, dict):
             raise ValueError("append --target runlog expects a JSON object of stats on stdin")
-        row = append_runlog(args.path, args.run_id, payload)
+        row = append_runlog(args.path, args.run_id, payload, at=args.at)
         print(json.dumps({"appended": 1, "target": "runlog", "row": row}))
     return 0
 
@@ -687,6 +687,8 @@ def _build_parser() -> argparse.ArgumentParser:
     p_append.add_argument("--run-id", required=True)
     p_append.add_argument("--target", choices=("snapshots", "runlog"), default="snapshots")
     p_append.add_argument("--path", default=None, help="defaults to the standard path for --target")
+    p_append.add_argument("--at", default=None,
+                          help="runlog target only: the heartbeat timestamp (ISO 8601); defaults to now")
     p_append.set_defaults(func=_cmd_append)
 
     p_diff = sub.add_parser("diff", help="two-run NEW / REMOVED / PRICE_CHANGED diff")
