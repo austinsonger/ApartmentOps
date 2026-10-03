@@ -138,3 +138,43 @@ def test_net_without_gross_hits_sweep():
     ])
     assert len(hits) == 1 and hits[0]["unit_id"] == "a"
     assert "Net-effective" in hits[0]["note_excerpt"]
+
+
+BUDGET = {"gross_max": 3500, "gross_max_stretch": 3800}
+
+
+def test_concession_badge_matches():
+    for text in ("1 month free", "6 weeks free", "2 mo free", "Move-in special", "move in special",
+                 "Special offer", "Special!", "Starting at $3,400", "starting from 3,400", "From $3,400",
+                 "Concession on 13-month lease", "Look and lease", "Limited-time deal", "limited time"):
+        assert quality.concession_badge(text), text
+    for text in ("Ask the specialist", "Near special education center", None, ""):
+        assert not quality.concession_badge(text), text
+
+
+def test_feed_price_decision_pass_under_ceiling():
+    assert quality.feed_price_decision(3400, "", BUDGET) == {"action": "pass"}
+
+
+def test_feed_price_decision_open_badged_within_stretch():
+    d = quality.feed_price_decision(3700, "6 weeks free", BUDGET)
+    assert d == {"action": "open", "reason": "concession_badged_over_ceiling"}
+    # opened on the exception, verified over the ceiling: the existing warn fires
+    opened = {"rent_verified": 3650, "quality_flags": ["concession_badged_over_ceiling"]}
+    assert _flags(opened)["over_budget_all_in"]["action"] == "warn"
+    assert "over_budget_all_in" not in _flags({**opened, "rent_verified": 3400})
+
+
+def test_feed_price_decision_skip_badged_above_stretch():
+    d = quality.feed_price_decision(3900, "6 weeks free", BUDGET)
+    assert d == {"action": "skip", "reason": "over_ceiling"}
+    # no stretch set: the stretch ceiling is gross_max, so a badge cannot open it
+    assert quality.feed_price_decision(3600, "Special", {"gross_max": 3500})["action"] == "skip"
+
+
+def test_feed_price_decision_skip_unbadged_over_ceiling():
+    assert quality.feed_price_decision(3700, "Bright corner unit", BUDGET) == {"action": "skip", "reason": "over_ceiling"}
+
+
+def test_feed_price_decision_none_price_opens():
+    assert quality.feed_price_decision(None, "", BUDGET) == {"action": "open", "reason": "price_unstated_on_card"}

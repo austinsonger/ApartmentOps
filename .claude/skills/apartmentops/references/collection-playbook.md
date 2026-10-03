@@ -30,6 +30,13 @@ before opening anything.
 6. Quality, dedupe, grade, gates, verify - then the rest of the scan phases
 ```
 
+The band filter in step 2 has one exception
+(`quality.feed_price_decision`): a card over the ceiling but within
+`gross_max_stretch` that carries a concession or starting-at badge is
+opened rather than skipped, because the badge hides the true unit rent -
+the card shows a teaser or an averaged net, and only the unit's own page
+shows what that unit costs.
+
 A realistic round: a few hundred raw results, under a hundred after the
 area filter, a handful genuinely new. If the "new" count is in the
 hundreds, the filters or the hunt memory failed - stop and look.

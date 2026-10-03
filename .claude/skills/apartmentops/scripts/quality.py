@@ -73,6 +73,17 @@ RELATIVE_TIME = re.compile(
 # monthly check. It is not: the gross is what is paid most months and what
 # renewal starts from.
 NET_WITHOUT_GROSS = re.compile(r"\bnet[- ]effective\b|\bnet\s*\$|\$[\d,]+\s*net\b", re.IGNORECASE)
+# A feed card carrying a concession or "starting at" badge hides the true
+# unit rent: the card shows a teaser, the page shows the unit. Such a card
+# over the ceiling (but within the stretch) is opened, not skipped. A bare
+# "special" is excluded before "education" / "needs" so school and service
+# copy does not read as a rent badge.
+CONCESSION_BADGE = re.compile(
+    r"\b(\d+\s*(month|months|mo|weeks?) free|move[- ]in special|special offer|"
+    r"special(?!\s+(education|needs)\b)|starting (at|from)|from \$|concession|look and lease|"
+    r"limited[- ]time)\b",
+    re.IGNORECASE,
+)
 # Typical size bands per bedroom count (square feet). Outside 0.5x-2x of
 # these reads as lot/garden area, a typo, or a wrong bed count.
 SQFT_TYPICAL = {0: 450, 1: 700, 2: 1000, 3: 1300, 4: 1700}
@@ -263,11 +274,25 @@ def traps(unit: dict, config: dict | None = None, comps: list[dict] | None = Non
             out.append(_flag("over_budget_all_in", "warn",
                              f"rent fits, but rent plus known fees is {total['total']:g}, over the {gmax:g} ceiling; lead the notes with this",
                              total=total["total"]))
+        verified = _num(unit, "rent_verified")
+        if (verified is not None and verified > gmax
+                and "concession_badged_over_ceiling" in _flag_names(unit.get("quality_flags"))):
+            out.append(_flag("over_budget_all_in", "warn",
+                             f"opened on a concession badge, but the verified rent {verified:g} is over the "
+                             f"{gmax:g} ceiling; lead the notes with this",
+                             total=verified))
 
     if unit.get("rent_is_net") and _net_without_gross(unit.get("notes")):
         out.append(_flag("net_without_gross", "warn",
                          "note states a net figure without the gross beside it"))
     return out
+
+
+def _flag_names(flags) -> set[str]:
+    names = set()
+    for f in flags or []:
+        names.add(f.get("flag") if isinstance(f, dict) else f)
+    return names
 
 
 def worst_action(flags: list[dict]) -> str | None:
@@ -277,6 +302,37 @@ def worst_action(flags: list[dict]) -> str | None:
         if a in actions:
             return a
     return None
+
+
+# ------------------------------------------------------------- feed cards
+
+def concession_badge(text: str | None) -> bool:
+    """True when a feed card's text carries a concession or starting-at
+    badge (CONCESSION_BADGE)."""
+    return bool(CONCESSION_BADGE.search(text or ""))
+
+
+def feed_price_decision(card_price, card_text, budget: dict) -> dict:
+    """The feed-first band check for one card.
+
+    pass  - card price within gross_max
+    open  - over gross_max but within gross_max_stretch (or gross_max when
+            no stretch is set) AND the card carries a concession badge: the
+            card price is a teaser, the page decides. Also any card with no
+            price at all.
+    skip  - over the ceiling otherwise, including badged cards above the
+            stretch ceiling.
+    """
+    budget = budget or {}
+    if card_price is None:
+        return {"action": "open", "reason": "price_unstated_on_card"}
+    gmax = budget.get("gross_max")
+    if gmax is None or card_price <= gmax:
+        return {"action": "pass"}
+    stretch = budget.get("gross_max_stretch") or gmax
+    if card_price <= stretch and concession_badge(card_text):
+        return {"action": "open", "reason": "concession_badged_over_ceiling"}
+    return {"action": "skip", "reason": "over_ceiling"}
 
 
 # ----------------------------------------------------------- note hygiene

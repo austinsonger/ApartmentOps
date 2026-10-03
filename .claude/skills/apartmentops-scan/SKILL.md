@@ -72,6 +72,12 @@ work or access.
   `checked.filter_new(tokens, tracked_tokens, state, criteria, now)`,
   where tracked tokens include gone units. Record out-of-area and
   out-of-band tokens with `checked.record_deferred`.
+  The band check calls `quality.feed_price_decision(card_price, card_text,
+  config["budget"])`: `open` decisions (a concession or starting-at badge
+  over `gross_max` but within `gross_max_stretch`, or no price on the card)
+  carry `quality_flags: ["concession_badged_over_ceiling"]` into the drain
+  row when the reason is the badge; `skip` decisions go to
+  `checked.record_deferred(state, "out_of_band", ...)` as today.
 - Drain as you go: `checked.drain_append` the surviving tokens the moment
   the feed scan ends, and item details in batches of about five while
   opening them. Never hold results only in page variables or the scraped
@@ -272,7 +278,9 @@ searches passed or failed and why), scan coverage from `checked.coverage`
 (pages read vs expected, blockers), counts (new, updated, live, rejected,
 confirmed delisted, possibly missing / unverified), any units withheld
 by an autofail this run, any `scam_flags` raised by the photo net, the
-actions.yml sync line, the standouts against their gates, and price
+actions.yml sync line, "opened on concession exception: N, of which M
+verified in band" (M is those whose verified rent is within `gross_max`;
+the rest carry the `over_budget_all_in` warn), the standouts against their gates, and price
 movements if this is a re-scan. Then offer the next stage:
 `apartmentops-research` if areas.json does not exist yet, otherwise
 `apartmentops-dashboard`.
