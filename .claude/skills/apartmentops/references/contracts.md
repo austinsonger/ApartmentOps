@@ -42,6 +42,7 @@ gates:                       # each: {value, mode: hard|bonus}
   elevator_doorman: {value: true, mode: bonus}
   in_unit_laundry: {value: true, mode: bonus}
   pets: none
+  walk_score_min: {value: 70, mode: bonus}  # value 0 or absent disables the fetch and the gate
 geography:
   areas: ["area-slug-1", "area-slug-2"]
   notes: "free text on scope decisions"
@@ -60,6 +61,8 @@ locale:                      # optional; omitted = US defaults shown here
     city_slug: chicago-il    # lowercase, hyphens, no spaces
     craigslist_subdomain: chicago
     area_slugs: {area-slug-1: west-loop}   # area -> platform neighborhood slug
+research:                    # optional
+  walk_score_cache_days: 90  # re-fetch a building's Walk Score after this many days
 saved_searches:              # optional; built by onboarding from the gates above
   primary:                   # profile name; extra profiles (e.g. a 1BR fallback)
     platform-a:              # write to the same verified.json with a profile tag
@@ -297,6 +300,7 @@ Per-building enrichments keyed by building slug:
     "address": "1 Example Ave, City, ST",
     "lat": 40.0, "lon": -74.0,
     "flood": {"zone": "X", "sfha": false, "source_url": "https://...", "viewer_url": "https://...", "fetched_at": "..."},
+    "walk": {"score": 92, "transit": 88, "bike": 79, "source_url": "https://www.walkscore.com/score/...", "fetched_at": "..."},
     "rent_control": {"status": "UNKNOWN", "cap_pct": null, "source": null, "resolved_at": null},
     "grating": {"stars": 4.3, "count": 1152, "url": "https://www.google.com/maps/search/?api=1&query=..."},
     "parking": {"avail": "garage", "cost": 250, "note": "on-site garage; $250/mo per <source>", "url": "https://..."},
@@ -308,6 +312,12 @@ Per-building enrichments keyed by building slug:
 
 `flood` comes from `scripts/flood.py` (keyless FEMA NFHL query; `zone: null`
 plus an `error` field on service failure - render n/a, never guess).
+`walk` comes from `scripts/walk.py` (the public Walk Score page, cached
+for `research.walk_score_cache_days`); on any failure it is `{score: null,
+error, source_url, fetched_at}` and the chip renders n/a. It is absent when
+`gates.walk_score_min` is absent or 0. The research stage copies `score`
+onto each unit as the `walk_score` provenance field (FACT, `source` =
+`source_url`; MISSING when null) before gates are evaluated.
 `rent_control` follows the cite-or-UNKNOWN procedure in
 `references/costs.md` and caps the year-2 renewal assumption in
 `scripts/costs.py`.

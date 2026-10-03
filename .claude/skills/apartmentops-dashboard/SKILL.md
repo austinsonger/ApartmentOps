@@ -112,6 +112,10 @@ that make it trustworthy rather than decorative:
   both render "flood: n/a" - never a guessed zone, and never a chip with
   no link behind it, matching the "no source, no grade" rule the
   safety/cleanliness chips already follow above.
+- **Walk Score chip.** Per building, read `data/buildings.json[slug].walk`
+  and render "walk: N" linking to `walk.source_url`, with `fetched_at` in
+  the chip's title text. A `score` of `null` (the lookup failed - `error`
+  is set) or no `walk` block renders "walk: n/a" - never a guessed score.
 - **Provenance chips.** Any unit field carrying the
   `references/provenance.md` shape gets a small FACT / INFERRED / MISSING
   / CONFLICT chip; read it through `gates.field_value` / `gates.field_status`

@@ -68,6 +68,7 @@ def test_load_spec_reads_committed_example():
         "safety",
         "cleanliness",
         "move_in_window_fit",
+        "walkability",
     }
     total_weight = sum(d["weight"] for d in spec["dimensions"].values())
     assert math.isclose(total_weight, 1.0, abs_tol=1e-6)
@@ -778,3 +779,26 @@ def test_cli_prints_score_unit_result(monkeypatch, capsys, tmp_path):
     assert rc == 0
     assert output["composite"] == 100.0
     assert output["band"] == "TourNow"
+
+
+def test_example_spec_with_walkability_loads():
+    spec = scoring.load_spec(EXAMPLE_SPEC_PATH)
+    walkability = spec["dimensions"]["walkability"]
+    assert math.isclose(walkability["weight"], 0.10, abs_tol=1e-9)
+    assert math.isclose(sum(d["weight"] for d in spec["dimensions"].values()), 1.0, abs_tol=1e-6)
+    bands = sorted((a["score_min"], a["score_max"]) for a in walkability["anchors"])
+    assert bands == [(1, 8), (9, 12), (13, 16), (17, 20)]
+    import walk  # the research stage maps a Walk Score onto these bands
+    for score, band in ((100, (17, 20)), (90, (17, 20)), (89, (13, 16)), (70, (13, 16)),
+                        (69, (9, 12)), (50, (9, 12)), (49, (1, 8)), (0, (1, 8))):
+        assert band[0] <= walk.walkability_raw(score) <= band[1], score
+    assert walk.walkability_raw(None) is None
+
+
+def test_missing_walkability_renormalizes_with_note():
+    spec = scoring.load_spec(EXAMPLE_SPEC_PATH)
+    full = {"commute": 20, "budget_fit": 20, "safety": 20, "cleanliness": 20, "move_in_window_fit": 20}
+    result = scoring.score_unit(full, spec)
+    assert result["renormalized"] == ["walkability"]
+    assert result["renormalization_note"] == "scored on 5 of 6 dimensions; weights renormalized"
+    assert result["composite"] == 100.0

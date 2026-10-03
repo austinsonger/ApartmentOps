@@ -104,6 +104,12 @@ generic `config_gates` dict `evaluate_gates` expects, e.g.:
 | `gates.floor_min: {value: 10, mode: bonus}` | `floor` | `{"field": "floor", "op": "gte", "value": 10, "mode": "bonus"}` |
 | `gates.exposure_blocked: [N]` (non-empty) | `exp` via `gates.exp_gate_field` | `{"field": "exp", "op": "not_in", "value": ["N"], "mode": "hard"}` |
 | `budget.gross_max: 5000` | `rent_verified` | `{"field": "rent_verified", "op": "lte", "value": 5000, "mode": "hard"}` |
+| `gates.walk_score_min: {value: 70, mode: hard}` | `walk_score` | `{"field": "walk_score", "op": "gte", "value": 70, "mode": "hard"}` |
+
+`walk_score` is not scraped from a listing: the research stage copies
+`buildings[slug].walk.score` onto each unit as a FACT provenance object
+(`source` = `walk.source_url`) before `evaluate_gates` runs. A null score
+is MISSING and reads UNKNOWN at the gate. `gates.py` is unchanged.
 
 `exposure_preferred` and an empty `exposure_blocked` are not hard gates -
 they are preference inputs to scoring, not translated into `config_gates`

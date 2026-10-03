@@ -34,6 +34,7 @@ gates:
   elevator_doorman: {value: true, mode: hard}
   in_unit_laundry: {value: true, mode: hard}
   pets: {value: cat, mode: hard}         # none | cat | dog | any
+  walk_score_min: {value: 70, mode: bonus}  # Walk Score; value 0 or omit to skip the lookup and the gate
 
 geography:
   areas: ["the-loop", "west-loop", "river-north", "south-loop", "streeterville"]
@@ -47,6 +48,9 @@ filters:                         # optional; matched against each feed card's ti
   include_keywords: []           # non-empty: at least one must match, e.g. ["in-unit laundry"]
                                  # whole words and phrases only: "garden" never matches "gardening";
                                  # these are criteria, so changing them re-opens prior keyword rejections
+
+research:                        # optional
+  walk_score_cache_days: 90      # a building's Walk Score is re-fetched after this many days
 
 move_in_target: null             # optional ISO date
 list_purpose: compare            # call_first | compare - shapes notes and reports
