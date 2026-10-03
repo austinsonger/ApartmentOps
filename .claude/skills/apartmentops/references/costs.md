@@ -28,6 +28,16 @@ This file covers the things that are policy, not code: the declared
 assumption stack, the income guardrail, and the rent-control resolution
 procedure.
 
+## What the renter actually pays
+
+A net-effective rent is the gross rent with a concession averaged over the
+whole term, so it is an average, not a price anyone is billed: the monthly
+check is the gross, and the concession arrives as a credit in specific months
+(often the first or last). Renewal offers start from the gross, never from
+the net-effective figure, so every note that states a net figure writes the
+gross beside it ("net $X / gross $Y"), and `quality.net_without_gross_hits`
+sweeps for notes that do not.
+
 ## The declared assumption stack
 
 Every unit in one engine run is compared against the same uniform

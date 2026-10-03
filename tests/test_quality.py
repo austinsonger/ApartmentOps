@@ -110,3 +110,31 @@ def test_integrity_report(tmp_path):
     assert r["out_of_spec"] == [{"unit_id": "x", "why": ["over budget", "too few beds"]}]
     assert r["same_unit_pairs"] == [{"a": "y", "b": "z", "level": "candidate"}]
     assert not r["ok"]
+
+
+def test_shared_patterns_new_phrases():
+    for phrase in ("Room for rent", "Shared room near transit", "Looking for a housemate",
+                   "House share, 3 people", "Room in house", "Room in apartment"):
+        f = _flags({"rent_verified": 3000, "property_type": phrase})
+        assert f["shared_or_sublet"]["action"] == "skip", phrase
+
+
+def test_shared_patterns_false_positives():
+    for phrase in ("Laundry room in basement", "Bedroom with closet", "Big living room", "Sunroom"):
+        assert "shared_or_sublet" not in _flags({"rent_verified": 3000, "property_type": phrase}), phrase
+
+
+def test_net_without_gross_flag():
+    u = {"rent_verified": 3900, "rent_is_net": True, "notes": "net $3,900/mo with 1 month free"}
+    assert _flags(u)["net_without_gross"]["action"] == "warn"
+    u["notes"] = "net $3,900/mo / gross $4,200"
+    assert "net_without_gross" not in _flags(u)
+
+
+def test_net_without_gross_hits_sweep():
+    hits = quality.net_without_gross_hits([
+        {"unit_id": "a", "notes": "Net-effective $3,900 on a 13-month term"},
+        {"unit_id": "b", "notes": "gross $4,200 / net $3,900"},
+    ])
+    assert len(hits) == 1 and hits[0]["unit_id"] == "a"
+    assert "Net-effective" in hits[0]["note_excerpt"]

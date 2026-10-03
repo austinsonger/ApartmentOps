@@ -258,9 +258,11 @@ other field belongs to the user. Use `backlog.describe_sync(before, after)`
 for the run-report line ("actions.yml: N NEW entries appended" or
 "actions.yml: no changes").
 
-Before the report, run `quality.integrity_report(units, config)` and
-`quality.relative_time_hits(units)`; fix duplicate ids, missing evidence
-files, out-of-spec rows, and relative-time notes, or name what remains.
+Before the report, run `quality.integrity_report(units, config)`,
+`quality.relative_time_hits(units)` and
+`quality.net_without_gross_hits(units)`; fix duplicate ids, missing evidence
+files, out-of-spec rows, relative-time notes, and net figures written
+without their gross, or name what remains.
 
 Report to the user: the strongest verified new find FIRST, with its link,
 verified date and true monthly cost (listings go fast; a find held for the

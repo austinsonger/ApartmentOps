@@ -58,6 +58,10 @@ that make it trustworthy rather than decorative:
   unit using the deepest known URL, and a live/gone badge with the check
   date), essentials chips with walk minutes, and the honest vibe sentence
   including negatives.
+- **Net rents show the gross first.** Where a unit has `rent_is_net: true`,
+  the rent cell and the notes read "gross $Y / net $X" with the gross
+  leading: the gross is the monthly check and the renewal baseline
+  (`references/costs.md`, "What the renter actually pays").
 - **Every grade chip is a link** to its primary source. No source, no grade -
   render "n/a" instead.
 - **Both themes.** Define tokens on :root, override in

@@ -25,6 +25,8 @@ Traps:
                        serious ad, less room to haggle                info
     over_budget_all_in rent + known recurring fees above gross_max:
                        must be the FIRST sentence of the notes        warn
+    net_without_gross  rent_is_net, and the notes state a net figure
+                       with no gross beside it                        warn
 
 Freshness: `published_at` is the original publication timestamp, kept in
 full (hour-level freshness matters) with its timezone. A refreshed
@@ -56,7 +58,8 @@ BUMP_GAP_DAYS = 7
 FAR_BELOW_COMPS = 0.40
 PLACEHOLDER_FEE = re.compile(r"^9{3,}$")
 SHARED_PATTERNS = re.compile(
-    r"\b(sublet|sublease|room in|private room|shared|roommate|rooming)\b",
+    r"\b(sublet|sublease|room in (a |an |the )?(house|apartment|apt|unit|flat)|room for rent|"
+    r"private room|shared room|shared|roommate|housemate|house share|rooming)\b",
     re.IGNORECASE,
 )
 # Relative time goes stale the day after it is written. Notes carry
@@ -66,6 +69,10 @@ RELATIVE_TIME = re.compile(
     r"\d+\s*(minutes?|hours?|days?)\s+ago|posted recently|brand new listing)\b",
     re.IGNORECASE,
 )
+# A net-effective figure written without the gross beside it reads as the
+# monthly check. It is not: the gross is what is paid most months and what
+# renewal starts from.
+NET_WITHOUT_GROSS = re.compile(r"\bnet[- ]effective\b|\bnet\s*\$|\$[\d,]+\s*net\b", re.IGNORECASE)
 # Typical size bands per bedroom count (square feet). Outside 0.5x-2x of
 # these reads as lot/garden area, a typo, or a wrong bed count.
 SQFT_TYPICAL = {0: 450, 1: 700, 2: 1000, 3: 1300, 4: 1700}
@@ -256,6 +263,10 @@ def traps(unit: dict, config: dict | None = None, comps: list[dict] | None = Non
             out.append(_flag("over_budget_all_in", "warn",
                              f"rent fits, but rent plus known fees is {total['total']:g}, over the {gmax:g} ceiling; lead the notes with this",
                              total=total["total"]))
+
+    if unit.get("rent_is_net") and _net_without_gross(unit.get("notes")):
+        out.append(_flag("net_without_gross", "warn",
+                         "note states a net figure without the gross beside it"))
     return out
 
 
@@ -280,6 +291,25 @@ def relative_time_hits(units: list[dict]) -> list[dict]:
             found = sorted({m.group(0) for m in RELATIVE_TIME.finditer(text)})
             if found:
                 hits.append({"unit_id": u.get("unit_id") or u.get("id"), "field": field, "phrases": found})
+    return hits
+
+
+def _net_without_gross(text: str | None) -> bool:
+    text = text or ""
+    return bool(NET_WITHOUT_GROSS.search(text)) and "gross" not in text.lower()
+
+
+def net_without_gross_hits(units: list[dict]) -> list[dict]:
+    """Units whose notes state a net figure with no gross beside it. A pure
+    string check, no money math: the fix is to write "net $X / gross $Y"."""
+    hits = []
+    for u in units:
+        text = u.get("notes") or ""
+        if _net_without_gross(text):
+            m = NET_WITHOUT_GROSS.search(text)
+            start = max(m.start() - 40, 0)
+            hits.append({"unit_id": u.get("unit_id") or u.get("id"),
+                         "note_excerpt": text[start:m.end() + 40].strip()})
     return hits
 
 
@@ -331,6 +361,7 @@ def integrity_report(units: list[dict], config: dict | None = None, root: str = 
         "out_of_spec": out_of_spec,
         "same_unit_pairs": pairs,
         "relative_time_notes": relative_time_hits(units),
+        "net_without_gross": net_without_gross_hits(units),
         "ok": not (dup_ids or missing_ids or missing_files or out_of_spec),
     }
 
