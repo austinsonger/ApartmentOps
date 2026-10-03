@@ -58,7 +58,7 @@ from typing import Any, Iterable
 
 VERSION = 1
 DEFAULT_REJECTION_MAX_AGE_DAYS = 30
-CRITERIA_KEYS = ("budget", "unit", "gates", "geography", "locale")
+CRITERIA_KEYS = ("budget", "unit", "gates", "geography", "locale", "filters")
 
 
 def empty_state() -> dict:
@@ -105,7 +105,7 @@ def criteria_fingerprint(config: dict) -> str:
     """Short stable hash of the search criteria a rejection depended on.
 
     Only the criteria blocks count (budget, unit, gates, geography,
-    locale); renaming the anchor label or editing notes does not expire
+    locale, filters); renaming the anchor label or editing notes does not expire
     every rejection.
     """
     subset = {k: config.get(k) for k in CRITERIA_KEYS if k in config}

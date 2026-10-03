@@ -77,7 +77,11 @@ work or access.
   over `gross_max` but within `gross_max_stretch`, or no price on the card)
   carry `quality_flags: ["concession_badged_over_ceiling"]` into the drain
   row when the reason is the badge; `skip` decisions go to
-  `checked.record_deferred(state, "out_of_band", ...)` as today.
+  `checked.record_deferred(state, "out_of_band", ...)` as today. The same
+  inline filter calls `quality.keyword_filter(card_title + " " +
+  card_blurb, config.get("filters"))`; a `skip` is recorded with
+  `checked.record_rejection(..., criteria_dependent=True)` and its reason
+  string (`exclude_keyword:<word>` or `no_include_keyword`).
 - Drain as you go: `checked.drain_append` the surviving tokens the moment
   the feed scan ends, and item details in batches of about five while
   opening them. Never hold results only in page variables or the scraped

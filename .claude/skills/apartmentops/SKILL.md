@@ -111,6 +111,13 @@ in-unit laundry. Lesson learned: when everything is a hard gate the pool goes
 to near zero; when everything is a bonus the results feel old and dark. Make
 the user choose consciously.
 
+Then ask for deal-breaker words and must-have words, matched against each
+feed card's title and description: for example `exclude_keywords:
+["basement", "garden unit"]` and `include_keywords: ["in-unit laundry"]`.
+Store them under `filters:`. They match whole words and phrases only, and
+they are criteria: changing them later re-opens every listing previously
+rejected for a keyword.
+
 ### Step 5 - Geography and locale
 
 Which neighborhoods/boroughs/cities are in scope. Offer to widen: the best

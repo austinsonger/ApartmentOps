@@ -335,6 +335,31 @@ def feed_price_decision(card_price, card_text, budget: dict) -> dict:
     return {"action": "skip", "reason": "over_ceiling"}
 
 
+def keyword_filter(text: str | None, filters: dict | None) -> dict:
+    """Apply config `filters` to a feed card's title + description.
+
+    Any `exclude_keywords` hit skips the card; a non-empty
+    `include_keywords` list needs at least one hit. Keywords match as whole
+    words or whole phrases, case-insensitive ("garden" does not match
+    "gardening"). Empty or missing filters always pass. A skip is
+    criteria-dependent: changing the keywords re-opens it.
+    """
+    filters = filters or {}
+    text = (text or "").lower()
+
+    def hit(word: str) -> bool:
+        phrase = r"\s+".join(re.escape(w) for w in str(word).lower().split())
+        return bool(phrase) and re.search(rf"\b{phrase}\b", text) is not None
+
+    for word in filters.get("exclude_keywords") or []:
+        if hit(word):
+            return {"action": "skip", "reason": f"exclude_keyword:{word}"}
+    include = [w for w in filters.get("include_keywords") or [] if str(w).strip()]
+    if include and not any(hit(w) for w in include):
+        return {"action": "skip", "reason": "no_include_keyword"}
+    return {"action": "pass"}
+
+
 # ----------------------------------------------------------- note hygiene
 
 def relative_time_hits(units: list[dict]) -> list[dict]:

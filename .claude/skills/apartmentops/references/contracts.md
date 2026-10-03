@@ -45,6 +45,9 @@ gates:                       # each: {value, mode: hard|bonus}
 geography:
   areas: ["area-slug-1", "area-slug-2"]
   notes: "free text on scope decisions"
+filters:                     # optional; applied to feed card title + description
+  exclude_keywords: []       # any match skips the card (criteria-dependent)
+  include_keywords: []       # non-empty: at least one must match
 move_in_target: null         # optional ISO date; drives the dashboard countdown
 list_purpose: compare        # call_first (speed: freshest first, call-now framing)
                              # | compare (true cost, leverage, calm evaluation)
@@ -59,6 +62,11 @@ saved_searches:              # optional; built by onboarding from the gates abov
         url: "https://... newest-first list URL with all filters baked in"
         marker: "of \\d+ results"   # optional regex proving results rendered
 ```
+
+`filters` keywords match whole words or whole phrases, case-insensitive,
+through `quality.keyword_filter`; they are criteria (part of
+`checked.criteria_fingerprint`), so editing them re-opens every
+keyword rejection.
 
 `income_annual` lives ONLY in this user-owned file. It must never be copied
 into any generated artifact (`costs.py` takes it as a separate argument and

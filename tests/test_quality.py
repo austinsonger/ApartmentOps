@@ -178,3 +178,29 @@ def test_feed_price_decision_skip_unbadged_over_ceiling():
 
 def test_feed_price_decision_none_price_opens():
     assert quality.feed_price_decision(None, "", BUDGET) == {"action": "open", "reason": "price_unstated_on_card"}
+
+
+def test_keyword_filter_exclude_hit():
+    f = {"exclude_keywords": ["basement", "garden unit"]}
+    assert quality.keyword_filter("Cozy BASEMENT 2BR", f) == {"action": "skip", "reason": "exclude_keyword:basement"}
+
+
+def test_keyword_filter_include_required_miss():
+    f = {"include_keywords": ["in-unit laundry"]}
+    assert quality.keyword_filter("2BR, laundry in building", f) == {"action": "skip", "reason": "no_include_keyword"}
+
+
+def test_keyword_filter_include_required_hit():
+    f = {"exclude_keywords": ["basement"], "include_keywords": ["in-unit laundry", "dishwasher"]}
+    assert quality.keyword_filter("Top floor 2BR with In-Unit Laundry", f) == {"action": "pass"}
+
+
+def test_keyword_filter_phrase_and_boundary():
+    assert quality.keyword_filter("Sunny garden unit", {"exclude_keywords": ["garden unit"]})["action"] == "skip"
+    assert quality.keyword_filter("Near gardening club", {"exclude_keywords": ["garden"]}) == {"action": "pass"}
+    assert quality.keyword_filter("Garden view, unit 4", {"exclude_keywords": ["garden unit"]}) == {"action": "pass"}
+
+
+def test_keyword_filter_empty_passes():
+    assert quality.keyword_filter("anything at all", None) == {"action": "pass"}
+    assert quality.keyword_filter(None, {"exclude_keywords": [], "include_keywords": []}) == {"action": "pass"}
