@@ -52,7 +52,6 @@ locale:                      # optional; omitted = US defaults shown here
   currency: USD
   timezone: America/New_York # reporting timezone; also the fallback for
                              # naive source timestamps ONLY when known correct
-  room_convention: bedrooms  # bedrooms | il_rooms (rooms include the living room)
 saved_searches:              # optional; built by onboarding from the gates above
   primary:                   # profile name; extra profiles (e.g. a 1BR fallback)
     platform-a:              # write to the same verified.json with a profile tag

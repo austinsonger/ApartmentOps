@@ -19,7 +19,7 @@ def test_price_unstated_skips():
 
 def test_shared_and_sublet_skip():
     assert _flags({"rent_verified": 3000, "property_type": "Sublet - 3 months"})["shared_or_sublet"]["action"] == "skip"
-    assert "shared_or_sublet" in _flags({"rent_verified": 3000, "property_type": "סאבלט"})
+    assert "shared_or_sublet" in _flags({"rent_verified": 3000, "property_type": "Room in a shared apartment"})
     cfg = {"unit": {"whole_unit_only": False}}
     assert not quality.traps({"rent_verified": 3000, "property_type": "private room"}, cfg)
 
@@ -92,9 +92,8 @@ def test_relative_time_sweep():
         {"unit_id": "a", "notes": "Posted today, hurry!"},
         {"unit_id": "b", "notes": "Published 2026-10-01; 3 days ago"},
         {"unit_id": "c", "notes": "Listed 2026-09-14 at 3,100."},
-        {"unit_id": "d", "notes": "מודעה מהיום"},
     ])
-    assert [h["unit_id"] for h in hits] == ["a", "b", "d"]
+    assert [h["unit_id"] for h in hits] == ["a", "b"]
 
 
 def test_integrity_report(tmp_path):

@@ -58,9 +58,7 @@ UI as before, and every row is tagged `profile: "primary"`.
 
 Read `../apartmentops/references/collection-playbook.md` before the first
 scan of a session; it is the field manual for collecting without losing
-work or access. If the user's geography is on a platform with notes under
-`../apartmentops/references/platforms/` (for example `yad2.md`), read
-those too, and re-verify anything there against a live page first.
+work or access.
 
 - Generate one `run_id` (`scan-YYYYMMDD-HHMM`) and load
   `apartmentops/data/checked.json` with `checked.load`. Compute

@@ -48,4 +48,3 @@ list_purpose: compare            # call_first | compare - shapes notes and repor
 locale:                          # optional; these are the US defaults
   currency: USD
   timezone: America/Chicago
-  room_convention: bedrooms      # bedrooms | il_rooms (Israeli rooms include the living room)

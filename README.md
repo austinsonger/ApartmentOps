@@ -235,7 +235,6 @@ repo - read it before adding a feature. The four that matter most:
     references/contracts.md   the file formats every stage reads and writes
     references/*.md           scoring, provenance, ledger, costs, lease-fields,
                               line-substitution, and collection-playbook docs
-    references/platforms/     per-platform notes (yad2.md for Israeli rentals)
     scripts/*.py              fifteen deterministic modules (costs, gates, scoring,
                               snapshots, photo_hash, lease_dates, line_advisor,
                               extract_embedded, flood, backlog, doctor_searches,

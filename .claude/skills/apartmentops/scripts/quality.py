@@ -56,15 +56,14 @@ BUMP_GAP_DAYS = 7
 FAR_BELOW_COMPS = 0.40
 PLACEHOLDER_FEE = re.compile(r"^9{3,}$")
 SHARED_PATTERNS = re.compile(
-    r"\b(sublet|sublease|room in|private room|shared|roommate|rooming)\b|סאבלט|שותפים|חדר בדירת",
+    r"\b(sublet|sublease|room in|private room|shared|roommate|rooming)\b",
     re.IGNORECASE,
 )
 # Relative time goes stale the day after it is written. Notes carry
 # absolute dates; the dashboard's live badge says how fresh a listing is.
 RELATIVE_TIME = re.compile(
     r"\b(today|tonight|yesterday|tomorrow|just (posted|listed)|hurry|this (week|morning|afternoon)|"
-    r"\d+\s*(minutes?|hours?|days?)\s+ago|posted recently|brand new listing)\b"
-    r"|מהיום|הטרייה|להזדרז|אתמול|היום",
+    r"\d+\s*(minutes?|hours?|days?)\s+ago|posted recently|brand new listing)\b",
     re.IGNORECASE,
 )
 # Typical size bands per bedroom count (square feet). Outside 0.5x-2x of
@@ -74,7 +73,7 @@ SQM_PER_SQFT = 0.092903
 
 PERIOD_MONTHS = {
     "monthly": 1,
-    "bimonthly": 2,  # every two months (e.g. an Israeli arnona bill)
+    "bimonthly": 2,  # billed every two months (some property-tax bills)
     "quarterly": 3,
     "semiannual": 6,
     "annual": 12,

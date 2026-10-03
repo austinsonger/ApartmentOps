@@ -116,10 +116,8 @@ the user choose consciously.
 Which neighborhoods/boroughs/cities are in scope. Offer to widen: the best
 value is often one transit stop past where the user first looked.
 
-Outside the US, set the `locale` block (currency, reporting timezone, and
-whether listings count bedrooms or rooms - in Israel "3 rooms" is a
-two-bedroom) and never silently change country or currency. Platform
-notes live in `references/platforms/` (e.g. `yad2.md`). Read platform
+Outside the US, set the `locale` block (currency and reporting
+timezone) and never silently change country or currency. Read platform
 area codes from a real search URL, never guess them.
 
 ### Step 5b - What the list is for
@@ -263,9 +261,6 @@ Step 6 also:
   go, pagination, item-page probing, hidden-tab timer throttling, bot-wall
   handling, hunt memory, refresh and removal rules, dedupe leverage,
   quality traps, and note hygiene.
-- `references/platforms/` - per-platform historical notes (`yad2.md` for
-  Israeli rentals: rooms vs bedrooms, vaad bayit and arnona, URL and
-  payload observations to re-verify).
 - `references/provenance.md` - the field-level provenance shape, tri-state
   gate rules, and how `constraints.json` plugs into grading.
 - `references/constraints.json` - the machine-readable anti-fabrication rule
