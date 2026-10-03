@@ -147,7 +147,11 @@ section 2). Gate it: read the unit's own `gates` field from `verified.json`
 (the hard-mode gates the scan stage already evaluated) and call
 `gates.tour_now_blocked(unit["gates"])`; feed that into `band_with_gates(
 band, tour_now_blocked)` so a unit with any `UNKNOWN` hard gate is demoted
-out of TourNow regardless of composite score.
+out of TourNow regardless of composite score. Treat any `no_star` entry in
+the unit's `quality_flags` (below the floor, far below comps, implausible
+size, stale publication) the same way: pass `tour_now_blocked=True`. A
+star on one of those only wastes a phone call. Never force a fixed share
+of units into TourNow; `calibrate` warns when the share drifts.
 
 Once every live unit has a post-gate band, run `calibrate(bands, spec)`
 over the whole batch. If `ok` is `False`, surface `warning` verbatim in the

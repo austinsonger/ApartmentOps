@@ -1,0 +1,112 @@
+"""Tests for quality.py - traps, fees, freshness, note hygiene, integrity."""
+
+from __future__ import annotations
+
+import quality
+
+CFG = {"budget": {"gross_min": 2500, "gross_max": 3500}, "unit": {"beds": 2}}
+NOW = "2026-10-03T12:00:00+00:00"
+
+
+def _flags(unit, **kw):
+    return {f["flag"]: f for f in quality.traps(unit, CFG, **kw)}
+
+
+def test_price_unstated_skips():
+    assert quality.traps({"rent_verified": 0}, CFG)[0]["action"] == "skip"
+    assert quality.traps({}, CFG)[0]["flag"] == "price_unstated"
+
+
+def test_shared_and_sublet_skip():
+    assert _flags({"rent_verified": 3000, "property_type": "Sublet - 3 months"})["shared_or_sublet"]["action"] == "skip"
+    assert "shared_or_sublet" in _flags({"rent_verified": 3000, "property_type": "Room in a shared apartment"})
+    cfg = {"unit": {"whole_unit_only": False}}
+    assert not quality.traps({"rent_verified": 3000, "property_type": "private room"}, cfg)
+
+
+def test_below_floor_and_comps():
+    comps = [{"beds": 2, "rent_verified": p} for p in (3000, 3100, 3200)]
+    f = _flags({"beds": 2, "rent_verified": 1000}, comps=comps)
+    assert f["below_floor"]["action"] == "no_star"
+    assert f["far_below_comps"]["comps_n"] == 3
+
+
+def test_implausible_size_sqm_and_sqft():
+    assert "implausible_size" in _flags({"beds": 2, "rent_verified": 3000, "sqft": 2400})
+    assert "implausible_size" in _flags({"beds": 2, "rent_verified": 3000, "size_sqm": 220})
+    assert "implausible_size" not in _flags({"beds": 2, "rent_verified": 3000, "sqft": 1050})
+
+
+def test_placeholder_fee_and_normalize():
+    f = _flags({"rent_verified": 3000, "fees": [{"type": "hoa", "amount": 9999, "billing_period": "monthly"}]})
+    assert f["placeholder_fee"]["action"] == "warn"
+    n = quality.normalize_fee({"type": "hoa", "amount": 9999, "billing_period": "monthly"})
+    assert n["monthly"] is None and n["status"] == "MISSING"
+    assert quality.normalize_fee({"amount": 600, "billing_period": "bimonthly"})["monthly"] == 300
+    assert quality.normalize_fee({"amount": 600})["monthly"] is None
+    assert quality.normalize_fee({"amount": 600, "billing_period": "one_time"})["monthly"] is None
+
+
+def test_known_monthly_total_partial():
+    t = quality.known_monthly_total({"rent_verified": 3000, "fees": [
+        {"type": "amenity", "amount": 50, "billing_period": "monthly"},
+        {"type": "property_tax", "amount": 400, "billing_period": "bimonthly"},
+        {"type": "committee", "amount": 9999, "billing_period": "monthly"},
+        {"type": "application", "amount": 75, "billing_period": "one_time"},
+    ]})
+    assert t["total"] == 3250 and t["partial"] and t["missing"] == ["committee"]
+
+
+def test_over_budget_all_in():
+    f = _flags({"rent_verified": 3400, "fees": [{"type": "amenity", "amount": 200, "billing_period": "monthly"}]})
+    assert f["over_budget_all_in"]["total"] == 3600
+
+
+def test_freshness_never_invents_timezone():
+    assert quality.freshness({"published_at": "2026-10-03T09:00:00"}, NOW)["hours"] is None
+    f = quality.freshness({"published_at": "2026-10-03T09:00:00"}, NOW, source_tz="Asia/Jerusalem")
+    assert f["hours"] == 6.0  # 09:00 IDT (UTC+3) -> 06:00Z, six hours before NOW
+    assert quality.freshness({"published_at": "2026-10-03T10:00:00+00:00"}, NOW)["hours"] == 2.0
+
+
+def test_stale_and_bumped():
+    u = {"rent_verified": 3000, "published_at": "2025-06-01T09:00:00+00:00",
+         "updated_at": "2026-10-01T09:00:00+00:00"}
+    f = _flags(u, now=NOW)
+    assert f["stale_publication"]["action"] == "no_star"
+    assert f["bumped_listing"]["action"] == "info"
+
+
+def test_odd_price_info():
+    assert "odd_price" in _flags({"rent_verified": 3013})
+    assert "odd_price" not in _flags({"rent_verified": 3015})
+
+
+def test_worst_action():
+    assert quality.worst_action([{"action": "info"}, {"action": "no_star"}]) == "no_star"
+    assert quality.worst_action([]) is None
+
+
+def test_relative_time_sweep():
+    hits = quality.relative_time_hits([
+        {"unit_id": "a", "notes": "Posted today, hurry!"},
+        {"unit_id": "b", "notes": "Published 2026-10-01; 3 days ago"},
+        {"unit_id": "c", "notes": "Listed 2026-09-14 at 3,100."},
+    ])
+    assert [h["unit_id"] for h in hits] == ["a", "b"]
+
+
+def test_integrity_report(tmp_path):
+    units = [
+        {"unit_id": "x", "rent_verified": 3000, "beds": 2, "screenshot": "shots/x.png", "live": True},
+        {"unit_id": "x", "rent_verified": 4000, "beds": 1, "live": True},
+        {"unit_id": "y", "rent_verified": 3000, "beds": 2, "screenshot": "https://cdn/y.png",
+         "lat": 1, "lon": 1, "floor": 2},
+        {"unit_id": "z", "rent_verified": 3000, "beds": 2, "lat": 1, "lon": 1, "floor": 2},
+    ]
+    r = quality.integrity_report(units, CFG, root=str(tmp_path))
+    assert r["duplicate_ids"] == ["x"]
+    assert r["missing_files"] == [{"unit_id": "x", "field": "screenshot", "path": "shots/x.png"}]
+    assert r["out_of_spec"] == [{"unit_id": "x", "why": ["over budget", "too few beds"]}]
+    assert r["same_unit_pairs"] == [{"a": "y", "b": "z", "level": "candidate"}]
+    assert not r["ok"]

@@ -3,7 +3,8 @@
 Every stage communicates through these files, all under `apartmentops/` in
 the project root. A stage must read its inputs from here and write its
 outputs here - nothing else is shared state. Timestamps are ISO 8601 with
-timezone. Prices are monthly USD numbers (no strings, no "$").
+timezone. Prices are monthly numbers in the config's `locale.currency`
+(USD when no `locale` block is set) - no strings, no currency symbols.
 
 **unit_id convention (used by every per-unit file below):** slugified
 building name + "-" + unit token, e.g. `example-tower-2-2207`. This is what
@@ -27,10 +28,12 @@ budget:
   allow_net_effective: true  # net-in-band qualifies if gross <= gross_max_stretch
   gross_max_stretch: 5500
   income_annual: null        # optional; enables 40x qualification flags
+  broker_fee: {mode: bonus}  # hard = skip broker/agency ads; bonus = a negative only
 unit:
   beds: 2
   baths: {value: 2, mode: hard}      # mode: hard | bonus
   sqft_min: {value: 1000, mode: bonus}
+  whole_unit_only: true      # rooms in shared units and sublets are skipped
 gates:                       # each: {value, mode: hard|bonus}
   year_built_min: {value: 2019, mode: bonus}
   floor_min: {value: 10, mode: bonus}
@@ -43,6 +46,12 @@ geography:
   areas: ["area-slug-1", "area-slug-2"]
   notes: "free text on scope decisions"
 move_in_target: null         # optional ISO date; drives the dashboard countdown
+list_purpose: compare        # call_first (speed: freshest first, call-now framing)
+                             # | compare (true cost, leverage, calm evaluation)
+locale:                      # optional; omitted = US defaults shown here
+  currency: USD
+  timezone: America/New_York # reporting timezone; also the fallback for
+                             # naive source timestamps ONLY when known correct
 saved_searches:              # optional; built by onboarding from the gates above
   primary:                   # profile name; extra profiles (e.g. a 1BR fallback)
     platform-a:              # write to the same verified.json with a profile tag
@@ -59,6 +68,24 @@ Onboarding also copies `examples/scoring.example.yml` to
 `apartmentops/scoring.yml` (the committed scoring spec the research stage
 scores against - see `references/scoring.md`) and creates
 `apartmentops/data/actions.yml` (see below).
+
+Criteria the user has not confirmed stay unset - never filled from these
+examples or from a previous user's values. Onboarding shows the resulting
+one-line search summary and gets a yes before the first scan.
+
+## apartmentops/data/checked.json  (written by: scan; read by: scan, hydrate - private, never published)
+
+The hunt's memory, maintained only through `scripts/checked.py`:
+`rejected` (opened and dismissed: `{token: {source, reason, checked_at,
+criteria, criteria_dependent}}`, where `criteria` is
+`checked.criteria_fingerprint(config)`), `deferred` (filtered before
+opening, by group: the first pool to revisit when the search widens),
+`out_of_window`, `scan_state` (per run: pages expected vs scanned per
+query, blockers, finish time) and `price_refresh` (per run: verified,
+missing, unverified, changes). `checked.coverage(state, run_id)` is the
+only way a run report may call a scan complete. Drained candidate rows
+land in `apartmentops/data/drain/<run_id>.jsonl` as they arrive
+(`checked.drain_append`). Mechanics: `references/collection-playbook.md`.
 
 ## apartmentops/sources.yml  (written by: scan as it meets each operator, hand-maintained; read by: scan verify, dashboard hydrate)
 
@@ -149,6 +176,38 @@ scan subagent prompt must carry verbatim are in `references/provenance.md`
 and `references/constraints.json`. `scam_flags` is populated from the
 photo-hash net (`scripts/photo_hash.py`, see `data/photo_hashes.json` below)
 as well as the text scam screen.
+
+### Listing hygiene fields (optional, additive)
+
+Written by the scan stage when the source provides them
+(`references/collection-playbook.md`):
+
+- `token`, `source` - the platform's own listing id and platform name;
+  the first dedupe key.
+- `published_at` - the ORIGINAL publication timestamp, kept whole, with
+  `publication_timezone` when the source gives local time. Never the
+  refreshed `updated_at` (kept separately when present). Publication,
+  observation (`found_at`), verification (`verified_at`), and removal
+  (`delisted`) dates stay distinct.
+- `advertiser_type` (`owner` | `building_direct` | `agency` | `broker`),
+  `agency`, `broker_fee`.
+- `rooms`, `size_sqm` for locales that count rooms or meters.
+- `fees`: `[{type, amount, currency, billing_period: monthly|bimonthly|
+  quarterly|semiannual|annual|one_time, source_url, observed_at}]`.
+  `quality.known_monthly_total` returns a partial total plus the missing
+  components whenever any fee lacks an amount or period.
+- `availability_state`: `active` | `possibly_missing` | `unknown` |
+  `delisted`, managed by `scripts/feed_refresh.py`; `delisted` is set only
+  by a confirmed `gone` verdict and carries the date. `price_checked` is
+  the date a price was last actually read.
+- `price_history`: `[{amount, currency, observed_at, source_url}]`.
+- `alternative_sources`, `duplicate_candidates` - from
+  `scripts/dedupe.py`; a duplicate is merged only on a token or strong
+  match and never loses its URL or price evidence.
+- `quality_flags` - `quality.traps` output; any `no_star` flag keeps the
+  unit out of TourNow and off value badges.
+- `notes` - absolute dates only, true cost first when it breaks the
+  ceiling; never relative time.
 
 ### Orientation: the canonical `exp` object
 

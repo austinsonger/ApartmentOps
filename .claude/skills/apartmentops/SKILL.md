@@ -79,6 +79,17 @@ band and whether net-effective prices may qualify. If they share income,
 note the standard qualification rule (annual gross >= 40x monthly rent) so
 every future result can carry a "you qualify" flag - but never require it.
 
+Ask about broker fees: a deal-breaker (`budget.broker_fee.mode: hard`,
+so broker and agency ads are skipped) or just a negative (`bonus`)? Where
+the same unit is offered directly and through a broker, the pipeline keeps
+the direct ad either way.
+
+Ask for a deliberate rent floor (`gross_min`), not just a ceiling: far
+below the local market, a "whole apartment" is usually a room in a shared
+unit or bait, and the floor is what removes them. Record
+`unit.whole_unit_only` (default true) so shared rooms and sublets are
+skipped.
+
 Also ask for a target move-in date - optional, `null` is fine if they are
 just browsing. Store it as the top-level `move_in_target` (ISO date) in
 `config.yml`; it feeds scoring's `move_in_window_fit` dimension (how well a
@@ -100,16 +111,37 @@ in-unit laundry. Lesson learned: when everything is a hard gate the pool goes
 to near zero; when everything is a bonus the results feel old and dark. Make
 the user choose consciously.
 
-### Step 5 - Geography
+### Step 5 - Geography and locale
 
 Which neighborhoods/boroughs/cities are in scope. Offer to widen: the best
 value is often one transit stop past where the user first looked.
 
+Outside the US, set the `locale` block (currency and reporting
+timezone) and never silently change country or currency. Read platform
+area codes from a real search URL, never guess them.
+
+### Step 5b - What the list is for
+
+Ask whether the user will work the list by calling first (speed: freshest
+listings first, call-now framing for a hot find) or by comparing calmly
+(true monthly cost, negotiation leverage). Store it as `list_purpose:
+call_first | compare`; it shapes the notes and the run report, not the
+filters.
+
 ### Step 6 - Write the config and confirm
 
 Write `apartmentops/config.yml` exactly per `references/contracts.md`,
-create `apartmentops/data/` and `apartmentops/shots/`, echo a readable
-summary back, and offer to start the first scan (`apartmentops-scan`).
+create `apartmentops/data/` and `apartmentops/shots/`, echo a one-line
+search summary back (areas, band with floor, beds/rooms, hard gates,
+broker-fee rule) and get a yes before the first scan
+(`apartmentops-scan`). Never use the example configs as the user's
+preferences; anything unconfirmed stays unset.
+
+When the user later says results feel off - wrong area, wrong band, too
+many broker ads - it is nearly always a config problem, not a scraping
+problem: re-ask the relevant question briefly and update `config.yml`.
+Criteria-dependent rejections in `checked.json` re-open automatically when
+the criteria change.
 
 Step 6 also:
 
@@ -159,6 +191,19 @@ Step 6 also:
   Book/Submit/Confirm/Apply on any site. Produce drafts and links; the user
   sends. Read-only browsing of public pages only; no logins, no CAPTCHA or
   bot-wall bypasses; back off on 403s and find another public source.
+- **Absence is not removal:** a unit missing from a search feed is
+  `possibly_missing` (or `unknown` on a partial scan), never gone, until
+  its own surface confirms it. Never call a scan complete without
+  `checked.coverage` saying so.
+- **Absolute dates only:** notes never say "today", "yesterday", or
+  "hurry"; they carry the date. Publication, observation, verification
+  and removal dates stay distinct, and no timezone is ever invented.
+- **Private stays private:** `checked.json`, drain files, contact details
+  and working notes never go into a published dashboard.
+- **Lessons go to the user first:** at the end of a round, report any new
+  reusable mechanism learned (a trap, a broken URL form, a data pattern),
+  without personal data. Edit a skill or reference file only when the
+  user authorizes it.
 - **No emojis in any produced file.**
 
 ## Bundled resources
@@ -177,6 +222,20 @@ Step 6 also:
 - `scripts/gates.py` - field-level provenance helpers and tri-state
   (PASS/FAIL/UNKNOWN) hard-gate evaluation; `grade_fields` is the
   anti-fabrication grading pass.
+- `scripts/checked.py` - hunt memory (`data/checked.json`): rejections
+  keyed to a criteria fingerprint, deferred pools, out-of-window tokens,
+  per-run scan coverage, and the drain-as-you-go candidate file.
+- `scripts/feed_refresh.py` - feed-first price refresh: diffs a full
+  token -> price feed against tracked units, plans individual checks for
+  missing ones (all up to 15, else a reported sample), and applies
+  verdicts so only a confirmed `gone` delists a unit.
+- `scripts/dedupe.py` - same-unit matching on coordinates + floor + beds
+  (gone units included) and the leverage each duplicate reveals.
+- `scripts/quality.py` - data-quality traps (unstated rent, shared rooms
+  and sublets, below-floor bait, implausible sizes, placeholder fees,
+  stale and bumped ads), billing-period fee normalization, publication
+  freshness without invented timezones, the relative-time notes sweep,
+  and the pre-ship integrity report.
 - `scripts/doctor_searches.py` - preflight-checks every `saved_searches` URL
   in `config.yml` still resolves and renders results.
 - `scripts/snapshots.py` - the append-only price/liveness ledger: run-to-run
@@ -198,6 +257,10 @@ Step 6 also:
   listing photos (recycled photos, price-gap flips, zombie reposts).
 - `scripts/line_advisor.py` - suggests same-line sibling units in a tower
   from a hand-curated per-building line map.
+- `references/collection-playbook.md` - feed-first scanning, drain as you
+  go, pagination, item-page probing, hidden-tab timer throttling, bot-wall
+  handling, hunt memory, refresh and removal rules, dedupe leverage,
+  quality traps, and note hygiene.
 - `references/provenance.md` - the field-level provenance shape, tri-state
   gate rules, and how `constraints.json` plugs into grading.
 - `references/constraints.json` - the machine-readable anti-fabrication rule
