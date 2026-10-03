@@ -67,6 +67,26 @@ report:                      # optional
   new_unit_scope: unit       # unit | building: with building, a new unit in a
                              # building the hunt already tracks is reported as
                              # "new in tracked building" (report_class below)
+shortlist_sync:              # optional; apartmentops-sync (stage 6)
+  enabled: false
+  target:
+    kind: sheet              # sheet (Google Sheet) | doc_table (a table in a Google Doc)
+    id: null                 # document id, or
+    url: null                # the document URL
+  connector: google_drive    # the attached connector that writes the document
+  min_days_between_syncs: 7  # re-sync cadence when nothing new was verified
+  mark_off_market: false     # write "off-market (reviewed)" only on rows the user reviewed
+  columns:                   # document column order; `address` and `link` are required
+    - {field: num, label: "#"}
+    - {field: address, label: "Address"}
+    - {field: name, label: "Name"}
+    - {field: walkScore, label: "Walk Score"}
+    - {field: price, label: "Price"}
+    - {field: sqft, label: "Sq ft"}
+    - {field: availability, label: "Available"}
+    - {field: link, label: "Link"}
+    - {field: review, label: "Review"}   # any non-machine field is user-owned
+  last_shortlist_sync: null  # pipeline-written ISO timestamp; the one key here the user does not own
 saved_searches:              # optional; built by onboarding from the gates above
   primary:                   # profile name; extra profiles (e.g. a 1BR fallback)
     platform-a:              # write to the same verified.json with a profile tag
@@ -104,6 +124,22 @@ scores against - see `references/scoring.md`) and creates
 Criteria the user has not confirmed stay unset - never filled from these
 examples or from a previous user's values. Onboarding shows the resulting
 one-line search summary and gets a yes before the first scan.
+
+`shortlist_sync` is user-owned except `last_shortlist_sync`, which
+apartmentops-sync stamps after a clean read-back. Machine fields
+(`shortlist.MACHINE_FIELDS`: num, address, name, walkScore, price, sqft,
+availability, link) are filled from verified.json and buildings.json; every
+other configured field is a user column, appended blank and never edited.
+
+## apartmentops/data/shortlist-plan.json and data/shortlist-state.json  (written by: apartmentops-sync - private, never published)
+
+`shortlist-plan.json` is transient: the `shortlist.plan_sync` result
+(`{run, reason, to_append: [rows], to_refresh: [{row_index, key, link}]}`)
+written before any document write and kept for the read-back diff. Each
+row carries every configured field plus `key`
+(`shortlist.norm_address(address)`) and `unit_id`.
+`shortlist-state.json` holds `{recovery: {key: attempts}}`; a row is held
+after three link-recovery attempts (`shortlist.recovery_budget`).
 
 ## apartmentops/data/checked.json  (written by: scan; read by: scan, hydrate - private, never published)
 

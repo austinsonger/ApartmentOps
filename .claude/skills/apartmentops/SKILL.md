@@ -17,7 +17,7 @@ description: >-
 # ApartmentOps
 
 A pipeline that turns "find me an apartment" into a verified, mapped,
-evidence-backed shortlist. Five skills feed each other through files in the
+evidence-backed shortlist. Six skills feed each other through files in the
 `apartmentops/` directory of the project (the contracts are defined in
 `references/contracts.md` - read it before producing or consuming any stage
 file):
@@ -28,6 +28,7 @@ apartmentops-scan     ->  apartmentops/data/verified.json  (+ shots/)
 apartmentops-research ->  apartmentops/data/areas.json, transit.json
 apartmentops-dashboard->  apartmentops/dashboard.html  (published artifact)
 apartmentops-lease    ->  apartmentops/data/lease.json  (post-signing, optional)
+apartmentops-sync     ->  the user's shortlist document  (optional)
 ```
 
 ## Routing
@@ -46,6 +47,9 @@ Check state, then route. Run these checks silently first:
    orthogonal to the checks above: it runs whenever the user has a lease in
    hand, regardless of where the rest of the pipeline is (it degrades
    gracefully with no `verified.json` to compare against).
+6. After the dashboard: if `shortlist_sync.enabled` and new verified units
+   exist or the sync cadence (`min_days_between_syncs`) has passed, offer
+   `apartmentops-sync` to update the user's shortlist document.
 
 The stages are separable on purpose: a user can re-run scan weekly without
 re-onboarding, or re-hydrate the dashboard without re-scanning. Never skip a
@@ -270,6 +274,12 @@ Step 6 also:
   (renewal notice, concession reversion, deposit return).
 - `scripts/photo_hash.py` - a perceptual-hash scam net across archived
   listing photos (recycled photos, price-gap flips, zombie reposts).
+- `scripts/walk.py` - Walk Score lookup for a building address, cached,
+  with n/a on any failure.
+- `scripts/shortlist.py` - shortlist-sync rows, the sync plan, the
+  live-link gate, and the read-back diff for `apartmentops-sync`.
+- `references/platforms.md` - per-platform saved-search recipes, markers,
+  walls, and quirks (dated observations).
 - `scripts/line_advisor.py` - suggests same-line sibling units in a tower
   from a hand-curated per-building line map.
 - `references/collection-playbook.md` - feed-first scanning, drain as you

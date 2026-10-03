@@ -48,6 +48,8 @@ import re
 import sys
 import urllib.request
 
+from shortlist import norm_address  # one row-key rule for the cache and the shortlist
+
 SCORE_ENDPOINT = "https://www.walkscore.com/score/"
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -72,14 +74,6 @@ def default_fetch(url: str) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
         return resp.read()
-
-
-def norm_address(s: str | None) -> str:
-    """Street portion before the first comma, lowercase, apt/unit/ste/suite
-    to '#', keeping [a-z0-9#] only. Local copy until shortlist.py owns it."""
-    street = (s or "").split(",", 1)[0].lower()
-    street = re.sub(r"\b(apt|unit|ste|suite)\b\.?", "#", street)
-    return re.sub(r"[^a-z0-9#]", "", street)
 
 
 def _slug(text: str) -> str:

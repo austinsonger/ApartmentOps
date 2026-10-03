@@ -52,6 +52,27 @@ filters:                         # optional; matched against each feed card's ti
 research:                        # optional
   walk_score_cache_days: 90      # a building's Walk Score is re-fetched after this many days
 
+shortlist_sync:                  # optional; the apartmentops-sync stage
+  enabled: false                 # true to keep a shortlist document in step with verified units
+  target:
+    kind: sheet                  # sheet (Google Sheet) | doc_table (a table in a Google Doc)
+    id: null                     # the document id, or
+    url: null                    # the document URL
+  connector: google_drive        # the attached connector that writes the document
+  min_days_between_syncs: 7      # re-sync cadence when nothing new was verified
+  mark_off_market: false         # write "off-market (reviewed)" only on rows you already reviewed
+  columns:                       # column order in the document; address and link are required
+    - {field: num, label: "#"}               # row number
+    - {field: address, label: "Address"}     # street address with the unit
+    - {field: name, label: "Name"}           # building, or "Private" for an owner ad with no building
+    - {field: walkScore, label: "Walk Score"}  # from buildings.json walk.score
+    - {field: price, label: "Price"}         # rent_verified
+    - {field: sqft, label: "Sq ft"}
+    - {field: availability, label: "Available"}
+    - {field: link, label: "Link"}           # only ever a link opened live and judged direct-to-unit
+    - {field: review, label: "Review"}       # yours: any non-machine column is never written after append
+  last_shortlist_sync: null      # written by the pipeline after a clean read-back; leave it alone
+
 move_in_target: null             # optional ISO date
 list_purpose: compare            # call_first | compare - shapes notes and reports
 

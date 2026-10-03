@@ -354,4 +354,6 @@ verified in band" (M is those whose verified rent is within `gross_max`;
 the rest carry the `over_budget_all_in` warn), the standouts against their gates, and price
 movements if this is a re-scan. Then offer the next stage:
 `apartmentops-research` if areas.json does not exist yet, otherwise
-`apartmentops-dashboard`.
+`apartmentops-dashboard`. When `shortlist_sync.enabled` is true and this run
+verified new units (or the sync cadence has passed), end with the offer to
+run `apartmentops-sync`.
