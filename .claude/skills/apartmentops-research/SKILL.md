@@ -88,6 +88,20 @@ viewer_url, fetched_at}` - write that shape verbatim so the dashboard chip
 renders "n/a" and never a fabricated risk level. `viewer_url` is what the
 chip links to.
 
+**Walk Score.** Skip this entirely when `config.yml`'s
+`gates.walk_score_min` is absent or its `value` is 0. Otherwise call
+`../apartmentops/scripts/walk.py`'s `walk_score(street_address, city, state,
+cache_path="apartmentops/data/cache/walk.json",
+cache_days=config["research"]["walk_score_cache_days"])` (default 90 when
+unset) once per building and write whatever it returns verbatim into the
+building's `walk` block: on success `score`/`transit`/`bike`/`source_url`/
+`fetched_at`, on any failure `{score: null, error, source_url,
+fetched_at}` - never a guessed score. Then copy `score` onto each of the
+building's units as the `walk_score` provenance field: `{"value": score,
+"status": "FACT", "source": walk.source_url, "evidence": "Walk Score page"}`,
+or `{"value": null, "status": "MISSING"}` when the score is null. A
+hard-mode `walk_score_min` gate reads that field (`references/provenance.md`).
+
 **Rent control.** Follow the resolution procedure in
 `../apartmentops/references/costs.md`: resolve applicability ONCE per
 building from public ordinance text and, where relevant, tax records -
@@ -139,6 +153,10 @@ Build each unit's `dim_scores = {dimension: raw_score | None}`:
   `move_in_target` is null, do not call it at all - the dimension is simply
   absent from `dim_scores`, and `score_unit`'s renormalization handles the
   rest.
+- `walkability` - `walk.walkability_raw(buildings[slug].walk.score)`, which
+  maps the building's Walk Score (source: `walk.source_url`) onto the
+  dimension's anchor bands; a null score leaves the dimension absent and it
+  renormalizes with a note.
 
 Then `score_unit(dim_scores, spec)` gives `{composite, band, renormalized,
 renormalization_note}` - a missing dimension's weight is redistributed

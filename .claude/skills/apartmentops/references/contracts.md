@@ -42,9 +42,13 @@ gates:                       # each: {value, mode: hard|bonus}
   elevator_doorman: {value: true, mode: bonus}
   in_unit_laundry: {value: true, mode: bonus}
   pets: none
+  walk_score_min: {value: 70, mode: bonus}  # value 0 or absent disables the fetch and the gate
 geography:
   areas: ["area-slug-1", "area-slug-2"]
   notes: "free text on scope decisions"
+filters:                     # optional; applied to feed card title + description
+  exclude_keywords: []       # any match skips the card (criteria-dependent)
+  include_keywords: []       # non-empty: at least one must match
 move_in_target: null         # optional ISO date; drives the dashboard countdown
 list_purpose: compare        # call_first (speed: freshest first, call-now framing)
                              # | compare (true cost, leverage, calm evaluation)
@@ -52,13 +56,61 @@ locale:                      # optional; omitted = US defaults shown here
   currency: USD
   timezone: America/New_York # reporting timezone; also the fallback for
                              # naive source timestamps ONLY when known correct
+  country: US                # platform recipes in references/platforms.md are US-only
+  platform_slugs:            # optional; feeds doctor_searches.build_saved_searches
+    city_slug: chicago-il    # lowercase, hyphens, no spaces
+    craigslist_subdomain: chicago
+    area_slugs: {area-slug-1: west-loop}   # area -> platform neighborhood slug
+research:                    # optional
+  walk_score_cache_days: 90  # re-fetch a building's Walk Score after this many days
+report:                      # optional
+  new_unit_scope: unit       # unit | building: with building, a new unit in a
+                             # building the hunt already tracks is reported as
+                             # "new in tracked building" (report_class below)
+shortlist_sync:              # optional; apartmentops-sync (stage 6)
+  enabled: false
+  target:
+    kind: sheet              # sheet (Google Sheet) | doc_table (a table in a Google Doc)
+    id: null                 # document id, or
+    url: null                # the document URL
+  connector: google_drive    # the attached connector that writes the document
+  min_days_between_syncs: 7  # re-sync cadence when nothing new was verified
+  mark_off_market: false     # write "off-market (reviewed)" only on rows the user reviewed
+  columns:                   # document column order; `address` and `link` are required
+    - {field: num, label: "#"}
+    - {field: address, label: "Address"}
+    - {field: name, label: "Name"}
+    - {field: walkScore, label: "Walk Score"}
+    - {field: price, label: "Price"}
+    - {field: sqft, label: "Sq ft"}
+    - {field: availability, label: "Available"}
+    - {field: link, label: "Link"}
+    - {field: review, label: "Review"}   # any non-machine field is user-owned
+  last_shortlist_sync: null  # pipeline-written ISO timestamp; the one key here the user does not own
 saved_searches:              # optional; built by onboarding from the gates above
   primary:                   # profile name; extra profiles (e.g. a 1BR fallback)
     platform-a:              # write to the same verified.json with a profile tag
       area-slug-1:
         url: "https://... newest-first list URL with all filters baked in"
         marker: "of \\d+ results"   # optional regex proving results rendered
+    platform-b:
+      area-slug-1:
+        needs_ui: true       # no URL template (e.g. Redfin); replaced by the
+        note: "..."          # URL the UI produces, then preflighted
 ```
+
+`saved_searches` is built by `scripts/doctor_searches.py`'s
+`build_saved_searches(config, recipes)` from the templates in
+`references/platforms.md`, substituting `locale.platform_slugs`,
+`geography.areas` and `budget.gross_max`; a city-wide recipe uses the area
+key `citywide`. A leaf may carry `needs_ui: true` for a platform whose
+neighborhood ids only the UI knows (Redfin) until the scan drives the UI
+and caches the URL in place of the leaf.
+
+`filters` keywords match whole words or whole phrases, case-insensitive,
+through `quality.keyword_filter`; they are criteria (part of
+`checked.criteria_fingerprint`), so editing them re-opens every
+keyword rejection.
 
 `income_annual` lives ONLY in this user-owned file. It must never be copied
 into any generated artifact (`costs.py` takes it as a separate argument and
@@ -72,6 +124,22 @@ scores against - see `references/scoring.md`) and creates
 Criteria the user has not confirmed stay unset - never filled from these
 examples or from a previous user's values. Onboarding shows the resulting
 one-line search summary and gets a yes before the first scan.
+
+`shortlist_sync` is user-owned except `last_shortlist_sync`, which
+apartmentops-sync stamps after a clean read-back. Machine fields
+(`shortlist.MACHINE_FIELDS`: num, address, name, walkScore, price, sqft,
+availability, link) are filled from verified.json and buildings.json; every
+other configured field is a user column, appended blank and never edited.
+
+## apartmentops/data/shortlist-plan.json and data/shortlist-state.json  (written by: apartmentops-sync - private, never published)
+
+`shortlist-plan.json` is transient: the `shortlist.plan_sync` result
+(`{run, reason, to_append: [rows], to_refresh: [{row_index, key, link}]}`)
+written before any document write and kept for the read-back diff. Each
+row carries every configured field plus `key`
+(`shortlist.norm_address(address)`) and `unit_id`.
+`shortlist-state.json` holds `{recovery: {key: attempts}}`; a row is held
+after three link-recovery attempts (`shortlist.recovery_budget`).
 
 ## apartmentops/data/checked.json  (written by: scan; read by: scan, hydrate - private, never published)
 
@@ -166,6 +234,14 @@ either shape and normalizes).
 }
 ```
 
+`report_class` (optional, written by scan Phase 5 for this run's new units):
+`"new"` or `"known_building"`, from `backlog.classify_new_units` under
+`config.report.new_unit_scope`. With scope `unit` (the default) every new
+unit is `new`; with `building`, a new unit whose building slug matches any
+tracked unit, live or gone, is `known_building`, except owner ads and units
+with no building name, which stay `new`. It labels the report and the
+dashboard badge only; actions.yml still gets a `NEW` row either way.
+
 Field-level provenance (additive, preferred for new writes): any fact field
 MAY be a provenance object instead of a bare scalar -
 `{"value", "status": "FACT|INFERRED|MISSING|CONFLICT", "source", "evidence",
@@ -190,7 +266,11 @@ Written by the scan stage when the source provides them
   observation (`found_at`), verification (`verified_at`), and removal
   (`delisted`) dates stay distinct.
 - `advertiser_type` (`owner` | `building_direct` | `agency` | `broker`),
-  `agency`, `broker_fee`.
+  `agency`, `broker_fee`. `advertiser_type` may be a provenance object
+  (written by `quality.owner_signals` at merge): `owner` from a by-owner
+  feed is FACT with the feed URL as `source`; `owner` from listing phrases
+  is INFERRED with a `confidence` and the matched phrases as `evidence`;
+  an existing FACT is never overwritten.
 - `rooms`, `size_sqm` for locales that count rooms or meters.
 - `fees`: `[{type, amount, currency, billing_period: monthly|bimonthly|
   quarterly|semiannual|annual|one_time, source_url, observed_at}]`.
@@ -268,6 +348,7 @@ Per-building enrichments keyed by building slug:
     "address": "1 Example Ave, City, ST",
     "lat": 40.0, "lon": -74.0,
     "flood": {"zone": "X", "sfha": false, "source_url": "https://...", "viewer_url": "https://...", "fetched_at": "..."},
+    "walk": {"score": 92, "transit": 88, "bike": 79, "source_url": "https://www.walkscore.com/score/...", "fetched_at": "..."},
     "rent_control": {"status": "UNKNOWN", "cap_pct": null, "source": null, "resolved_at": null},
     "grating": {"stars": 4.3, "count": 1152, "url": "https://www.google.com/maps/search/?api=1&query=..."},
     "parking": {"avail": "garage", "cost": 250, "note": "on-site garage; $250/mo per <source>", "url": "https://..."},
@@ -279,6 +360,12 @@ Per-building enrichments keyed by building slug:
 
 `flood` comes from `scripts/flood.py` (keyless FEMA NFHL query; `zone: null`
 plus an `error` field on service failure - render n/a, never guess).
+`walk` comes from `scripts/walk.py` (the public Walk Score page, cached
+for `research.walk_score_cache_days`); on any failure it is `{score: null,
+error, source_url, fetched_at}` and the chip renders n/a. It is absent when
+`gates.walk_score_min` is absent or 0. The research stage copies `score`
+onto each unit as the `walk_score` provenance field (FACT, `source` =
+`source_url`; MISSING when null) before gates are evaluated.
 `rent_control` follows the cite-or-UNKNOWN procedure in
 `references/costs.md` and caps the year-2 renewal assumption in
 `scripts/costs.py`.

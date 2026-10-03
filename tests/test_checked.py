@@ -19,6 +19,20 @@ def test_fingerprint_ignores_non_criteria_keys():
     assert checked.criteria_fingerprint(a) != checked.criteria_fingerprint(c)
 
 
+def test_fingerprint_changes_with_filters():
+    base = {"budget": {"gross_max": 3000}, "anchor": {"label": "Office"},
+            "filters": {"exclude_keywords": [], "include_keywords": []}}
+    more = {**base, "filters": {"exclude_keywords": ["basement"], "include_keywords": []}}
+    relabeled = {**base, "anchor": {"label": "HQ"}}
+    assert checked.criteria_fingerprint(base) != checked.criteria_fingerprint(more)
+    assert checked.criteria_fingerprint(base) == checked.criteria_fingerprint(relabeled)
+    s = checked.empty_state()
+    fp = checked.criteria_fingerprint(base)
+    checked.record_rejection(s, "t1", "exclude_keyword:garden unit", NOW, fp)
+    assert checked.rejection_active(s, "t1", fp, NOW)
+    assert not checked.rejection_active(s, "t1", checked.criteria_fingerprint(more), NOW)
+
+
 def test_rejection_expires_on_criteria_change_and_age():
     s = checked.empty_state()
     checked.record_rejection(s, "t1", "over budget", "2026-10-01T00:00:00+00:00", "fp1")

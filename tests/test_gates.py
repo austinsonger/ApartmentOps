@@ -458,3 +458,13 @@ def test_bare_exp_dir_read_directly_would_be_a_false_fact():
     raw = {"dir": "N", "south": False, "conf": "UNK", "src": None}
     assert gates.exp_gate_field(raw)["status"] == gates.MISSING
     assert gates.normalize_field(raw["dir"])["status"] == gates.FACT
+
+
+def test_walk_score_min_hard_pass_fail_unknown():
+    cfg = {"walk_score_min": {"field": "walk_score", "op": "gte", "value": 70, "mode": "hard"}}
+    src = "https://www.walkscore.com/score/1-example-ave-chicago-il"
+    fact = lambda v: {"value": v, "status": "FACT", "source": src, "evidence": "walk score page"}
+    assert gates.evaluate_gates(cfg, {"walk_score": fact(72)}) == {"walk_score_min": "PASS"}
+    assert gates.evaluate_gates(cfg, {"walk_score": fact(55)}) == {"walk_score_min": "FAIL"}
+    missing = {"value": None, "status": "MISSING"}
+    assert gates.evaluate_gates(cfg, {"walk_score": missing}) == {"walk_score_min": "UNKNOWN"}

@@ -33,7 +33,7 @@ grades, no auto-contacting brokers.
 
 ## How it works
 
-Five skills that hand off through plain files in an `apartmentops/`
+Six skills that hand off through plain files in an `apartmentops/`
 directory. Each stage reads the previous stage's output and writes its own,
 so you can re-run any single stage without redoing the others.
 
@@ -57,6 +57,10 @@ so you can re-run any single stage without redoing the others.
   (lease review, on demand)
                                feeds back into the dashboard's critical-dates
                                timeline
+
+  apartmentops-sync        ->  your shortlist document (Google Sheet or Doc table)
+  (shortlist sync, optional)
+                               data/shortlist-plan.json  (plan + read-back)
 ```
 
 - **Onboard.** Asks where you commute to (down to the corner - a downtown
@@ -107,10 +111,19 @@ so you can re-run any single stage without redoing the others.
   concession, a surprise fee), and derives a critical-dates timeline
   (renewal notice, concession reversion, deposit-return deadline) for you to
   copy into your own calendar.
+- **Sync.** Optional sixth stage for anyone who keeps their shortlist in a
+  Google Sheet or a Doc table. Appends newly verified units (address, name,
+  Walk Score, price, size, availability, link) through a connected document
+  connector, refreshes links that moved, and never writes a link it has not
+  opened live and judged to be the unit's own, active, whole-unit page -
+  dead and indirect links are recovered (three attempts) or held and
+  reported. Your own columns (reviews, ratings, notes) are never touched,
+  and a read-back diff proves every planned cell landed before the sync is
+  stamped done.
 
 ## Quickstart
 
-1. Copy the five skill folders into your project's skills directory:
+1. Copy the six skill folders into your project's skills directory:
 
    ```bash
    git clone https://github.com/ajokunu/ApartmentOps
@@ -180,14 +193,17 @@ subagents cut corners when the rules are implicit:
 Every number the skills report - a true monthly cost, a rent-drop
 percentage, a gate PASS/FAIL/UNKNOWN, a photo-hash match distance, a lease
 deadline - comes out of plain, tested Python, not the model doing math in
-its head. Fifteen modules under `.claude/skills/apartmentops/scripts/`
+its head. Seventeen modules under `.claude/skills/apartmentops/scripts/`
 (`costs.py`, `snapshots.py`, `gates.py`, `scoring.py`, `photo_hash.py`,
 `lease_dates.py`, `checked.py`, `feed_refresh.py`, `dedupe.py`,
-`quality.py`, and five more, alongside the original `geocode.py` and
-`verify_units.py`) are covered by a 483-test pytest suite (479 tests over
-sixteen of the seventeen modules - `geocode.py` is a live Nominatim call and
-has no test file - plus 4 tests for the example-data generator under
-`assets/`) - run it with `pytest tests/` from the repo root. The model's
+`quality.py`, `walk.py`, `shortlist.py`, and five more, alongside the
+original `geocode.py` and `verify_units.py`) are covered by a 546-test
+pytest suite (542 tests over eighteen of the nineteen modules -
+`geocode.py` is a live Nominatim call and has no test file - plus 4 tests
+for the example-data generator under `assets/`) - run it with
+`pytest tests/` from the repo root. Network-facing modules (`flood.py`,
+`walk.py`, `doctor_searches.py`) take an injectable fetch, so the suite
+never touches the network. The model's
 job in every skill is to
 call these functions, read what they return, and narrate it with citations;
 it never computes a dollar figure, a percentage, or a hash distance by
@@ -234,11 +250,12 @@ repo - read it before adding a feature. The four that matter most:
   apartmentops/             onboarding + routing; references/, scripts/, assets/
     references/contracts.md   the file formats every stage reads and writes
     references/*.md           scoring, provenance, ledger, costs, lease-fields,
-                              line-substitution, and collection-playbook docs
-    scripts/*.py              fifteen deterministic modules (costs, gates, scoring,
+                              line-substitution, collection-playbook, and
+                              platforms (saved-search recipes) docs
+    scripts/*.py              seventeen deterministic modules (costs, gates, scoring,
                               snapshots, photo_hash, lease_dates, line_advisor,
-                              extract_embedded, flood, backlog, doctor_searches,
-                              checked, feed_refresh, dedupe, quality)
+                              extract_embedded, flood, walk, backlog, doctor_searches,
+                              checked, feed_refresh, dedupe, quality, shortlist)
                               plus the original geocode.py and verify_units.py
     assets/example-dashboard.html  a finished dashboard to study (synthetic, seeded data)
     assets/make_example_data.py    the seeded generator for that example data
@@ -246,12 +263,13 @@ repo - read it before adding a feature. The four that matter most:
   apartmentops-research/    safety, cleanliness, transit, scoring
   apartmentops-dashboard/   build + hydrate the map
   apartmentops-lease/       lease abstraction, deviations, critical dates
+  apartmentops-sync/        shortlist document sync (optional)
 examples/config.example.yml
 examples/scoring.example.yml
 examples/extractor.example.yml
 examples/sources.example.yml   per-source liveness / gone / price evidence policy
 docs/screenshots/
-tests/                      pytest suite (483 tests) for sixteen of the seventeen scripts/ modules (geocode.py is untested) plus assets/make_example_data.py
+tests/                      pytest suite (546 tests) for eighteen of the nineteen scripts/ modules (geocode.py is untested) plus assets/make_example_data.py
 ```
 
 ## License

@@ -20,7 +20,8 @@ version: 1
 # --- Scored dimensions --------------------------------------------------
 # v1 covers what research already grades (commute, budget fit, safety,
 # cleanliness) plus move_in_window_fit (availability-vs-move-in-window
-# gap). Weights must sum to 1.0. Each anchor band is {score_min, score_max,
+# gap) and walkability (the building's Walk Score from scripts/walk.py; a
+# building with no score is missing and renormalizes with a note). Weights must sum to 1.0. Each anchor band is {score_min, score_max,
 # meaning}; bands must tile the dimension's full range with no gaps and no
 # overlaps (validated on load). A fractional raw score landing between two
 # integer-tiled bands (e.g. 16.5 between a band ending at 16 and the next
@@ -39,7 +40,7 @@ version: 1
 
 dimensions:
   commute:
-    weight: 0.25
+    weight: 0.22
     rank_based: false
     anchors:
       - score_min: 17
@@ -56,7 +57,7 @@ dimensions:
         meaning: "over 60 min door-to-door, or no viable transit route"
 
   budget_fit:
-    weight: 0.20
+    weight: 0.18
     rank_based: false
     anchors:
       - score_min: 17
@@ -73,7 +74,7 @@ dimensions:
         meaning: "above stretch band even net-effective"
 
   safety:
-    weight: 0.20
+    weight: 0.18
     rank_based: false
     anchors:
       - score_min: 17
@@ -90,7 +91,7 @@ dimensions:
         meaning: "area grade D or below, or above-average crime with sources"
 
   cleanliness:
-    weight: 0.15
+    weight: 0.14
     rank_based: false
     anchors:
       - score_min: 17
@@ -107,7 +108,7 @@ dimensions:
         meaning: "area grade D or below"
 
   move_in_window_fit:
-    weight: 0.20
+    weight: 0.18
     rank_based: false
     anchors:
       - score_min: 17
@@ -122,6 +123,23 @@ dimensions:
       - score_min: 1
         score_max: 8
         meaning: "available date more than 42 days outside the window, or no usable overlap - outright miss"
+
+  walkability:
+    weight: 0.10
+    rank_based: false
+    anchors:
+      - score_min: 17
+        score_max: 20
+        meaning: "Walk Score 90+, daily errands on foot"
+      - score_min: 13
+        score_max: 16
+        meaning: "Walk Score 70 to 89, most errands on foot"
+      - score_min: 9
+        score_max: 12
+        meaning: "Walk Score 50 to 69, some errands on foot"
+      - score_min: 1
+        score_max: 8
+        meaning: "Walk Score under 50, car-dependent"
 
 # --- Action bands ---------------------------------------------------------
 # Composite is 0-100 (weighted, renormalized when dimensions are missing).

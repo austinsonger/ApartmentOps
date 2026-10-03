@@ -709,3 +709,48 @@ def test_cli_preserves_hand_authored_actions_yml_across_scan_and_hydrate(
         "updated_at": "2026-07-01",
     }
     assert final["tower-2-2207"]["status"] == "NEW"
+
+
+# --------------------------------------------------------------------------
+# classify_new_units: unit scope vs building scope
+# --------------------------------------------------------------------------
+
+
+def test_classify_unit_scope_all_new():
+    new = {"tower-2-3301": make_unit(unit="3301")}
+    tracked = {"tower-2-2207": make_unit()}
+    assert backlog.classify_new_units(new, tracked, "unit") == {"tower-2-3301": "new"}
+
+
+def test_classify_building_scope_known_building():
+    new = {"tower-2-3301": make_unit(unit="3301"), "other-place-4": make_unit(building="Other Place", unit="4")}
+    tracked = {"tower-2-2207": make_unit(live=False)}  # a gone unit still makes the building tracked
+    assert backlog.classify_new_units(new, tracked, "building") == {
+        "tower-2-3301": "known_building", "other-place-4": "new"}
+
+
+def test_classify_building_scope_owner_always_new():
+    owner = make_unit(unit="3301")
+    owner["advertiser_type"] = {"value": "owner", "status": "FACT", "source": "https://x.test/frbo"}
+    assert backlog.classify_new_units({"tower-2-3301": owner}, {"tower-2-2207": make_unit()},
+                                      "building") == {"tower-2-3301": "new"}
+
+
+def test_classify_building_scope_empty_slug_new():
+    nameless = make_unit(unit="3301")
+    nameless["building"] = None
+    tracked = {"x": dict(make_unit(), building=None)}
+    assert backlog.classify_new_units({"n-3301": nameless}, tracked, "building") == {"n-3301": "new"}
+    assert backlog.building_slug(nameless) == ""
+
+
+def test_describe_sync_mentions_known_building():
+    before = {"tower-2-2207": {"status": "Contacted"}}
+    after = dict(before, **{"tower-2-3301": {"status": "NEW"}, "other-4": {"status": "NEW"}})
+    classes = {"tower-2-3301": "known_building", "other-4": "new"}
+    line = backlog.describe_sync(before, after, classes)
+    assert line == "actions.yml: 2 NEW entries appended (3 units tracked), of which 1 in tracked buildings"
+    assert backlog.describe_sync(before, after) == "actions.yml: 2 NEW entries appended (3 units tracked)"
+    md = backlog.backlog_markdown(backlog.build_backlog(
+        {"tower-2-3301": make_unit(unit="3301")}, after, {}, {}, "r1", classes={"tower-2-3301": "known_building"}))
+    assert "### New units in tracked buildings" in md and "tower-2-3301" in md

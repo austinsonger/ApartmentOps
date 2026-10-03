@@ -96,3 +96,57 @@ sources:
     gone_evidence: false
     price_evidence: false
     note: "Partial lazy-loaded renders are common; absence is not proof."
+
+  # Platform entries (references/platforms.md). Aggregator search feeds
+  # confirm live but prove nothing gone and carry no admissible price; the
+  # per-post / per-listing pages above each feed are the unit's own page.
+  - match: "/apa/d/"
+    kind: own_page
+    live_evidence: true
+    gone_evidence: true
+    price_evidence: true
+    price_layer: base
+    note: "Craigslist post page (region path, then /apa/d/): one unit, asking rent as posted. Listed before the search-index entry; first match wins."
+  - match: ".craigslist.org/"
+    kind: aggregator
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+    note: "Craigslist search index; no wall observed. Neighborhood filters are per-city numeric codes."
+  - match: "/for-rent-by-owner/"
+    kind: aggregator
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+    note: "Apartments.com FRBO search; rate-limits plain fetches and ignores a price placed in the path."
+  - match: "apartments.com/"
+    kind: own_page
+    live_evidence: true
+    gone_evidence: true
+    price_evidence: true
+    price_layer: base
+    note: "Apartments.com FRBO detail page (one listing per page). Detail URLs have no distinctive path, so the FRBO search path above is matched first."
+  - match: "hotpads.com/"
+    kind: aggregator
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+    note: "HotPads; PerimeterX wall. The by-owner path may be ignored - use the 'Listed by: Property owner' filter."
+  - match: "zumper.com/"
+    kind: aggregator
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+    note: "Zumper; neighborhoods only through the UI selector."
+  - match: "zillow.com/"
+    kind: aggregator
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+    note: "Zillow; PerimeterX wall, routinely blocks plain fetches."
+  - match: "redfin.com/"
+    kind: aggregator
+    live_evidence: true
+    gone_evidence: false
+    price_evidence: false
+    note: "Redfin; neighborhood ids are numeric and come from the UI."

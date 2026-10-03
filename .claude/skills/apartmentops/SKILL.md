@@ -17,7 +17,7 @@ description: >-
 # ApartmentOps
 
 A pipeline that turns "find me an apartment" into a verified, mapped,
-evidence-backed shortlist. Five skills feed each other through files in the
+evidence-backed shortlist. Six skills feed each other through files in the
 `apartmentops/` directory of the project (the contracts are defined in
 `references/contracts.md` - read it before producing or consuming any stage
 file):
@@ -28,6 +28,7 @@ apartmentops-scan     ->  apartmentops/data/verified.json  (+ shots/)
 apartmentops-research ->  apartmentops/data/areas.json, transit.json
 apartmentops-dashboard->  apartmentops/dashboard.html  (published artifact)
 apartmentops-lease    ->  apartmentops/data/lease.json  (post-signing, optional)
+apartmentops-sync     ->  the user's shortlist document  (optional)
 ```
 
 ## Routing
@@ -46,6 +47,9 @@ Check state, then route. Run these checks silently first:
    orthogonal to the checks above: it runs whenever the user has a lease in
    hand, regardless of where the rest of the pipeline is (it degrades
    gracefully with no `verified.json` to compare against).
+6. After the dashboard: if `shortlist_sync.enabled` and new verified units
+   exist or the sync cadence (`min_days_between_syncs`) has passed, offer
+   `apartmentops-sync` to update the user's shortlist document.
 
 The stages are separable on purpose: a user can re-run scan weekly without
 re-onboarding, or re-hydrate the dashboard without re-scanning. Never skip a
@@ -111,6 +115,13 @@ in-unit laundry. Lesson learned: when everything is a hard gate the pool goes
 to near zero; when everything is a bonus the results feel old and dark. Make
 the user choose consciously.
 
+Then ask for deal-breaker words and must-have words, matched against each
+feed card's title and description: for example `exclude_keywords:
+["basement", "garden unit"]` and `include_keywords: ["in-unit laundry"]`.
+Store them under `filters:`. They match whole words and phrases only, and
+they are criteria: changing them later re-opens every listing previously
+rejected for a keyword.
+
 ### Step 5 - Geography and locale
 
 Which neighborhoods/boroughs/cities are in scope. Offer to widen: the best
@@ -154,10 +165,17 @@ Step 6 also:
   header saying it is user-owned (the pipeline only ever appends `NEW`
   entries for newly verified units; every other edit is the user's - see
   `references/actions.md`).
-- Build the `saved_searches` block from the gates just chosen: one
-  newest-first, fully filtered listing URL per platform per area (price
-  band, beds, sort baked into the URL so no scan subagent has to drive a
-  search UI), keyed `saved_searches.<profile>.<platform>.<area>: {url,
+- Build the `saved_searches` block from the gates just chosen: read
+  `references/platforms.md`, ask which platforms to enable (default: all
+  six for a US city), collect `locale.platform_slugs` (`city_slug`,
+  `craigslist_subdomain`, `area_slugs`), call
+  `doctor_searches.build_saved_searches(config, recipes)` with the
+  templates from that file, run `check_saved_searches` on the result, and
+  show the preflight table (a bot wall is a reported result, not a
+  failure). For Redfin, drive the UI once per area and store the URL it
+  produces in place of the `needs_ui` leaf. Ask for `locale.country` when
+  it is unset; a non-US country skips the US-only recipes. The result is
+  keyed `saved_searches.<profile>.<platform>.<area>: {url,
   marker}` per `references/contracts.md`. `marker` is an optional regex
   (e.g. `"of \\d+ results"`) proving the page actually rendered results,
   not an empty or blocked state.
@@ -236,8 +254,9 @@ Step 6 also:
   stale and bumped ads), billing-period fee normalization, publication
   freshness without invented timezones, the relative-time notes sweep,
   and the pre-ship integrity report.
-- `scripts/doctor_searches.py` - preflight-checks every `saved_searches` URL
-  in `config.yml` still resolves and renders results.
+- `scripts/doctor_searches.py` - expands the `references/platforms.md`
+  recipes into a `saved_searches` block and preflight-checks every URL in
+  `config.yml` still resolves and renders results.
 - `scripts/snapshots.py` - the append-only price/liveness ledger: run-to-run
   diffs, price-drop detection, per-unit trajectories, the weekly digest, and
   the heartbeat run log.
@@ -255,6 +274,12 @@ Step 6 also:
   (renewal notice, concession reversion, deposit return).
 - `scripts/photo_hash.py` - a perceptual-hash scam net across archived
   listing photos (recycled photos, price-gap flips, zombie reposts).
+- `scripts/walk.py` - Walk Score lookup for a building address, cached,
+  with n/a on any failure.
+- `scripts/shortlist.py` - shortlist-sync rows, the sync plan, the
+  live-link gate, and the read-back diff for `apartmentops-sync`.
+- `references/platforms.md` - per-platform saved-search recipes, markers,
+  walls, and quirks (dated observations).
 - `scripts/line_advisor.py` - suggests same-line sibling units in a tower
   from a hand-curated per-building line map.
 - `references/collection-playbook.md` - feed-first scanning, drain as you

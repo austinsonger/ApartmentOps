@@ -34,6 +34,7 @@ gates:
   elevator_doorman: {value: true, mode: hard}
   in_unit_laundry: {value: true, mode: hard}
   pets: {value: cat, mode: hard}         # none | cat | dog | any
+  walk_score_min: {value: 70, mode: bonus}  # Walk Score; value 0 or omit to skip the lookup and the gate
 
 geography:
   areas: ["the-loop", "west-loop", "river-north", "south-loop", "streeterville"]
@@ -42,9 +43,46 @@ geography:
     Streeterville after onboarding flagged them as one L stop out with
     better price-per-foot.
 
+filters:                         # optional; matched against each feed card's title + description
+  exclude_keywords: []           # any match skips the card, e.g. ["basement", "garden unit"]
+  include_keywords: []           # non-empty: at least one must match, e.g. ["in-unit laundry"]
+                                 # whole words and phrases only: "garden" never matches "gardening";
+                                 # these are criteria, so changing them re-opens prior keyword rejections
+
+research:                        # optional
+  walk_score_cache_days: 90      # a building's Walk Score is re-fetched after this many days
+
+shortlist_sync:                  # optional; the apartmentops-sync stage
+  enabled: false                 # true to keep a shortlist document in step with verified units
+  target:
+    kind: sheet                  # sheet (Google Sheet) | doc_table (a table in a Google Doc)
+    id: null                     # the document id, or
+    url: null                    # the document URL
+  connector: google_drive        # the attached connector that writes the document
+  min_days_between_syncs: 7      # re-sync cadence when nothing new was verified
+  mark_off_market: false         # write "off-market (reviewed)" only on rows you already reviewed
+  columns:                       # column order in the document; address and link are required
+    - {field: num, label: "#"}               # row number
+    - {field: address, label: "Address"}     # street address with the unit
+    - {field: name, label: "Name"}           # building, or "Private" for an owner ad with no building
+    - {field: walkScore, label: "Walk Score"}  # from buildings.json walk.score
+    - {field: price, label: "Price"}         # rent_verified
+    - {field: sqft, label: "Sq ft"}
+    - {field: availability, label: "Available"}
+    - {field: link, label: "Link"}           # only ever a link opened live and judged direct-to-unit
+    - {field: review, label: "Review"}       # yours: any non-machine column is never written after append
+  last_shortlist_sync: null      # written by the pipeline after a clean read-back; leave it alone
+
 move_in_target: null             # optional ISO date
 list_purpose: compare            # call_first | compare - shapes notes and reports
 
 locale:                          # optional; these are the US defaults
   currency: USD
   timezone: America/Chicago
+  country: US                    # the platform recipes in references/platforms.md are US-only
+  platform_slugs:                # feeds doctor_searches.build_saved_searches
+    city_slug: chicago-il        # lowercase letters, digits and hyphens; no spaces
+    craigslist_subdomain: chicago
+    area_slugs:                  # area -> the platform's neighborhood slug (defaults to the area name)
+      the-loop: the-loop
+      west-loop: west-loop

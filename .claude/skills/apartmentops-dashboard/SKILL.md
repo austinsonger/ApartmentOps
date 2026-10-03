@@ -58,6 +58,10 @@ that make it trustworthy rather than decorative:
   unit using the deepest known URL, and a live/gone badge with the check
   date), essentials chips with walk minutes, and the honest vibe sentence
   including negatives.
+- **Net rents show the gross first.** Where a unit has `rent_is_net: true`,
+  the rent cell and the notes read "gross $Y / net $X" with the gross
+  leading: the gross is the monthly check and the renewal baseline
+  (`references/costs.md`, "What the renter actually pays").
 - **Every grade chip is a link** to its primary source. No source, no grade -
   render "n/a" instead.
 - **Both themes.** Define tokens on :root, override in
@@ -101,6 +105,10 @@ that make it trustworthy rather than decorative:
   `diff_last_two` raises `InsufficientHistoryError` - catch it and hide
   the sparkline and every delta badge for that unit entirely. A single
   point is not a trend; never draw a flat line to fill the gap.
+  The NEW badge reads the unit's `report_class` from verified.json: a
+  `known_building` unit shows a quieter "new in tracked building" badge
+  instead of NEW, with a toggle that shows them as plain NEW; a unit with
+  no `report_class` badges as before.
 - **Flood chip.** Per building, read `data/buildings.json[slug].flood`
   and render a chip (zone letter, SFHA yes/no) that links out to
   `viewer_url`. A `flood.zone` of `null` (the FEMA service call failed -
@@ -108,6 +116,10 @@ that make it trustworthy rather than decorative:
   both render "flood: n/a" - never a guessed zone, and never a chip with
   no link behind it, matching the "no source, no grade" rule the
   safety/cleanliness chips already follow above.
+- **Walk Score chip.** Per building, read `data/buildings.json[slug].walk`
+  and render "walk: N" linking to `walk.source_url`, with `fetched_at` in
+  the chip's title text. A `score` of `null` (the lookup failed - `error`
+  is set) or no `walk` block renders "walk: n/a" - never a guessed score.
 - **Provenance chips.** Any unit field carrying the
   `references/provenance.md` shape gets a small FACT / INFERRED / MISSING
   / CONFLICT chip; read it through `gates.field_value` / `gates.field_status`

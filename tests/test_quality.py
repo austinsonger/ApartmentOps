@@ -110,3 +110,138 @@ def test_integrity_report(tmp_path):
     assert r["out_of_spec"] == [{"unit_id": "x", "why": ["over budget", "too few beds"]}]
     assert r["same_unit_pairs"] == [{"a": "y", "b": "z", "level": "candidate"}]
     assert not r["ok"]
+
+
+def test_shared_patterns_new_phrases():
+    for phrase in ("Room for rent", "Shared room near transit", "Looking for a housemate",
+                   "House share, 3 people", "Room in house", "Room in apartment"):
+        f = _flags({"rent_verified": 3000, "property_type": phrase})
+        assert f["shared_or_sublet"]["action"] == "skip", phrase
+
+
+def test_shared_patterns_false_positives():
+    for phrase in ("Laundry room in basement", "Bedroom with closet", "Big living room", "Sunroom"):
+        assert "shared_or_sublet" not in _flags({"rent_verified": 3000, "property_type": phrase}), phrase
+
+
+def test_net_without_gross_flag():
+    u = {"rent_verified": 3900, "rent_is_net": True, "notes": "net $3,900/mo with 1 month free"}
+    assert _flags(u)["net_without_gross"]["action"] == "warn"
+    u["notes"] = "net $3,900/mo / gross $4,200"
+    assert "net_without_gross" not in _flags(u)
+
+
+def test_net_without_gross_hits_sweep():
+    hits = quality.net_without_gross_hits([
+        {"unit_id": "a", "notes": "Net-effective $3,900 on a 13-month term"},
+        {"unit_id": "b", "notes": "gross $4,200 / net $3,900"},
+    ])
+    assert len(hits) == 1 and hits[0]["unit_id"] == "a"
+    assert "Net-effective" in hits[0]["note_excerpt"]
+
+
+BUDGET = {"gross_max": 3500, "gross_max_stretch": 3800}
+
+
+def test_concession_badge_matches():
+    for text in ("1 month free", "6 weeks free", "2 mo free", "Move-in special", "move in special",
+                 "Special offer", "Special!", "Starting at $3,400", "starting from 3,400", "From $3,400",
+                 "Concession on 13-month lease", "Look and lease", "Limited-time deal", "limited time"):
+        assert quality.concession_badge(text), text
+    for text in ("Ask the specialist", "Near special education center", None, ""):
+        assert not quality.concession_badge(text), text
+
+
+def test_feed_price_decision_pass_under_ceiling():
+    assert quality.feed_price_decision(3400, "", BUDGET) == {"action": "pass"}
+
+
+def test_feed_price_decision_open_badged_within_stretch():
+    d = quality.feed_price_decision(3700, "6 weeks free", BUDGET)
+    assert d == {"action": "open", "reason": "concession_badged_over_ceiling"}
+    # opened on the exception, verified over the ceiling: the existing warn fires
+    opened = {"rent_verified": 3650, "quality_flags": ["concession_badged_over_ceiling"]}
+    assert _flags(opened)["over_budget_all_in"]["action"] == "warn"
+    assert "over_budget_all_in" not in _flags({**opened, "rent_verified": 3400})
+
+
+def test_feed_price_decision_skip_badged_above_stretch():
+    d = quality.feed_price_decision(3900, "6 weeks free", BUDGET)
+    assert d == {"action": "skip", "reason": "over_ceiling"}
+    # no stretch set: the stretch ceiling is gross_max, so a badge cannot open it
+    assert quality.feed_price_decision(3600, "Special", {"gross_max": 3500})["action"] == "skip"
+
+
+def test_feed_price_decision_skip_unbadged_over_ceiling():
+    assert quality.feed_price_decision(3700, "Bright corner unit", BUDGET) == {"action": "skip", "reason": "over_ceiling"}
+
+
+def test_feed_price_decision_none_price_opens():
+    assert quality.feed_price_decision(None, "", BUDGET) == {"action": "open", "reason": "price_unstated_on_card"}
+
+
+def test_keyword_filter_exclude_hit():
+    f = {"exclude_keywords": ["basement", "garden unit"]}
+    assert quality.keyword_filter("Cozy BASEMENT 2BR", f) == {"action": "skip", "reason": "exclude_keyword:basement"}
+
+
+def test_keyword_filter_include_required_miss():
+    f = {"include_keywords": ["in-unit laundry"]}
+    assert quality.keyword_filter("2BR, laundry in building", f) == {"action": "skip", "reason": "no_include_keyword"}
+
+
+def test_keyword_filter_include_required_hit():
+    f = {"exclude_keywords": ["basement"], "include_keywords": ["in-unit laundry", "dishwasher"]}
+    assert quality.keyword_filter("Top floor 2BR with In-Unit Laundry", f) == {"action": "pass"}
+
+
+def test_keyword_filter_phrase_and_boundary():
+    assert quality.keyword_filter("Sunny garden unit", {"exclude_keywords": ["garden unit"]})["action"] == "skip"
+    assert quality.keyword_filter("Near gardening club", {"exclude_keywords": ["garden"]}) == {"action": "pass"}
+    assert quality.keyword_filter("Garden view, unit 4", {"exclude_keywords": ["garden unit"]}) == {"action": "pass"}
+
+
+def test_keyword_filter_empty_passes():
+    assert quality.keyword_filter("anything at all", None) == {"action": "pass"}
+    assert quality.keyword_filter(None, {"exclude_keywords": [], "include_keywords": []}) == {"action": "pass"}
+
+
+def test_owner_signals_feed_url_is_fact():
+    for url in ("https://chicago.craigslist.org/chc/apa/d/sunny-2br/7800000000.html",
+                "https://www.apartments.com/west-loop-chicago-il/for-rent-by-owner/",
+                "https://hotpads.com/chicago-il/apartments-for-rent?listingTypes=by-owner"):
+        s = quality.owner_signals({"url": url, "building": "Some Building"})
+        assert s == {"value": "owner", "status": "FACT", "source": url, "evidence": "by-owner feed"}, url
+
+
+def test_owner_signals_hotpads_without_by_owner_is_not_feed():
+    s = quality.owner_signals({"url": "https://hotpads.com/chicago-il/apartments-for-rent", "building": "Tower"})
+    assert s == {"value": None, "status": "MISSING"}
+
+
+def test_owner_signals_two_phrases_inferred():
+    s = quality.owner_signals({"building": "Two-flat", "title": "2BR, private entrance",
+                               "description": "Utilities included. Contact owner."})
+    assert s["status"] == "INFERRED" and s["value"] == "owner"
+    assert s["confidence"] == 0.9  # three phrases
+    s = quality.owner_signals({"building": "Two-flat", "title": "Private entrance", "description": "No broker fee"})
+    assert s["confidence"] == 0.7
+    assert s["evidence"] == ["private entrance", "no broker fee"]
+
+
+def test_owner_signals_one_phrase_missing():
+    s = quality.owner_signals({"building": "Tower", "description": "Utilities included"})
+    assert s == {"value": None, "status": "MISSING"}
+
+
+def test_owner_signals_missing_building_counts_once():
+    s = quality.owner_signals({"description": "Utilities included"})
+    assert s["status"] == "INFERRED" and s["confidence"] == 0.7
+    assert s["evidence"] == ["utilities included", "no building or property name"]
+    assert quality.owner_signals({"description": "Nice place"})["status"] == "MISSING"
+
+
+def test_owner_signals_never_overrides_fact():
+    fact = {"value": "broker", "status": "FACT", "source": "https://example.test/listing/1", "evidence": "Listed by: Agent"}
+    s = quality.owner_signals({"advertiser_type": fact, "url": "https://chicago.craigslist.org/chc/apa/d/x/1.html"})
+    assert s is fact

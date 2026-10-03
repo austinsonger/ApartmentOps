@@ -25,6 +25,8 @@ Traps:
                        serious ad, less room to haggle                info
     over_budget_all_in rent + known recurring fees above gross_max:
                        must be the FIRST sentence of the notes        warn
+    net_without_gross  rent_is_net, and the notes state a net figure
+                       with no gross beside it                        warn
 
 Freshness: `published_at` is the original publication timestamp, kept in
 full (hour-level freshness matters) with its timezone. A refreshed
@@ -56,7 +58,8 @@ BUMP_GAP_DAYS = 7
 FAR_BELOW_COMPS = 0.40
 PLACEHOLDER_FEE = re.compile(r"^9{3,}$")
 SHARED_PATTERNS = re.compile(
-    r"\b(sublet|sublease|room in|private room|shared|roommate|rooming)\b",
+    r"\b(sublet|sublease|room in (a |an |the )?(house|apartment|apt|unit|flat)|room for rent|"
+    r"private room|shared room|shared|roommate|housemate|house share|rooming)\b",
     re.IGNORECASE,
 )
 # Relative time goes stale the day after it is written. Notes carry
@@ -66,6 +69,28 @@ RELATIVE_TIME = re.compile(
     r"\d+\s*(minutes?|hours?|days?)\s+ago|posted recently|brand new listing)\b",
     re.IGNORECASE,
 )
+# A net-effective figure written without the gross beside it reads as the
+# monthly check. It is not: the gross is what is paid most months and what
+# renewal starts from.
+NET_WITHOUT_GROSS = re.compile(r"\bnet[- ]effective\b|\bnet\s*\$|\$[\d,]+\s*net\b", re.IGNORECASE)
+# A feed card carrying a concession or "starting at" badge hides the true
+# unit rent: the card shows a teaser, the page shows the unit. Such a card
+# over the ceiling (but within the stretch) is opened, not skipped. A bare
+# "special" is excluded before "education" / "needs" so school and service
+# copy does not read as a rent badge.
+CONCESSION_BADGE = re.compile(
+    r"\b(\d+\s*(month|months|mo|weeks?) free|move[- ]in special|special offer|"
+    r"special(?!\s+(education|needs)\b)|starting (at|from)|from \$|concession|look and lease|"
+    r"limited[- ]time)\b",
+    re.IGNORECASE,
+)
+# Owner-ad signals. A by-owner feed URL is a FACT; phrases are only
+# INFERRED. A missing building / property name is normal on owner feeds and
+# counts as one signal.
+OWNER_SIGNALS = ("private entrance", "utilities included", "contact owner", "owner managed",
+                 "bad credit ok", "no application fee", "no broker fee", "by owner")
+# HotPads counts as an owner feed only when the URL also says by-owner.
+OWNER_FEED_HOSTS = ("craigslist.org", "/for-rent-by-owner", "for-rent-by-owner?", "hotpads.com")
 # Typical size bands per bedroom count (square feet). Outside 0.5x-2x of
 # these reads as lot/garden area, a typo, or a wrong bed count.
 SQFT_TYPICAL = {0: 450, 1: 700, 2: 1000, 3: 1300, 4: 1700}
@@ -256,7 +281,25 @@ def traps(unit: dict, config: dict | None = None, comps: list[dict] | None = Non
             out.append(_flag("over_budget_all_in", "warn",
                              f"rent fits, but rent plus known fees is {total['total']:g}, over the {gmax:g} ceiling; lead the notes with this",
                              total=total["total"]))
+        verified = _num(unit, "rent_verified")
+        if (verified is not None and verified > gmax
+                and "concession_badged_over_ceiling" in _flag_names(unit.get("quality_flags"))):
+            out.append(_flag("over_budget_all_in", "warn",
+                             f"opened on a concession badge, but the verified rent {verified:g} is over the "
+                             f"{gmax:g} ceiling; lead the notes with this",
+                             total=verified))
+
+    if unit.get("rent_is_net") and _net_without_gross(unit.get("notes")):
+        out.append(_flag("net_without_gross", "warn",
+                         "note states a net figure without the gross beside it"))
     return out
+
+
+def _flag_names(flags) -> set[str]:
+    names = set()
+    for f in flags or []:
+        names.add(f.get("flag") if isinstance(f, dict) else f)
+    return names
 
 
 def worst_action(flags: list[dict]) -> str | None:
@@ -266,6 +309,98 @@ def worst_action(flags: list[dict]) -> str | None:
         if a in actions:
             return a
     return None
+
+
+# ---------------------------------------------------------- owner signals
+
+def _owner_feed(url: str) -> bool:
+    url = (url or "").lower()
+    for host in OWNER_FEED_HOSTS:
+        if host in url and (host != "hotpads.com" or "by-owner" in url):
+            return True
+    return False
+
+
+def owner_signals(unit: dict) -> dict:
+    """advertiser_type as a provenance object (references/provenance.md).
+
+    FACT when the unit came from a by-owner feed (source = that URL);
+    INFERRED owner when two or more OWNER_SIGNALS phrases appear in the
+    title + description (a missing building / property_name counts as one),
+    confidence min(0.3 + 0.2 * hits, 0.9); MISSING otherwise. An existing
+    FACT advertiser_type is returned unchanged, never overwritten.
+    """
+    existing = unit.get("advertiser_type")
+    if isinstance(existing, dict) and existing.get("status") == "FACT":
+        return existing
+    for key in ("url", "source"):
+        value = unit.get(key)
+        if isinstance(value, str) and _owner_feed(value):
+            return {"value": "owner", "status": "FACT", "source": value, "evidence": "by-owner feed"}
+    text = " ".join(str(_val(unit, k) or "") for k in ("title", "description")).lower()
+    evidence = [p for p in OWNER_SIGNALS if p in text]
+    if not (_val(unit, "building") or _val(unit, "property_name")):
+        evidence.append("no building or property name")
+    if len(evidence) >= 2:
+        return {"value": "owner", "status": "INFERRED",
+                "confidence": round(min(0.3 + 0.2 * len(evidence), 0.9), 2), "evidence": evidence}
+    return {"value": None, "status": "MISSING"}
+
+
+# ------------------------------------------------------------- feed cards
+
+def concession_badge(text: str | None) -> bool:
+    """True when a feed card's text carries a concession or starting-at
+    badge (CONCESSION_BADGE)."""
+    return bool(CONCESSION_BADGE.search(text or ""))
+
+
+def feed_price_decision(card_price, card_text, budget: dict) -> dict:
+    """The feed-first band check for one card.
+
+    pass  - card price within gross_max
+    open  - over gross_max but within gross_max_stretch (or gross_max when
+            no stretch is set) AND the card carries a concession badge: the
+            card price is a teaser, the page decides. Also any card with no
+            price at all.
+    skip  - over the ceiling otherwise, including badged cards above the
+            stretch ceiling.
+    """
+    budget = budget or {}
+    if card_price is None:
+        return {"action": "open", "reason": "price_unstated_on_card"}
+    gmax = budget.get("gross_max")
+    if gmax is None or card_price <= gmax:
+        return {"action": "pass"}
+    stretch = budget.get("gross_max_stretch") or gmax
+    if card_price <= stretch and concession_badge(card_text):
+        return {"action": "open", "reason": "concession_badged_over_ceiling"}
+    return {"action": "skip", "reason": "over_ceiling"}
+
+
+def keyword_filter(text: str | None, filters: dict | None) -> dict:
+    """Apply config `filters` to a feed card's title + description.
+
+    Any `exclude_keywords` hit skips the card; a non-empty
+    `include_keywords` list needs at least one hit. Keywords match as whole
+    words or whole phrases, case-insensitive ("garden" does not match
+    "gardening"). Empty or missing filters always pass. A skip is
+    criteria-dependent: changing the keywords re-opens it.
+    """
+    filters = filters or {}
+    text = (text or "").lower()
+
+    def hit(word: str) -> bool:
+        phrase = r"\s+".join(re.escape(w) for w in str(word).lower().split())
+        return bool(phrase) and re.search(rf"\b{phrase}\b", text) is not None
+
+    for word in filters.get("exclude_keywords") or []:
+        if hit(word):
+            return {"action": "skip", "reason": f"exclude_keyword:{word}"}
+    include = [w for w in filters.get("include_keywords") or [] if str(w).strip()]
+    if include and not any(hit(w) for w in include):
+        return {"action": "skip", "reason": "no_include_keyword"}
+    return {"action": "pass"}
 
 
 # ----------------------------------------------------------- note hygiene
@@ -280,6 +415,25 @@ def relative_time_hits(units: list[dict]) -> list[dict]:
             found = sorted({m.group(0) for m in RELATIVE_TIME.finditer(text)})
             if found:
                 hits.append({"unit_id": u.get("unit_id") or u.get("id"), "field": field, "phrases": found})
+    return hits
+
+
+def _net_without_gross(text: str | None) -> bool:
+    text = text or ""
+    return bool(NET_WITHOUT_GROSS.search(text)) and "gross" not in text.lower()
+
+
+def net_without_gross_hits(units: list[dict]) -> list[dict]:
+    """Units whose notes state a net figure with no gross beside it. A pure
+    string check, no money math: the fix is to write "net $X / gross $Y"."""
+    hits = []
+    for u in units:
+        text = u.get("notes") or ""
+        if _net_without_gross(text):
+            m = NET_WITHOUT_GROSS.search(text)
+            start = max(m.start() - 40, 0)
+            hits.append({"unit_id": u.get("unit_id") or u.get("id"),
+                         "note_excerpt": text[start:m.end() + 40].strip()})
     return hits
 
 
@@ -331,6 +485,7 @@ def integrity_report(units: list[dict], config: dict | None = None, root: str = 
         "out_of_spec": out_of_spec,
         "same_unit_pairs": pairs,
         "relative_time_notes": relative_time_hits(units),
+        "net_without_gross": net_without_gross_hits(units),
         "ok": not (dup_ids or missing_ids or missing_files or out_of_spec),
     }
 

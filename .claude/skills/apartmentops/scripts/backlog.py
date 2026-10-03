@@ -226,14 +226,71 @@ def sync_new_units(actions: dict, verified_units: dict, now: str) -> dict:
     return updated
 
 
-def describe_sync(before: dict, after: dict) -> str:
-    """One-line run-report summary of what sync_new_units just did."""
+def describe_sync(before: dict, after: dict, classes: dict | None = None) -> str:
+    """One-line run-report summary of what sync_new_units just did.
+
+    classes: optional classify_new_units() map; when any new unit is
+    known_building, ", of which N in tracked buildings" is appended.
+    """
     added = [unit_id for unit_id in after if unit_id not in before]
     if not before and added:
-        return f"actions.yml created; all {len(added)} units initialized as NEW"
-    if not added:
+        line = f"actions.yml created; all {len(added)} units initialized as NEW"
+    elif not added:
         return "actions.yml: no changes"
-    return f"actions.yml: {len(added)} NEW entries appended ({len(after)} units tracked)"
+    else:
+        line = f"actions.yml: {len(added)} NEW entries appended ({len(after)} units tracked)"
+    known = sum(1 for unit_id in added if (classes or {}).get(unit_id) == "known_building")
+    if known:
+        line += f", of which {known} in tracked buildings"
+    return line
+
+
+# --------------------------------------------------------------------------
+# NEW classification: unit scope vs building scope
+# --------------------------------------------------------------------------
+
+
+def building_slug(unit: dict) -> str:
+    """Slug of the unit's building (or property_name); "" when neither is set."""
+    for key in ("building", "property_name"):
+        value = unit.get(key)
+        if isinstance(value, dict):
+            value = value.get("value")
+        if value and str(value).strip():
+            return _slugify(str(value))
+    return ""
+
+
+def _is_owner(unit: dict) -> bool:
+    value = unit.get("advertiser_type")
+    if isinstance(value, dict):
+        value = value.get("value")
+    return value == "owner"
+
+
+def classify_new_units(new_units: dict, tracked_units: dict, scope: str) -> dict:
+    """{unit_id: "new" | "known_building"} for this run's new units.
+
+    scope "unit" (the default): every new unit is "new". scope "building":
+    a unit is "known_building" when its building slug is non-empty and any
+    tracked unit (live or gone) other than itself shares it. Units with no
+    building slug, and owner ads (advertiser_type owner), are always "new".
+    Classification only labels the report; it never replaces dedupe and
+    never changes what sync_new_units appends.
+    """
+    if scope != "building":
+        return {unit_id: "new" for unit_id in new_units}
+    tracked_slugs: dict[str, set] = {}
+    for unit_id, unit in (tracked_units or {}).items():
+        slug = building_slug(unit)
+        if slug:
+            tracked_slugs.setdefault(slug, set()).add(unit_id)
+    out = {}
+    for unit_id, unit in new_units.items():
+        slug = building_slug(unit)
+        others = tracked_slugs.get(slug, set()) - {unit_id}
+        out[unit_id] = "known_building" if slug and others and not _is_owner(unit) else "new"
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -249,6 +306,7 @@ def build_backlog(
     run_id: str,
     top_n: int = 5,
     max_resurface: int = 3,
+    classes: dict | None = None,
 ) -> dict:
     """Select still-live, high-scoring NEW units the user never acted on.
 
@@ -267,6 +325,9 @@ def build_backlog(
         top_n: max scored units actually shown in the backlog this run.
         max_resurface: appearances allowed before permanent demotion to
             the stale list.
+        classes: optional classify_new_units() map; when supplied, the
+            result carries "known_building": the new units found in a
+            building the hunt already tracks.
 
     Returns:
         {"backlog": [...], "unscored": [...], "stale": [...], "state": {...}}
@@ -360,12 +421,23 @@ def build_backlog(
     # whatever decay state they already had, ready to compete again next
     # run.
 
-    return {
+    result = {
         "backlog": backlog_rows,
         "unscored": unscored_rows,
         "stale": stale_rows,
         "state": new_state,
     }
+    if classes is not None:
+        result["known_building"] = [
+            {
+                "unit_id": unit_id,
+                "building": verified_units.get(unit_id, {}).get("building"),
+                "deep_link": _deep_link(verified_units.get(unit_id, {})),
+            }
+            for unit_id in sorted(classes)
+            if classes[unit_id] == "known_building"
+        ]
+    return result
 
 
 def backlog_markdown(result: dict) -> str:
@@ -404,6 +476,17 @@ def backlog_markdown(result: dict) -> str:
                     f"[Listing]({link})"
                 )
                 lines.append(f"  Draft outreach: \"{row['draft_outreach_note']}\"")
+
+    if "known_building" in result:
+        lines.append("")
+        lines.append("### New units in tracked buildings")
+        known = result["known_building"]
+        if not known:
+            lines.append("- none")
+        for row in known:
+            building = row.get("building") or "n/a"
+            link = row.get("deep_link") or "n/a"
+            lines.append(f"- {row['unit_id']} - building: {building} - [Listing]({link})")
 
     if stale:
         lines.append("")

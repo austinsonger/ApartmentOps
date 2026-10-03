@@ -42,6 +42,9 @@ of driving the platform's search UI - filter widgets drift, a baked-in URL
 does not. A leg that fails preflight (403 bot wall, non-200, marker miss) is
 reported loudly and skipped - never retried against a bot wall, never
 silently patched over by falling back to a hand-driven search for that leg.
+A `needs_ui` leaf (a platform with no URL template, such as Redfin) is
+handled by driving the platform's UI once for that area, caching the URL it
+produces into `saved_searches`, and re-running preflight on it.
 
 `saved_searches` can carry more than one profile (e.g. a `fallback_1br`
 alongside `primary`, for a secondary configuration). Run each profile as its
@@ -72,6 +75,16 @@ work or access.
   `checked.filter_new(tokens, tracked_tokens, state, criteria, now)`,
   where tracked tokens include gone units. Record out-of-area and
   out-of-band tokens with `checked.record_deferred`.
+  The band check calls `quality.feed_price_decision(card_price, card_text,
+  config["budget"])`: `open` decisions (a concession or starting-at badge
+  over `gross_max` but within `gross_max_stretch`, or no price on the card)
+  carry `quality_flags: ["concession_badged_over_ceiling"]` into the drain
+  row when the reason is the badge; `skip` decisions go to
+  `checked.record_deferred(state, "out_of_band", ...)` as today. The same
+  inline filter calls `quality.keyword_filter(card_title + " " +
+  card_blurb, config.get("filters"))`; a `skip` is recorded with
+  `checked.record_rejection(..., criteria_dependent=True)` and its reason
+  string (`exclude_keyword:<word>` or `no_include_keyword`).
 - Drain as you go: `checked.drain_append` the surviving tokens the moment
   the feed scan ends, and item details in batches of about five while
   opening them. Never hold results only in page variables or the scraped
@@ -91,6 +104,52 @@ work or access.
   gone. Record the round with `checked.record_price_refresh`.
 
 ## Phase 1 - Hunt (parallel researchers)
+
+Owner feeds first: before the cluster researchers, spawn one `owner`
+researcher per area, scoped to the by-owner saved searches from Phase 0
+(Craigslist `apa`, Apartments.com FRBO, and HotPads by-owner when its leg
+passed preflight; never when walled). Owner ads go fastest and skip the
+broker fee (`../apartmentops/references/collection-playbook.md` section
+12). Its prompt carries the note that a missing property or building name
+is normal on these feeds, not a red flag, and these ground rules verbatim
+(from `../apartmentops/SKILL.md`):
+
+> - **Anti-fabrication:** report only facts tied to a URL actually fetched or a
+>   file actually read. UNKNOWN is always an acceptable value. Never invent
+>   unit numbers, rents, years, orientations, or safety claims.
+> - **Constraints travel verbatim, and outputs get graded:** every subagent
+>   prompt carries `references/constraints.json`'s rules verbatim, not
+>   paraphrased or summarized. After a stage produces output, grade it with
+>   `scripts/gates.py`'s `grade_fields` - autofail on `value-without-provenance`
+>   (a FACT/INFERRED value with no source) and `placeholder-left-in-output`
+>   (TODO/TBD/FIXME/lorem-ipsum/example.com left in a committed file). A unit
+>   that fails grading is withheld and re-checked next run, never shipped with
+>   a footnote.
+> - **Liveness or it does not count:** a listing must be verifiably live on the
+>   day of the check. Stale syndication pages ("zombie listings") look real and
+>   are not - years-old listings resurface on syndication pages looking current.
+> - **Evidence is per source, not per link type:** an index or root page confirms live but never proves gone; a login wall, bot wall, CAPTCHA interstitial, empty shell, or fetch error keeps the prior verdict and can never overturn a prior gone; a complete, unpaginated operator table that omits a unit IS evidence of gone; a per-unit deep link is admissible only when the source policy says so (some operators render any invented unit id with a price).
+>   Prices come only from the unit's own page or its own table row, with the price layer recorded; a price near a unit token on an index is unusable.
+>   The policy is the `sources:` list in `apartmentops/sources.yml` (`references/contracts.md`); harvest deep links when found, and record a policy entry for every operator you meet.
+> - **Human-in-the-loop:** never submit applications, book tours, send
+>   emails/messages to brokers or leasing offices, or click
+>   Book/Submit/Confirm/Apply on any site. Produce drafts and links; the user
+>   sends. Read-only browsing of public pages only; no logins, no CAPTCHA or
+>   bot-wall bypasses; back off on 403s and find another public source.
+> - **Absence is not removal:** a unit missing from a search feed is
+>   `possibly_missing` (or `unknown` on a partial scan), never gone, until
+>   its own surface confirms it. Never call a scan complete without
+>   `checked.coverage` saying so.
+> - **Absolute dates only:** notes never say "today", "yesterday", or
+>   "hurry"; they carry the date. Publication, observation, verification
+>   and removal dates stay distinct, and no timezone is ever invented.
+> - **Private stays private:** `checked.json`, drain files, contact details
+>   and working notes never go into a published dashboard.
+> - **Lessons go to the user first:** at the end of a round, report any new
+>   reusable mechanism learned (a trap, a broken URL form, a data pattern),
+>   without personal data. Edit a skill or reference file only when the
+>   user authorizes it.
+> - **No emojis in any produced file.**
 
 Spawn one researcher per geographic cluster in `geography.areas` (plus one
 broad aggregator sweep and, when coverage feels thin, a completeness critic
@@ -117,11 +176,16 @@ legitimately appear once per profile) and then on the unit itself with
 `dedupe.find_matches(new_rows, tracked_units_including_gone)` (coordinates +
 floor + beds, never the address string alone; only `token`/`strong`
 matches merge, `candidate` matches go to `duplicate_candidates` for
-review). For each same-unit group, `dedupe.choose_primary` keeps the
+review). Building-scope NEW classification (Phase 5) happens after this
+dedupe, never instead of it: a relisted unit is still merged here first. For each same-unit group, `dedupe.choose_primary` keeps the
 no-fee or cheapest live ad as primary with the rest as
 `alternative_sources`, and `dedupe.classify_group`'s signals (price gap,
 relisted unrented, real price cut, owner vs broker, size growth, feed
-flooding) go into the unit's notes as cited evidence. Run
+flooding) go into the unit's notes as cited evidence. After
+`dedupe.find_matches`, run `quality.owner_signals(unit)` on every row and
+write the result as the provenance object for `advertiser_type` (FACT
+`owner` with the feed URL as source from a by-owner feed, INFERRED from
+phrases, MISSING otherwise; an existing FACT is never overwritten). Run
 `quality.traps(unit, config, comps, now)` on every row: drop `skip` rows
 into `checked.record_rejection`, store the rest as `quality_flags`. Drop
 rows failing hard gates or
@@ -173,7 +237,11 @@ Confirm:
 4. **Screenshot** to `apartmentops/shots/` - permanent evidence that this was
    live on this date, since the link itself will outlive the unit.
 5. **Scam screen** - price far below the building's own comps, no-deposit
-   tells, mismatched addresses. Flag, do not silently drop.
+   tells, mismatched addresses. Flag, do not silently drop. On owner ads,
+   also flag the owner-specific tells as `scam_flags` text: a deposit by
+   wire or gift card only, a refusal to show the unit in person, and a
+   price far below same-bed comps (`quality.traps`' `far_below_comps`
+   already raises the price tell).
 
 Watch for unit-number collisions: two towers in one complex can both have a
 unit with the same display number at different prices. Trust feed IDs over
@@ -258,19 +326,34 @@ other field belongs to the user. Use `backlog.describe_sync(before, after)`
 for the run-report line ("actions.yml: N NEW entries appended" or
 "actions.yml: no changes").
 
-Before the report, run `quality.integrity_report(units, config)` and
-`quality.relative_time_hits(units)`; fix duplicate ids, missing evidence
-files, out-of-spec rows, and relative-time notes, or name what remains.
+After `sync_new_units`, classify the new units:
+`classes = backlog.classify_new_units(new_units, tracked,
+config.get("report", {}).get("new_unit_scope", "unit"))`, where
+`new_units` are the units appended this run and `tracked` is every unit
+already on file, live or gone. Write each class onto its row in
+verified.json as `report_class`, pass `classes` to
+`backlog.describe_sync(before, after, classes)`, and report both counts
+(new units, and new units in tracked buildings).
+
+Before the report, run `quality.integrity_report(units, config)`,
+`quality.relative_time_hits(units)` and
+`quality.net_without_gross_hits(units)`; fix duplicate ids, missing evidence
+files, out-of-spec rows, relative-time notes, and net figures written
+without their gross, or name what remains.
 
 Report to the user: the strongest verified new find FIRST, with its link,
 verified date and true monthly cost (listings go fast; a find held for the
 next round is often a find lost - when `list_purpose` is `call_first`,
 frame it as call now), then the Phase 0 preflight table (which saved
 searches passed or failed and why), scan coverage from `checked.coverage`
-(pages read vs expected, blockers), counts (new, updated, live, rejected,
+(pages read vs expected, blockers), counts (new, updated, live, owner ads, rejected,
 confirmed delisted, possibly missing / unverified), any units withheld
 by an autofail this run, any `scam_flags` raised by the photo net, the
-actions.yml sync line, the standouts against their gates, and price
+actions.yml sync line, "opened on concession exception: N, of which M
+verified in band" (M is those whose verified rent is within `gross_max`;
+the rest carry the `over_budget_all_in` warn), the standouts against their gates, and price
 movements if this is a re-scan. Then offer the next stage:
 `apartmentops-research` if areas.json does not exist yet, otherwise
-`apartmentops-dashboard`.
+`apartmentops-dashboard`. When `shortlist_sync.enabled` is true and this run
+verified new units (or the sync cadence has passed), end with the offer to
+run `apartmentops-sync`.
