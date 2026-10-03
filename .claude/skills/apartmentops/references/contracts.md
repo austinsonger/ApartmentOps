@@ -55,13 +55,30 @@ locale:                      # optional; omitted = US defaults shown here
   currency: USD
   timezone: America/New_York # reporting timezone; also the fallback for
                              # naive source timestamps ONLY when known correct
+  country: US                # platform recipes in references/platforms.md are US-only
+  platform_slugs:            # optional; feeds doctor_searches.build_saved_searches
+    city_slug: chicago-il    # lowercase, hyphens, no spaces
+    craigslist_subdomain: chicago
+    area_slugs: {area-slug-1: west-loop}   # area -> platform neighborhood slug
 saved_searches:              # optional; built by onboarding from the gates above
   primary:                   # profile name; extra profiles (e.g. a 1BR fallback)
     platform-a:              # write to the same verified.json with a profile tag
       area-slug-1:
         url: "https://... newest-first list URL with all filters baked in"
         marker: "of \\d+ results"   # optional regex proving results rendered
+    platform-b:
+      area-slug-1:
+        needs_ui: true       # no URL template (e.g. Redfin); replaced by the
+        note: "..."          # URL the UI produces, then preflighted
 ```
+
+`saved_searches` is built by `scripts/doctor_searches.py`'s
+`build_saved_searches(config, recipes)` from the templates in
+`references/platforms.md`, substituting `locale.platform_slugs`,
+`geography.areas` and `budget.gross_max`; a city-wide recipe uses the area
+key `citywide`. A leaf may carry `needs_ui: true` for a platform whose
+neighborhood ids only the UI knows (Redfin) until the scan drives the UI
+and caches the URL in place of the leaf.
 
 `filters` keywords match whole words or whole phrases, case-insensitive,
 through `quality.keyword_filter`; they are criteria (part of

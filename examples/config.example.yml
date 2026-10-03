@@ -54,3 +54,10 @@ list_purpose: compare            # call_first | compare - shapes notes and repor
 locale:                          # optional; these are the US defaults
   currency: USD
   timezone: America/Chicago
+  country: US                    # the platform recipes in references/platforms.md are US-only
+  platform_slugs:                # feeds doctor_searches.build_saved_searches
+    city_slug: chicago-il        # lowercase letters, digits and hyphens; no spaces
+    craigslist_subdomain: chicago
+    area_slugs:                  # area -> the platform's neighborhood slug (defaults to the area name)
+      the-loop: the-loop
+      west-loop: west-loop

@@ -217,3 +217,76 @@ def test_cli_wrong_arg_count(capsys):
     rc = ds.main([])
     assert rc == 2
     assert "usage" in capsys.readouterr().err.lower()
+
+
+# ---------------------------------------------------------------------------
+# build_saved_searches
+# ---------------------------------------------------------------------------
+
+RECIPES = {
+    "craigslist": {"url": "https://{craigslist_subdomain}.craigslist.org/search/apa?max_price={max_rent}&sort=date",
+                   "marker": None, "per_area": False},
+    "apartments_frbo": {"url": "https://www.apartments.com/{neighborhood_slug}-{city_slug}/for-rent-by-owner/",
+                        "citywide_url": "https://www.apartments.com/{city_slug}/for-rent-by-owner/",
+                        "marker": None, "per_area": True},
+    "zillow": {"url": "https://www.zillow.com/{neighborhood_slug}-{city_slug}/rentals/?price-max={max_rent}",
+               "citywide_url": "https://www.zillow.com/{city_slug}/rentals/?price-max={max_rent}",
+               "marker": r"\d+ rentals", "per_area": True},
+    "zumper": {"url": "https://www.zumper.com/apartments-for-rent/{city_slug}?max-price={max_rent}",
+               "marker": None, "per_area": True},
+    "redfin": {"url": None, "marker": None, "per_area": True},
+}
+
+
+def _cfg(areas):
+    return {
+        "budget": {"gross_max": 3600},
+        "geography": {"areas": areas},
+        "locale": {"platform_slugs": {"city_slug": "chicago-il", "craigslist_subdomain": "chicago",
+                                      "area_slugs": {"West Loop": "west-loop"}}},
+    }
+
+
+def test_build_saved_searches_expands_per_area():
+    recipes = {k: RECIPES[k] for k in ("apartments_frbo", "zillow", "zumper")}
+    out = ds.build_saved_searches(_cfg(["West Loop", "river-north"]), recipes)["primary"]
+    urls = [leaf["url"] for areas in out.values() for leaf in areas.values()]
+    assert len(urls) == 6
+    assert out["apartments_frbo"]["West Loop"]["url"] == "https://www.apartments.com/west-loop-chicago-il/for-rent-by-owner/"
+    assert out["zillow"]["river-north"]["url"] == "https://www.zillow.com/river-north-chicago-il/rentals/?price-max=3600"
+    assert out["zumper"]["West Loop"]["url"] == "https://www.zumper.com/apartments-for-rent/chicago-il?max-price=3600"
+
+
+def test_build_saved_searches_city_wide_when_no_areas():
+    recipes = {k: RECIPES[k] for k in ("craigslist", "apartments_frbo")}
+    out = ds.build_saved_searches(_cfg([]), recipes)["primary"]
+    assert out["craigslist"] == {"citywide": {"url": "https://chicago.craigslist.org/search/apa?max_price=3600&sort=date"}}
+    assert out["apartments_frbo"]["citywide"]["url"] == "https://www.apartments.com/chicago-il/for-rent-by-owner/"
+    # per_area false stays city-wide even when areas exist
+    assert list(ds.build_saved_searches(_cfg(["river-north"]), recipes)["primary"]["craigslist"]) == ["citywide"]
+
+
+def test_build_saved_searches_skips_redfin_with_needs_ui():
+    out = ds.build_saved_searches(_cfg(["river-north"]), {"redfin": RECIPES["redfin"]})
+    leaf = out["primary"]["redfin"]["river-north"]
+    assert leaf["needs_ui"] is True and "url" not in leaf
+    rows = ds.check_saved_searches(out, fetch=_fetch_map({}))
+    assert rows[0]["ok"] is False and rows[0]["detail"].startswith("needs_ui")
+
+
+def test_build_saved_searches_rejects_bad_slug():
+    cfg = _cfg(["West Loop"])
+    cfg["locale"]["platform_slugs"]["area_slugs"] = {"West Loop": "west loop"}
+    with pytest.raises(ValueError):
+        ds.build_saved_searches(cfg, {"zillow": RECIPES["zillow"]})
+    cfg = _cfg([])
+    cfg["locale"]["platform_slugs"]["city_slug"] = "Chicago IL"
+    with pytest.raises(ValueError):
+        ds.build_saved_searches(cfg, {"zumper": RECIPES["zumper"]})
+
+
+def test_build_saved_searches_marker_carried():
+    out = ds.build_saved_searches(_cfg(["river-north"]), {"zillow": RECIPES["zillow"]})
+    assert out["primary"]["zillow"]["river-north"]["marker"] == r"\d+ rentals"
+    fetch = _fetch_map({"https://www.zillow.com/river-north-chicago-il/rentals/?price-max=3600": (200, "412 rentals")})
+    assert ds.check_saved_searches(out, fetch=fetch)[0]["ok"] is True

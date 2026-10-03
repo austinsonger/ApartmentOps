@@ -42,6 +42,9 @@ of driving the platform's search UI - filter widgets drift, a baked-in URL
 does not. A leg that fails preflight (403 bot wall, non-200, marker miss) is
 reported loudly and skipped - never retried against a bot wall, never
 silently patched over by falling back to a hand-driven search for that leg.
+A `needs_ui` leaf (a platform with no URL template, such as Redfin) is
+handled by driving the platform's UI once for that area, caching the URL it
+produces into `saved_searches`, and re-running preflight on it.
 
 `saved_searches` can carry more than one profile (e.g. a `fallback_1br`
 alongside `primary`, for a secondary configuration). Run each profile as its
