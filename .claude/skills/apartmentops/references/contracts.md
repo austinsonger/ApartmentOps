@@ -63,6 +63,10 @@ locale:                      # optional; omitted = US defaults shown here
     area_slugs: {area-slug-1: west-loop}   # area -> platform neighborhood slug
 research:                    # optional
   walk_score_cache_days: 90  # re-fetch a building's Walk Score after this many days
+report:                      # optional
+  new_unit_scope: unit       # unit | building: with building, a new unit in a
+                             # building the hunt already tracks is reported as
+                             # "new in tracked building" (report_class below)
 saved_searches:              # optional; built by onboarding from the gates above
   primary:                   # profile name; extra profiles (e.g. a 1BR fallback)
     platform-a:              # write to the same verified.json with a profile tag
@@ -193,6 +197,14 @@ either shape and normalizes).
   "verify_checklist": ["confirm year built before contacting or touring"]
 }
 ```
+
+`report_class` (optional, written by scan Phase 5 for this run's new units):
+`"new"` or `"known_building"`, from `backlog.classify_new_units` under
+`config.report.new_unit_scope`. With scope `unit` (the default) every new
+unit is `new`; with `building`, a new unit whose building slug matches any
+tracked unit, live or gone, is `known_building`, except owner ads and units
+with no building name, which stay `new`. It labels the report and the
+dashboard badge only; actions.yml still gets a `NEW` row either way.
 
 Field-level provenance (additive, preferred for new writes): any fact field
 MAY be a provenance object instead of a bare scalar -

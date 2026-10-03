@@ -105,6 +105,10 @@ that make it trustworthy rather than decorative:
   `diff_last_two` raises `InsufficientHistoryError` - catch it and hide
   the sparkline and every delta badge for that unit entirely. A single
   point is not a trend; never draw a flat line to fill the gap.
+  The NEW badge reads the unit's `report_class` from verified.json: a
+  `known_building` unit shows a quieter "new in tracked building" badge
+  instead of NEW, with a toggle that shows them as plain NEW; a unit with
+  no `report_class` badges as before.
 - **Flood chip.** Per building, read `data/buildings.json[slug].flood`
   and render a chip (zone letter, SFHA yes/no) that links out to
   `viewer_url`. A `flood.zone` of `null` (the FEMA service call failed -

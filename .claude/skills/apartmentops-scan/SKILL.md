@@ -176,7 +176,8 @@ legitimately appear once per profile) and then on the unit itself with
 `dedupe.find_matches(new_rows, tracked_units_including_gone)` (coordinates +
 floor + beds, never the address string alone; only `token`/`strong`
 matches merge, `candidate` matches go to `duplicate_candidates` for
-review). For each same-unit group, `dedupe.choose_primary` keeps the
+review). Building-scope NEW classification (Phase 5) happens after this
+dedupe, never instead of it: a relisted unit is still merged here first. For each same-unit group, `dedupe.choose_primary` keeps the
 no-fee or cheapest live ad as primary with the rest as
 `alternative_sources`, and `dedupe.classify_group`'s signals (price gap,
 relisted unrented, real price cut, owner vs broker, size growth, feed
@@ -324,6 +325,15 @@ byte. This is the only write this skill ever makes to actions.yml; every
 other field belongs to the user. Use `backlog.describe_sync(before, after)`
 for the run-report line ("actions.yml: N NEW entries appended" or
 "actions.yml: no changes").
+
+After `sync_new_units`, classify the new units:
+`classes = backlog.classify_new_units(new_units, tracked,
+config.get("report", {}).get("new_unit_scope", "unit"))`, where
+`new_units` are the units appended this run and `tracked` is every unit
+already on file, live or gone. Write each class onto its row in
+verified.json as `report_class`, pass `classes` to
+`backlog.describe_sync(before, after, classes)`, and report both counts
+(new units, and new units in tracked buildings).
 
 Before the report, run `quality.integrity_report(units, config)`,
 `quality.relative_time_hits(units)` and
