@@ -260,6 +260,16 @@ The verdict rules are per source, never per link type (`sources:` policy shape i
 - An index page confirms live but never proves gone; a price near a unit token on an index is never written.
   Where an operator's index is the admissible surface, one read of the complete table covers every tracked unit in that building: units present get `live` with the row's price and layer, units absent from a complete table get `gone`.
 
+Before per-unit checks, when a saved-search feed is reachable, run the
+feed-first refresh from `../apartmentops/references/collection-playbook.md`
+section 7: one full feed read (`feed_refresh.diff_feed`) surfaces price
+changes and possibly-missing units for a handful of requests, and only
+those units (all of them up to 15, else a reported sample) need
+individual checks. Feed absence alone never marks a unit gone; a unit left
+`possibly_missing` or `unknown` renders a muted "possibly missing since
+<date>" badge, distinct from a dated gone badge. Notes and badges carry
+absolute dates only.
+
 Every hydrate run also does the following, in order:
 
 - **Run identity.** Generate one `run_id` at the very start of hydrate,

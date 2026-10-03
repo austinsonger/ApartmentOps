@@ -17,7 +17,9 @@ description: >-
 Inputs: `apartmentops/config.yml`. Outputs: `apartmentops/data/candidates.json`,
 `apartmentops/data/verified.json`, `apartmentops/shots/*.png`,
 `apartmentops/extractors/{platform}.yml` (probed lazily, see Phase 2),
-`apartmentops/data/photo_hashes.json` (see Phase 4). Also appends
+`apartmentops/data/photo_hashes.json` (see Phase 4),
+`apartmentops/data/checked.json` and `apartmentops/data/drain/<run_id>.jsonl`
+(hunt memory, see Phase 0.5). Also appends
 `status: NEW` rows to the user-owned `apartmentops/data/actions.yml` (see
 Phase 5) - never rewrites it.
 Read `../apartmentops/references/contracts.md` for the exact schemas, and
@@ -52,6 +54,44 @@ If `config.yml` has no `saved_searches` block at all, skip this phase
 entirely; Phase 1's researchers fall back to driving the platform's search
 UI as before, and every row is tagged `profile: "primary"`.
 
+## Phase 0.5 - Hunt memory and the order of work
+
+Read `../apartmentops/references/collection-playbook.md` before the first
+scan of a session; it is the field manual for collecting without losing
+work or access. If the user's geography is on a platform with notes under
+`../apartmentops/references/platforms/` (for example `yad2.md`), read
+those too, and re-verify anything there against a live page first.
+
+- Generate one `run_id` (`scan-YYYYMMDD-HHMM`) and load
+  `apartmentops/data/checked.json` with `checked.load`. Compute
+  `criteria = checked.criteria_fingerprint(config)` and call
+  `checked.start_scan`. Get the current time from the system, never assume
+  it.
+- Feed first: read every result page of each saved search (recording
+  `set_pages_expected` from the page count the source reports and
+  `mark_page` per page), keep the FULL token -> price map for refresh,
+  and filter inline by geography, band, size, hard gates and
+  `checked.filter_new(tokens, tracked_tokens, state, criteria, now)`,
+  where tracked tokens include gone units. Record out-of-area and
+  out-of-band tokens with `checked.record_deferred`.
+- Drain as you go: `checked.drain_append` the surviving tokens the moment
+  the feed scan ends, and item details in batches of about five while
+  opening them. Never hold results only in page variables or the scraped
+  site's localStorage.
+- Open only the survivors. On a CAPTCHA, bot wall, or repeated throttling:
+  stop, `checked.add_blocker`, ship what was drained, and report coverage
+  from `checked.coverage` - never a complete-scan claim without it.
+- Every listing opened and dismissed gets `checked.record_rejection` with
+  its reason (`criteria_dependent=False` for sublets, scams, unstated
+  rent). Save with `checked.save` at the end, and after each batch on long
+  runs.
+- On a re-scan, pass the full feed map to
+  `feed_refresh.diff_feed(feed, verified_units, feed_complete=coverage
+  ["complete"], price_ceiling=budget.gross_max)`, verify missing units per
+  `feed_refresh.verification_plan`, and apply verdicts with
+  `feed_refresh.apply_verdicts` - absence from a feed never marks a unit
+  gone. Record the round with `checked.record_price_refresh`.
+
 ## Phase 1 - Hunt (parallel researchers)
 
 Spawn one researcher per geographic cluster in `geography.areas` (plus one
@@ -75,7 +115,18 @@ Each researcher prompt needs, explicitly:
   there rather than driving the search UI redundantly.
 
 Merge results, dedupe on (address + unit + profile - the same address can
-legitimately appear once per profile), drop rows failing hard gates or
+legitimately appear once per profile) and then on the unit itself with
+`dedupe.find_matches(new_rows, tracked_units_including_gone)` (coordinates +
+floor + beds, never the address string alone; only `token`/`strong`
+matches merge, `candidate` matches go to `duplicate_candidates` for
+review). For each same-unit group, `dedupe.choose_primary` keeps the
+no-fee or cheapest live ad as primary with the rest as
+`alternative_sources`, and `dedupe.classify_group`'s signals (price gap,
+relisted unrented, real price cut, owner vs broker, size growth, feed
+flooding) go into the unit's notes as cited evidence. Run
+`quality.traps(unit, config, comps, now)` on every row: drop `skip` rows
+into `checked.record_rejection`, store the rest as `quality_flags`. Drop
+rows failing hard gates or
 outside the band (allow a small tolerance - sites drift daily), and write
 candidates.json. Tag every row with its `profile` (default `"primary"` when
 no `saved_searches` are configured). Log what was dropped and why; silent
@@ -209,8 +260,17 @@ other field belongs to the user. Use `backlog.describe_sync(before, after)`
 for the run-report line ("actions.yml: N NEW entries appended" or
 "actions.yml: no changes").
 
-Report to the user: the Phase 0 preflight table (which saved searches
-passed or failed and why), counts (live, rejected, gone), any units withheld
+Before the report, run `quality.integrity_report(units, config)` and
+`quality.relative_time_hits(units)`; fix duplicate ids, missing evidence
+files, out-of-spec rows, and relative-time notes, or name what remains.
+
+Report to the user: the strongest verified new find FIRST, with its link,
+verified date and true monthly cost (listings go fast; a find held for the
+next round is often a find lost - when `list_purpose` is `call_first`,
+frame it as call now), then the Phase 0 preflight table (which saved
+searches passed or failed and why), scan coverage from `checked.coverage`
+(pages read vs expected, blockers), counts (new, updated, live, rejected,
+confirmed delisted, possibly missing / unverified), any units withheld
 by an autofail this run, any `scam_flags` raised by the photo net, the
 actions.yml sync line, the standouts against their gates, and price
 movements if this is a re-scan. Then offer the next stage:

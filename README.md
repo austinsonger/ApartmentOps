@@ -71,7 +71,16 @@ so you can re-run any single stage without redoing the others.
   fact FACT / INFERRED / MISSING / CONFLICT and evaluates hard and bonus
   gates as PASS / FAIL / UNKNOWN, and runs a photo-hash net across every
   listing photo to catch cross-address, cross-platform, price-gap, and
-  zombie-repost scams.
+  zombie-repost scams. Scans feed-first (read the search feed, filter
+  inline, open only survivors), drain results to disk as they arrive so a
+  bot wall never costs the round, and remember every rejection in
+  `data/checked.json` so later sessions never re-open the same listing.
+  Same-unit detection (coordinates + floor + beds, gone units included)
+  turns duplicates into leverage: a cheaper ad from the same agent, a
+  relist that never rented, an owner ad that skips the broker fee.
+  Data-quality traps catch unstated rents, shared rooms and sublets,
+  below-floor bait, implausible sizes, placeholder fees, and stale or
+  bumped ads.
 - **Research.** Grades each area's safety and cleanliness from cited crime
   and sanitation data, lists nearby essentials with walk times, and computes
   real door-to-door transit time and monthly fare cost to your office. Pulls
@@ -83,7 +92,9 @@ so you can re-run any single stage without redoing the others.
   advisor from cited floor plans.
 - **Dashboard.** Renders everything on a to-scale map with real shorelines,
   commute lines, source-linked grade chips, per-unit listing links, and
-  live/gone badges. "Hydrate" re-checks every unit later without re-hunting,
+  live/gone badges. "Hydrate" re-checks every unit later without re-hunting
+  (one full feed read finds price changes and possibly-missing units; feed
+  absence alone never marks a unit gone),
   and every hydrate writes to a market-memory ledger that drives a
   freshness/heartbeat banner, per-unit price sparklines with NEW /
   PRICE-DROP / REMOVED badges, a weekly digest, a 2-8 unit compare view, an
@@ -153,7 +164,12 @@ subagents cut corners when the rules are implicit:
   Some operators render any invented unit id with a price on their per-unit deep link, so a per-source policy can declare those deep links inadmissible and the operator's index authoritative.
   Prices are read only from the unit's own page or its own table row, never from a price sitting near a unit token on an index, and the price layer (net-effective, base rent, total monthly) is recorded with the price.
   Label rows such as "2BR-3" carry no unit number and can never be verified gone.
+  A unit missing from a search feed is only possibly missing: filters, a price rise above the ceiling, and incomplete scans all hide live ads.
   The policy is a `sources:` list in `apartmentops/sources.yml` (shape in `references/contracts.md`, starter in `examples/sources.example.yml`); `verify_units.py` and hydrate read it and return a three-state verdict, live / check / gone, where check means "keep what is on file".
+- **Absolute dates, honest coverage.** Notes carry dates, never "posted
+  today"; publication time is the original timestamp, never a refreshed
+  one; and a scan interrupted by a bot wall is reported as partial, with
+  pages read vs expected.
 - **Human-in-the-loop.** ApartmentOps never submits applications, books
   tours, or contacts a broker or leasing office. It produces drafts and
   links; you send them. Read-only browsing of public pages only - no logins,
@@ -164,11 +180,12 @@ subagents cut corners when the rules are implicit:
 Every number the skills report - a true monthly cost, a rent-drop
 percentage, a gate PASS/FAIL/UNKNOWN, a photo-hash match distance, a lease
 deadline - comes out of plain, tested Python, not the model doing math in
-its head. Eleven modules under `.claude/skills/apartmentops/scripts/`
+its head. Fifteen modules under `.claude/skills/apartmentops/scripts/`
 (`costs.py`, `snapshots.py`, `gates.py`, `scoring.py`, `photo_hash.py`,
-`lease_dates.py`, and five more, alongside the original `geocode.py` and
-`verify_units.py`) are covered by a 445-test pytest suite (441 tests over
-twelve of the thirteen modules - `geocode.py` is a live Nominatim call and
+`lease_dates.py`, `checked.py`, `feed_refresh.py`, `dedupe.py`,
+`quality.py`, and five more, alongside the original `geocode.py` and
+`verify_units.py`) are covered by a 483-test pytest suite (479 tests over
+sixteen of the seventeen modules - `geocode.py` is a live Nominatim call and
 has no test file - plus 4 tests for the example-data generator under
 `assets/`) - run it with `pytest tests/` from the repo root. The model's
 job in every skill is to
@@ -217,10 +234,12 @@ repo - read it before adding a feature. The four that matter most:
   apartmentops/             onboarding + routing; references/, scripts/, assets/
     references/contracts.md   the file formats every stage reads and writes
     references/*.md           scoring, provenance, ledger, costs, lease-fields,
-                              and line-substitution docs
-    scripts/*.py              eleven deterministic modules (costs, gates, scoring,
+                              line-substitution, and collection-playbook docs
+    references/platforms/     per-platform notes (yad2.md for Israeli rentals)
+    scripts/*.py              fifteen deterministic modules (costs, gates, scoring,
                               snapshots, photo_hash, lease_dates, line_advisor,
-                              extract_embedded, flood, backlog, doctor_searches)
+                              extract_embedded, flood, backlog, doctor_searches,
+                              checked, feed_refresh, dedupe, quality)
                               plus the original geocode.py and verify_units.py
     assets/example-dashboard.html  a finished dashboard to study (synthetic, seeded data)
     assets/make_example_data.py    the seeded generator for that example data
@@ -233,7 +252,7 @@ examples/scoring.example.yml
 examples/extractor.example.yml
 examples/sources.example.yml   per-source liveness / gone / price evidence policy
 docs/screenshots/
-tests/                      pytest suite (445 tests) for twelve of the thirteen scripts/ modules (geocode.py is untested) plus assets/make_example_data.py
+tests/                      pytest suite (483 tests) for sixteen of the seventeen scripts/ modules (geocode.py is untested) plus assets/make_example_data.py
 ```
 
 ## License

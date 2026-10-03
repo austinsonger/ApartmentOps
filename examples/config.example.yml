@@ -18,11 +18,13 @@ budget:
   allow_net_effective: true      # net-in-band qualifies if gross <= gross_max_stretch
   gross_max_stretch: 3900
   income_annual: null            # optional; set it to get 40x-rent qualification flags
+  broker_fee: {mode: bonus}      # hard = skip broker/agency ads; bonus = just a negative
 
 unit:
   beds: 2
   baths: {value: 2, mode: hard}          # mode: hard (required) | bonus (nice to have)
   sqft_min: {value: 950, mode: bonus}
+  whole_unit_only: true                  # skip rooms in shared units and sublets
 
 gates:
   year_built_min: {value: 2015, mode: bonus}
@@ -39,3 +41,11 @@ geography:
     Started with West Loop and River North; widened to South Loop and
     Streeterville after onboarding flagged them as one L stop out with
     better price-per-foot.
+
+move_in_target: null             # optional ISO date
+list_purpose: compare            # call_first | compare - shapes notes and reports
+
+locale:                          # optional; these are the US defaults
+  currency: USD
+  timezone: America/Chicago
+  room_convention: bedrooms      # bedrooms | il_rooms (Israeli rooms include the living room)
