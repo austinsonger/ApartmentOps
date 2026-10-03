@@ -204,3 +204,44 @@ def test_keyword_filter_phrase_and_boundary():
 def test_keyword_filter_empty_passes():
     assert quality.keyword_filter("anything at all", None) == {"action": "pass"}
     assert quality.keyword_filter(None, {"exclude_keywords": [], "include_keywords": []}) == {"action": "pass"}
+
+
+def test_owner_signals_feed_url_is_fact():
+    for url in ("https://chicago.craigslist.org/chc/apa/d/sunny-2br/7800000000.html",
+                "https://www.apartments.com/west-loop-chicago-il/for-rent-by-owner/",
+                "https://hotpads.com/chicago-il/apartments-for-rent?listingTypes=by-owner"):
+        s = quality.owner_signals({"url": url, "building": "Some Building"})
+        assert s == {"value": "owner", "status": "FACT", "source": url, "evidence": "by-owner feed"}, url
+
+
+def test_owner_signals_hotpads_without_by_owner_is_not_feed():
+    s = quality.owner_signals({"url": "https://hotpads.com/chicago-il/apartments-for-rent", "building": "Tower"})
+    assert s == {"value": None, "status": "MISSING"}
+
+
+def test_owner_signals_two_phrases_inferred():
+    s = quality.owner_signals({"building": "Two-flat", "title": "2BR, private entrance",
+                               "description": "Utilities included. Contact owner."})
+    assert s["status"] == "INFERRED" and s["value"] == "owner"
+    assert s["confidence"] == 0.9  # three phrases
+    s = quality.owner_signals({"building": "Two-flat", "title": "Private entrance", "description": "No broker fee"})
+    assert s["confidence"] == 0.7
+    assert s["evidence"] == ["private entrance", "no broker fee"]
+
+
+def test_owner_signals_one_phrase_missing():
+    s = quality.owner_signals({"building": "Tower", "description": "Utilities included"})
+    assert s == {"value": None, "status": "MISSING"}
+
+
+def test_owner_signals_missing_building_counts_once():
+    s = quality.owner_signals({"description": "Utilities included"})
+    assert s["status"] == "INFERRED" and s["confidence"] == 0.7
+    assert s["evidence"] == ["utilities included", "no building or property name"]
+    assert quality.owner_signals({"description": "Nice place"})["status"] == "MISSING"
+
+
+def test_owner_signals_never_overrides_fact():
+    fact = {"value": "broker", "status": "FACT", "source": "https://example.test/listing/1", "evidence": "Listed by: Agent"}
+    s = quality.owner_signals({"advertiser_type": fact, "url": "https://chicago.craigslist.org/chc/apa/d/x/1.html"})
+    assert s is fact

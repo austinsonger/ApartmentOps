@@ -215,7 +215,11 @@ Written by the scan stage when the source provides them
   observation (`found_at`), verification (`verified_at`), and removal
   (`delisted`) dates stay distinct.
 - `advertiser_type` (`owner` | `building_direct` | `agency` | `broker`),
-  `agency`, `broker_fee`.
+  `agency`, `broker_fee`. `advertiser_type` may be a provenance object
+  (written by `quality.owner_signals` at merge): `owner` from a by-owner
+  feed is FACT with the feed URL as `source`; `owner` from listing phrases
+  is INFERRED with a `confidence` and the matched phrases as `evidence`;
+  an existing FACT is never overwritten.
 - `rooms`, `size_sqm` for locales that count rooms or meters.
 - `fees`: `[{type, amount, currency, billing_period: monthly|bimonthly|
   quarterly|semiannual|annual|one_time, source_url, observed_at}]`.

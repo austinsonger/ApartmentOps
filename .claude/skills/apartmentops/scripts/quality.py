@@ -84,6 +84,13 @@ CONCESSION_BADGE = re.compile(
     r"limited[- ]time)\b",
     re.IGNORECASE,
 )
+# Owner-ad signals. A by-owner feed URL is a FACT; phrases are only
+# INFERRED. A missing building / property name is normal on owner feeds and
+# counts as one signal.
+OWNER_SIGNALS = ("private entrance", "utilities included", "contact owner", "owner managed",
+                 "bad credit ok", "no application fee", "no broker fee", "by owner")
+# HotPads counts as an owner feed only when the URL also says by-owner.
+OWNER_FEED_HOSTS = ("craigslist.org", "/for-rent-by-owner", "for-rent-by-owner?", "hotpads.com")
 # Typical size bands per bedroom count (square feet). Outside 0.5x-2x of
 # these reads as lot/garden area, a typo, or a wrong bed count.
 SQFT_TYPICAL = {0: 450, 1: 700, 2: 1000, 3: 1300, 4: 1700}
@@ -302,6 +309,42 @@ def worst_action(flags: list[dict]) -> str | None:
         if a in actions:
             return a
     return None
+
+
+# ---------------------------------------------------------- owner signals
+
+def _owner_feed(url: str) -> bool:
+    url = (url or "").lower()
+    for host in OWNER_FEED_HOSTS:
+        if host in url and (host != "hotpads.com" or "by-owner" in url):
+            return True
+    return False
+
+
+def owner_signals(unit: dict) -> dict:
+    """advertiser_type as a provenance object (references/provenance.md).
+
+    FACT when the unit came from a by-owner feed (source = that URL);
+    INFERRED owner when two or more OWNER_SIGNALS phrases appear in the
+    title + description (a missing building / property_name counts as one),
+    confidence min(0.3 + 0.2 * hits, 0.9); MISSING otherwise. An existing
+    FACT advertiser_type is returned unchanged, never overwritten.
+    """
+    existing = unit.get("advertiser_type")
+    if isinstance(existing, dict) and existing.get("status") == "FACT":
+        return existing
+    for key in ("url", "source"):
+        value = unit.get(key)
+        if isinstance(value, str) and _owner_feed(value):
+            return {"value": "owner", "status": "FACT", "source": value, "evidence": "by-owner feed"}
+    text = " ".join(str(_val(unit, k) or "") for k in ("title", "description")).lower()
+    evidence = [p for p in OWNER_SIGNALS if p in text]
+    if not (_val(unit, "building") or _val(unit, "property_name")):
+        evidence.append("no building or property name")
+    if len(evidence) >= 2:
+        return {"value": "owner", "status": "INFERRED",
+                "confidence": round(min(0.3 + 0.2 * len(evidence), 0.9), 2), "evidence": evidence}
+    return {"value": None, "status": "MISSING"}
 
 
 # ------------------------------------------------------------- feed cards

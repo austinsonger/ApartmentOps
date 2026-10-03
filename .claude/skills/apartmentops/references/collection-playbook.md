@@ -228,3 +228,20 @@ yield - roughly one usable listing per full pass in past rounds. Run the
 primary platforms first. Read-only: never message a seller or post
 anything. They usually give only vague times ("listed over a week ago");
 record that in notes and leave `published_at` unset.
+
+## 12. Owner feeds
+
+Three feeds carry most by-owner ads (recipes in `platforms.md`):
+Craigslist `apa`, Apartments.com FRBO (`/for-rent-by-owner/`), and HotPads
+by-owner (only when the URL still says `by-owner`, and not when walled).
+Open owner ads first: they go fastest and skip the broker fee.
+
+`quality.owner_signals(unit)` writes `advertiser_type` as a provenance
+object. A row from one of these feeds is FACT `owner`, sourced to the feed
+URL. Elsewhere, the phrases "private entrance", "utilities included",
+"contact owner", "owner managed", "bad credit ok", "no application fee",
+"no broker fee" and "by owner", plus a missing building or property name
+(one signal), make it INFERRED at two or more hits; fewer is MISSING. A
+missing property name is normal on owner feeds, not a red flag. Owner
+scam tells (wire-only deposit, refusal to show the unit, a price far below
+same-bed comps) go into `scam_flags`.
